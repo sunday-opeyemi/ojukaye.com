@@ -1,0 +1,77 @@
+{% extends 'page_setup.html' %}
+{% block title %} Home page {% endblock title%}
+
+{% block loginsession %}
+    <a class="date text-white mt-4 ml-3" href="{% url 'signup' %}">Sign up </a> 
+    <a class="date text-white mt-4 ml-3" href="{% url 'login' %}">Sign in </a> 
+{%endblock loginsession %}
+
+{% block bodycontent %}
+
+{% if approved_news %}
+
+<form method="post" class="mt-4">
+  <div class="row">
+    <div class="col-6">
+        {% csrf_token %}
+      {% load bootstrap %}
+      {{form|bootstrap}}
+    </div>
+    <div class="col-2 mt-2">
+      <input class="bc-white loginbutton " type="submit" value="Search">
+    </div>
+  </div>
+</form>
+
+{% for news_title in approved_news %}
+  <div class="col-12 shadow-sm py-1 px-auto  mb-1">
+      <div class=" p-1 ">
+          <a  href="{% url 'newsbody' news_title.post_title %}">
+              <span style='color:#0e399c' class="font-weight-bold">
+                {{news_title.post_title}}
+            </span>
+          </a>
+      </div>
+    <div class=" p-0  text-small">By:
+        <a  href="{% url 'newsbody' news_title.post_title %}">
+            <span class="text-muted">{{news_title.username}}</span>
+      </a> 
+        <span class="date text-muted">{{news_title.datetime}}</span>
+        <span class="date text-muted">Share: {{news_title.share_num}} </span>
+    </div>
+  </div>
+{% endfor %}
+{% else %}
+<div class="sorry" >Sorry no news to display</div>
+{% endif %}
+
+<!-- pagination -->
+<nav aria-label="Page navigation example">
+    <ul class="pagination justify-content-center">
+      {% if approved_news.has_previous %}
+        <li class="page-item">
+          <a class="page-link" href="?page={{ approved_news.previous_page_number }}">Previous</a>
+        </li>
+      {% endif %}
+      {% for i in approved_news.paginator.page_range %}
+        {% if approved_news.number == i %}
+          <li class="page-item active" aria-current="page">
+            <span class="page-link">
+              {{ i }}
+              <span class="sr-only">(current)</span>
+            </span>
+          </li>
+        {% else %}
+          <li class="page-item"><a class="page-link" href="?page={{ i }}">{{ i }}</a></li>
+        {% endif %}
+      {% endfor %}
+      {% if approved_news.has_next %}
+        <li class="page-item">
+          <a class="page-link" href="?page={{ approved_news.next_page_number }}">Next</a>
+        </li>
+      {% endif %}
+    </ul>
+  </nav>
+<!--end of Pagination-->
+
+{% endblock bodycontent%}

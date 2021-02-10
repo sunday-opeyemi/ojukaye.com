@@ -1,0 +1,190 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+"http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+
+<title>{% block title %}Home Page {% endblock title%}</title>
+{% load static %} 
+<link href={% static "Assets/main.css" %} type="text/css" rel="stylesheet">
+<style type="text/css">
+
+body {
+	margin-left: 0px;
+	margin-top: 0px;
+	margin-right: 0px;
+	margin-bottom: 0px;
+}
+.style1 {color: #6B97BC}
+body {
+	margin-left: 0px;
+	margin-top: 0px;
+	margin-right: 0px;
+	margin-bottom: 0px;
+}
+.style1 {color: #6B97BC}
+.style8 a {color: #FFFFFF}
+.style4 {color: #FFFFFF; font-weight: bold; }
+.style5 {
+	color: #000099;
+	font-weight: bold;
+}
+#flex {
+  display: flex
+}
+a {
+  margin-left: 20px;
+	color: #0000CC;
+	/* font-weight: bold; */
+}
+.style7 {color: #0000CC}
+
+</style>
+<body bgcolor="#FFFFFF">
+<table width="90%" border="0" align="center" cellspacing="0" cellpadding="0">
+  <tr bgcolor="#FFFFFF">
+    <td width="780" height="14" valign="top"><table width="100%" border="0" cellspacing="0" cellpadding="0">
+      <tr>
+        {% load static %} 
+        <td width="202" height="78"><img name="logo" src={% static 'Assets/images/flash-banner.png' %} width="100%" height="85" alt=""></td>
+        <td width="277" height="78" background={% static "Assets/images/bg.jpg" %}>{% block messagereturn %} &nbsp; {% endblock messagereturn%}</td>
+        <td width="522" valign="bottom" background={% static "Assets/images/bg.jpg" %}>{%block loginsession %}&nbsp; {% endblock loginsession %}</td>
+      </tr>
+    </table></td>
+  </tr>
+  <tr bgcolor="#FFFFFF">
+    <td width="780" height="67" valign="top"><a href="{% url 'homenewsfeed' 'general_news' %}">General News |</a>
+      <a href="{% url 'homenewsfeed' 'politics_news' %}">Politic News |</a> <a href="{% url 'homenewsfeed' 'family_news' %}">Family News |</a>
+      <a href="{% url 'homenewsfeed' 'crime_news' %}">Crime News |</a> <a href="{% url 'homenewsfeed' 'society_news' %}">Society/Culture News |</a>
+      <a href="{% url 'homenewsfeed' 'sport_news' %}">Sport News |</a> <a href="{% url 'homenewsfeed' 'religion_news' %}">Religion News |</a>
+      <a href="{% url 'homenewsfeed' 'relationship_news' %}">Relationship/Romanc News |</a> <a href="{% url 'homenewsfeed' 'food_news' %}">Foods/Agriculture News |</a>
+      <a href="{% url 'homenewsfeed' 'vacancies_news' %}">Vacancies/Jobs News |</a> <a href="{% url 'homenewsfeed' 'entertainment_news' %}">Entertainment News |</a>
+      <a href="{% url 'homenewsfeed' 'investiment_new' %}">Investiment News |</a> <a href="{% url 'homenewsfeed' 'literature_news' %}">Literature News |</a>
+      <a href="{% url 'homenewsfeed' 'nysc_news' %}">NYSC News |</a> <a href="{% url 'homenewsfeed' 'market_news' %}">Market News |</a>
+      <a href="{% url 'homenewsfeed' 'education_news' %}">Education News |</a> <a href="{% url 'homenewsfeed' 'programming_news' %}">Programming/Code/Challenges |</a>
+      <a href="{% url 'homenewsfeed' 'automobile_news' %}">AutoMobiles News |</a> <a href="{% url 'homenewsfeed' 'phone_news' %}">Phones News |</a>
+      <a href="{% url 'homenewsfeed' 'properties_news' %}">Properties News |</a> <a href="{% url 'homenewsfeed' 'computer_news' %}">Computers News |</a>
+      <a href="{% url 'homenewsfeed' 'health_news' %}">Health/Hospital News |</a> <a href="{% url 'homenewsfeed' 'science-news' %}">Science/Technology News |</a>
+      <a href="{% url 'homenewsfeed' 'travel_news' %}">Travel/Tour News |</a> <a href="{% url 'homenewsfeed' 'event_news' %}">Events/Activities |</a>
+
+    </td>
+  </tr>
+  <tr bgcolor="#FFFFFF">
+    <td height="14" valign="top"><table width="100%" border="0" cellspacing="0" cellpadding="0">
+      <tr>
+        {% load static %} 
+        <td width="177" height="33" background={% static 'Assets/images/template_mt002_05.jpg' %}><img src={% static 'Assets/images/template_mt002_05.jpg' %} width="1" height="33"></td>
+        <td width="603" height="33" background={% static "Assets/images/template_mt002_06.jpg" %}>&nbsp;</td>
+      </tr>
+      <tr>
+        <td height="372" valign="top" background={% static "Assets/images/bg1.jpg" %}>
+          <!-- <table width="177" border="0" cellspacing="0" cellpadding="0">
+            <tr>
+              <td width="177" height="25"><a href="{% url 'index' %}"><img src={% static "Assets/images/template_mt002_07.jpg" %} width="177" height="25" border="0"></a></td>
+            </tr>
+            <tr>
+              <td height="19"><a href="{% url 'products' %}"><img src={% static "Assets/images/template_mt002_10.jpg" %} width="177" height="19" border="0"></a></td>
+            </tr>
+            <tr>
+              <td height="20"><a href="{% url 'services' %}"><img src={% static "Assets/images/template_mt002_11.jpg"%} width="177" height="20" border="0"></a></td>
+            </tr>
+            <tr>
+              <td height="20"><a href="{% url 'helpcenter' %}"><img src={% static "Assets/images/template_mt002_12.jpg" %} width="177" height="20" border="0"></a></td>
+            </tr>
+            <tr>
+              <td height="21"><a href="{% url 'contact' %}"><img src={% static "Assets/images/template_mt002_13.jpg" %} width="177" height="21" border="0"></a></td>
+            </tr>
+          </table> -->
+   			</td>
+        <td height="33" valign="top" background={% static "Assets/images/template_mt002_08.jpg" %}>
+          {% block bodycontent %}
+
+          {% endblock bodycontent %}  
+        </td>
+      </tr>
+    </table></td>
+  </tr>
+</table>
+
+<table width="90%" border="0" align="center" cellspacing="0" cellpadding="0">
+   <tr><td width="603" height="33" background={% static "Assets/images/template_mt002_06.jpg" %}>&nbsp;</td></tr>
+  <tr style="background-color:#0000CC" class="style8">
+    <td>
+      <div class="fwt-fatfooter new-fatfooter">
+        <div class="row quarters" id="flex">
+          <div class="col quarter"><a href="javascript: void(0);">About Us<span class="caret"></span></a> <!-- Mobile Header --> 
+            <ul>
+              <li class="desktop-item"><a href="">About Us</a></li>                           <!-- desktop link --> 
+              <li class="mobile-item"><a href="">About Ojukaye</a></li>                         <!-- mobile link --> 
+      
+               <li><a href="">Customer stories</a></li>
+      
+      
+              <li><a href="">Investor relations</a></li>
+              <li><a href="">Social responsibility</a></li>
+              <li><a href="">Environmental sustainability</a></li>
+              <li><a href="">Supply chain transparency</a>
+              <li><a href="">The Trust Center</a></li>
+            </ul>
+          </div>
+          <div class="col quarter"><a href="javascript: void(0);">Contact Us<span class="caret"></span></a>   <!-- Mobile Header --> 
+            <ul>
+              <li class="desktop-item"><a href="">Contact Us</a></li>     <!--  desktop link -->
+             <li class="mobile-item"><a href="">Contact Ojukaye</a></li>    <!-- mobile link --> 
+              <li><a href="">Meet our partners</a></li>
+              <li><a href="">Find a reseller</a></li>
+            </ul>
+          </div>
+          <div class="col quarter"><a href="javascript: void(0);">Work with Us<span class="caret"></span></a>    <!-- Mobile Header --> 
+            <ul>
+              <li><a href="">Careers</a></li>                                         
+              <li><a href="">We Are Ojukaye</a></li>
+              <li><a href="">Our People Deal</a></li>
+              <li><a href="">Partner with Ojukaye</a></li>
+            </ul>
+          </div>
+          <div class="col quarter" id="cisco-sites"> <a href="javascript: void(0);">Ojukaye Sites<span class="caret"></span></a>   <!-- Mobile Header --> 
+            <ul>
+              <li><a href="">Yoako</a> </li>
+              <li><a href="">Alajiki</a> </li>
+              <li><a href="">Ojukaye Umbrella</a></li>
+            </ul>
+          </div>
+          <div>
+            <ul>
+                <li><a href="">Contacts</a></li>
+                <li><a href="">Feedback</a></li>
+                <li><a href="">Help</a></li>
+                <li><a href="">Site Map</a></li>
+                <li><a href="">Terms &amp; Conditions</a></li>
+                <li>
+                    <a href="">
+                        <span>Privacy</span>
+                        <span>Privacy Statement</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="">
+                        <span>Cookies</span>
+                        <span>Cookies</span>
+                    </a>
+                </li>
+                <li><a href="">Trademarks</a></li>
+            </ul>
+          </div>
+        </div>
+        
+      </div>
+          </div>
+      </div>
+       
+      </div>
+        
+    </td>
+  </tr>
+   <tr bgcolor= "#0000CC" >
+    <td> Copyright &copy; 2020 Sunday Opeyemi. All rights reserved. <br><b>Disclaimer</b>: Every Ojukaye member is <b>solely responsible</b> for <b>anything</b> that he/she <b>posts</b> or <b>uploads</b> on Ojukaye.</td>
+  </tr>
+</table>
+</body>
+</html>

@@ -1,0 +1,17 @@
+{% extends 'page_setup.html' %}
+{% block title %} Signup page {% endblock title%}
+
+{% block bodycontent %}
+<form method="post" class="col-12 mt-5 mt-md-1  p-0">
+    {% csrf_token %}
+      {% load bootstrap %}
+      {{form|bootstrap_horizontal:'col-4'}}
+      <input class="loginbutton" type="submit" value="Register">
+  </form>
+  <div class='mt-3'>
+    <span class="date text-black">Have an account? </span>
+    <a class="date text-primary ml-1" href="{% url 'login' %}">Sign in </a> 
+  </div>
+
+
+{% endblock bodycontent%}

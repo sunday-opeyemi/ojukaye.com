@@ -1,0 +1,13 @@
+{% extends 'userportalapp/userportal_page_setup.html' %}
+{% block title %} Reply post {% endblock title%}
+
+{% block bodycontent %}
+
+    <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        {% load bootstrap %}
+        {{form|bootstrap_horizontal:'col-lg-4' }}
+        <input type="submit" value="Post">
+    </form>
+       
+{% endblock bodycontent%}

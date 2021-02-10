@@ -1,0 +1,142 @@
+{% extends 'page_setup.html' %}
+{% block title %} News body {% endblock title%}
+
+{% block bodycontent %}
+
+{% if returned_value %}
+
+  {% if user.is_authenticated %}
+  <P class="reply shadow-sm">
+    <a href="{% url 'commentpost' %}">Reply post </a>
+  </P>
+  {% endif %}
+  
+  {% for news_title in returned_value.approved_news %}
+
+  <div class="col-12 py-1 shadow px-auto mb-4">
+    <div class=" p-1">
+      <div class='d-flex justify-content-center'>
+      </div>
+      <strong style='font-size: 25px;' id='tt'>{{news_title.post_title}}</strong>
+
+      <div>
+        <small>
+          By: <a href="{% url 'userportal' news_title.username %}"> 
+            <span class="ml-1">{{news_title.username}}</span>
+          </a>
+          <span class="date pl-2">{{news_title.datetime}}</span>
+
+        </small>
+
+      </div>
+    </div>
+    <div class=" my-1 p-1">
+      <div>
+        {{news_title.news_post}}
+      </div>
+      <div class="bg-secondary">
+        Source: <a href="{{news_title.post_source}}" class="nav-link text-white">{{news_title.post_source}}</a> 
+      </div>
+      <div>
+        {% if news_title.picture %}
+          <img src="{{news_title.picture.url}}" alt="img" width="250px" height="300px"><br><br>
+        {% endif %}
+        {% if news_title.video %}
+          <video controls src="{{news_title.video.url}}" width="250px" height="300px"></video> <br><br>
+        {% endif %}
+        {% if news_title.audio %}
+          <audio controls src="{{news_title.audio.url}}" width="250px" height="300px"></audio><br><br>
+        {% endif %}
+      </div>
+    </div>
+    <div class=" p-1">
+      <small>
+        {% if user.is_authenticated %}
+          <span class="sharelink"><a  href="{% url 'sharepost' news_title.post_id %}">Share: {{news_title.share_num}}</a></span>
+        {% else %}
+        <span class="sharelink">Share: {{news_title.share_num}}</span>
+
+        {% endif %}
+      </small>
+    </div>
+  </div>    
+  {% endfor %}
+  
+
+  <h2 class="header-post2 my-0">Comments </h2>
+  {% if returned_value.comment_news %}
+  {% for comment in returned_value.comment_news %}
+  {% load static %}
+  <div class="col-12 mx-auto p-0 mb-2">
+    <div class="shadow-sm">
+      <div class="" style="background-color: rgba(0,0,0, 0.01)">
+        <div class="p-3">{{comment.comment_post}}</div>
+        <div>
+          {% if comment.picture %}
+           <img src="{{comment.picture.url}}" alt="img" width="250px" height="300px"><br><br>
+          {% endif %}
+          {% if comment.video %}
+            <video controls src="{{comment.video.url}}" width="250px" height="300px"></video> <br><br>
+          {% endif %}
+          {% if comment.audio %}
+            <audio controls src="{{comment.audio.url}}" width="250px" height="300px"></audio><br><br>
+          {% endif %}
+        </div>
+      </div>
+      <div class="shadow-sm">
+        <div>
+          <small>
+            <a class="sharelink" href="{% url 'userportal' comment.username %}">
+              <span class="p-2">by: {{comment.username}}</span>
+            </a>
+            <span class="date"> {{comment.comment_date}} </span>
+          </small>
+        </di>
+        {% if user.is_authenticated %}
+        <div class='d'>
+          <small>
+            <a class="sharelink" href="{% url 'likecomment' comment.comment_id %}">
+              <i class="fa fa-thumbs-up pl-2"></i>:{{comment.like_num}}
+            </a>
+            <a class="sharelink" href="{% url 'unlikecomment' comment.comment_id %}">
+              <i class="fa fa-thumbs-down pl-2"></i>:{{comment.unlike_num}}</a>
+          </small>
+        </div>
+        {% else %}
+        <div class='d'>
+          <small> 
+              <i class="fa fa-thumbs-up pl-2"></i>:{{comment.like_num}}
+              <i class="fa fa-thumbs-down pl-2"></i>:{{comment.unlike_num}}
+          </small>
+        </div>
+        {% endif %}
+      </div>
+    </div>   
+    
+  </div>
+
+  {% endfor %}
+  {% else %}
+    <div class="ml-2"><small>No comment for now</small></div>
+  {%endif%}
+{% else %}
+  no news to display. sorry!!
+{% endif %}
+
+{% if user.is_authenticated %}
+  <div class="reply shadow-sm col-2 p-0 m-0 ">
+    <a href="{% url 'commentpost' %}">Reply post </a>
+  </div>
+{% endif %}
+
+ <script>
+  const test = document.getElementById('tt');
+  if(test){
+    let inns = test.innerHTML
+    if(inns && inns.slice(0,1) !== inns.slice(0,1).toUpperCase()){
+      test.innerHTML = inns.slice(0,1).toUpperCase()+inns.slice(1,inns.length);
+    }
+  }
+</script>
+
+{% endblock bodycontent%}

@@ -1,0 +1,16 @@
+{% extends 'page_setup.html' %}
+{% block title %} Post news {% endblock title%}
+
+{% block loginsession %} <a href="{% url 'index' %}">SignOut </a>{% endblock loginsession %}
+
+{% block bodycontent %}
+
+    <div class="col-12 shadow-sm py-1 px-auto  mb-1">Topic: {{return_form.headline}}</div>
+    <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        {% load bootstrap %}
+        {{return_form.form|bootstrap_horizontal:'col-lg-4' }}
+        <input type="submit" value="Post">
+    </form>
+       
+{% endblock bodycontent%}

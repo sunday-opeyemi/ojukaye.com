@@ -1,0 +1,61 @@
+{% extends 'adminapp/adminpage_setup.html' %}
+{% block title %} {{ returned_values.headline }} {% endblock title%}
+
+{% block bodycontent %}
+
+    {% if returned_values.approved_news %}
+
+    {% if returned_values.headline %}
+        <p class="post mt-3 mb-3"><a href="{% url 'postnews' %}"><span>Post your news here</span></a></p>
+    {% endif %}
+
+    {% for news_title in returned_values.approved_news %}
+
+    <div class="col-12 shadow-sm py-1 px-auto  mb-1">
+        <div class="row">
+            <div class="col-6">
+                <div class=" p-1 ">
+                    <a  href="{% url 'newsbody' news_title.post_title %}">
+                    <span style='color:#0e399c' class="font-weight-bold">
+                        {{news_title.post_title}}
+                    </span>
+                    </a>
+                </div>
+            </div>
+            <div class="col-6 d-flex">
+                <div class=" p-1 mr-5">
+                <a  href="{% url 'approvenews' news_title.post_id %}">
+                    <span style='color:#0e399c' class="font-weight-bold">
+                        {{news_title.approved}}
+                    </span>
+                </a>
+                </div>
+                <div class=" p-1 ">
+                <a  href="{% url 'deletenews' news_title.post_id %}">
+                    <span style='color:#0e399c' class="font-weight-bold">
+                        Delete
+                    </span>
+                </a>
+                </div>
+            </div>
+        <div class=" p-0  text-small">
+            <a  href="{% url 'userportal' news_title.username %}">
+                <span class="text-muted">{{news_title.username}}</span>
+            </a> 
+            <span class="date text-muted">{{news_title.datetime}}</span>
+            <span class="date text-muted">Share: {{news_title.share_num}} </span>
+        </div>
+    </div>
+</div>
+    
+        {% endfor %}
+        {% else %}
+
+        <div class="sorry">Sorry no news to display</div>
+
+        {% endif %}
+
+    {% if returned_values.headline %}
+        <p class="post mt-3 mb-3"><a href="{% url 'postnews' %}"><span>Post your news here</span></a></p>
+    {% endif %}
+{% endblock bodycontent%}

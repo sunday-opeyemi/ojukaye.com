@@ -1,0 +1,107 @@
+{% extends 'userportalapp/userportal_page_setup.html' %}
+{% block title %} News body {% endblock title%}
+
+{% block bodycontent %}
+
+{% if returned_value %}
+
+  {% for post in returned_value.userpost %}
+
+  <div class="col-12 py-1 shadow px-auto mb-4">
+    <div class=" my-1 p-1">
+      <div>
+        {{post.post_content}}
+      </div>
+      <div>
+        {% if news_title.picture %}
+          <img src="{{post.picture.url}}" alt="img" width="250px" height="300px"><br><br>
+        {% endif %}
+        {% if news_title.video %}
+          <video controls src="{{post.video.url}}" width="250px" height="300px"></video> <br><br>
+        {% endif %}
+        {% if news_title.audio %}
+          <audio controls src="{{post.audio.url}}" width="250px" height="300px"></audio><br><br>
+        {% endif %}
+      </div>
+    </div>
+    <div class=" p-1">
+      <small>
+        {% if user.is_authenticated %}
+          <span class="sharelink"><a  href="{% url 'shareuser' post.userp_id %}">Share: {{post.share_num}}</a></span>
+        {% else %}
+        <span class="sharelink">Share: {{news_title.share_num}}</span>
+
+        {% endif %}
+      </small>
+    </div>
+  </div>    
+  {% endfor %}
+  
+
+  <h2 class="header-post2 my-0">Comments </h2>
+  {% if returned_value.postcomment %}
+  {% for comment in returned_value.postcomment %}
+  {% load static %}
+  <div class="col-12 mx-auto p-0 mb-2">
+    <div class="shadow-sm">
+      <div class="" style="background-color: rgba(0,0,0, 0.01)">
+        <div class="p-3">{{comment.comment_post}}</div>
+        <div>
+          {% if comment.picture %}
+           <img src="{{comment.picture.url}}" alt="img" width="250px" height="300px"><br><br>
+          {% endif %}
+          {% if comment.video %}
+            <video controls src="{{comment.video.url}}" width="250px" height="300px"></video> <br><br>
+          {% endif %}
+          {% if comment.audio %}
+            <audio controls src="{{comment.audio.url}}" width="250px" height="300px"></audio><br><br>
+          {% endif %}
+        </div>
+      </div>
+      <div class="shadow-sm">
+        <div>
+          <small>
+            <a class="sharelink" href="{% url 'userportal' comment.username %}">
+              <span class="p-2">by: {{comment.username}}</span>
+            </a>
+            <span class="date"> {{comment.comment_date}} </span>
+          </small>
+        </di>
+        {% if user.is_authenticated %}
+        <div class='d'>
+          <small>
+            <a class="sharelink" href="{% url 'likeuser' comment.comment_id %}">
+              <i class="fa fa-thumbs-up pl-2"></i>:{{comment.like_num}}
+            </a>
+            <a class="sharelink" href="{% url 'unlikeuser' comment.comment_id %}">
+              <i class="fa fa-thumbs-down pl-2"></i>:{{comment.unlike_num}}</a>
+          </small>
+        </div>
+        {% else %}
+        <div class='d'>
+          <small> 
+              <i class="fa fa-thumbs-up pl-2"></i>:{{comment.like_num}}
+              <i class="fa fa-thumbs-down pl-2"></i>:{{comment.unlike_num}}
+          </small>
+        </div>
+        {% endif %}
+      </div>
+    </div>   
+    
+  </div>
+
+  {% endfor %}
+  {% else %}
+    <div class="ml-2"><small>No comment for now</small></div>
+  {%endif%}
+{% else %}
+  no news to display. sorry!!
+{% endif %}
+
+{% if user.is_authenticated %}
+  <div class="reply shadow-sm col-2 p-0 m-0 ">
+    <a href="{% url 'replypost' %}">Reply post </a>
+  </div>
+{% endif %}
+
+{% endblock bodycontent%}

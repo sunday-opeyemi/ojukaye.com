@@ -1,0 +1,106 @@
+@import url('https://fonts.googleapis.com/css2?family=Ubuntu:ital,wght@0,400;1,300&display=swap');
+
+body {
+	margin-left: 0px;
+	margin-top: 0px;
+	margin-right: 0px;
+  margin-bottom: 0px;
+}
+body a{
+  text-decoration: none;
+}
+
+.brandname{
+  font-size:2.2em !important;
+  font-family: 'Lucida Sans', 'Lucida Sans Regular', 'Lucida Grande', 'Lucida Sans Unicode', Geneva, Verdana, sans-serif !important;
+  margin-top: 10px !important;
+  display: inline-block !important;
+}
+
+.loginbutton{
+  height:37px;
+  border-radius: 5px !important;
+  outline: none;
+  border:none;background-color:white; 
+
+ } 
+.sidenav{
+  background-color: #c0c6ce;
+}
+.foot{
+  background-color: #4492D6;
+}
+
+.footers > li > a{
+  font-size:12px !important;
+}
+
+.foot ul {
+  list-style-type: none;
+}
+
+.foot ul a {
+  color: white;
+}
+
+.foot ul a:hover {
+  color: silver;
+  text-decoration: none;
+}
+.copyright{
+  margin-left: 40px;
+  color: rgb(75, 67, 67);
+
+}
+.heading{
+  color: white;
+  font-size: 1.1em;
+  margin-top: 10px
+}
+/* homefeedpage */
+.post{
+  width:1000px;
+}
+.post a{
+  text-decoration:none;
+}
+.post a span{
+  color:rgb(71, 87, 102); 
+  margin-left:40px;
+}
+.date{
+  font-size: 10pt; 
+  font-style: italic;
+}
+.sorry{
+  background-color:rgb(166, 192, 214); 
+  width:1000px;
+}
+
+/* news_body doc style */
+.reply a{
+  text-decoration:none; 
+  color:black
+}
+.header-title-content{
+  margin-left:20px;
+}
+.newspost{
+  font-family: Ubuntu;
+}
+.sharelink a{
+  margin-left:5px; 
+  text-decoration:none;
+  color: black !important;
+}
+.header-title-content2{
+  margin-left:20px;
+}
+#thumb1, #thumb2{
+  color:#333;
+}
+
+
+
+
+/* responsive max-width=900px */

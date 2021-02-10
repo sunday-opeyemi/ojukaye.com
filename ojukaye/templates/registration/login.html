@@ -1,0 +1,40 @@
+ {% extends '../page_setup.html' %}
+{% block title %} Sign in page {% endblock title%}
+
+{% block userprofile %} &nbsp;{% endblock userprofile %}
+
+{% block bodycontent %}
+<!-- <form method="post" class=" text-light form-inline col-md-offset-2 mt-4">
+    {% csrf_token %}
+    {% load bootstrap %}
+      {{form|bootstrap}}
+      <input class="bc-white ml-2 loginbutton" type="submit" value="Login"> 
+</form> -->
+<div>
+  <div class='row'>
+    <div class='col-3'></div>
+    <div class='col-md-6 col-12 col-offset-3'>
+      <form method="post" class="mt-4">
+        {% csrf_token %}
+        {% load bootstrap %}
+          {{form|bootstrap}}
+          <div class='d-flex justify-content-center'>
+            <input class="bc-white ml-2 loginbutton" type="submit" value="Login">
+          </div>
+    </form>
+    <div class='d-flex justify-content-center mt-3'>
+      <div>
+        <a class="date text-primary mt-5 ml-1" href="{% url 'password_reset' %}">Forget password? </a>      
+      </div>  
+      <div>
+        <span class="date text-black mt-5 ml-4">Don't have an account? </span>
+        <a class="date text-primary mt-4 ml-1" href="{% url 'signup' %}">Sign up </a>      
+      </div>        
+    </div>
+    </div>
+    <div class='col-3'></div>
+  </div>
+</div>
+
+
+{% endblock bodycontent %}

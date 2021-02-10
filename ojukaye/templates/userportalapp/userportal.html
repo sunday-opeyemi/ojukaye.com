@@ -1,0 +1,155 @@
+{% extends 'userportalapp/userportal_page_setup.html' %}
+{% block title %} Portal page {% endblock title%}
+
+{% block userprofile %}
+
+{% endblock userprofile %}
+
+{% block bodycontent %}
+
+<form method="post" class="mt-4">
+  <div class="row">
+    {% load static %}
+    <div style="background-color:rgb(133, 138, 136); border-radius: 50% ; height: 5vh; width:3vw; overflow:hidden;">
+        <img src="/static/Assets/images/eagle-head2.png" alt="profileimg" class="img-fluid">
+    </div>
+    <div class="col-6">
+        {% csrf_token %}
+      {% load bootstrap %}
+      {{form|bootstrap}}
+    </div>
+    <div class="col-2 mt-2">
+      <input class="bc-white loginbutton " type="submit" value="Post">
+    </div>
+  </div>
+</form>
+
+{% if approved_news.posted_news %}
+    {% for news_title in approved_news.posted_news %}
+        <div class="col-12 shadow-sm py-1 px-auto  mb-1">
+            <div class=" p-1 ">
+                <span class="date text-muted">News you posted</span>
+                <a  href="{% url 'newsbody' news_title.post_title %}">
+                    <span style='color:#0e399c' class="font-weight-bold">
+                     {{news_title.post_title}} 
+                </a>
+                </span>
+            </div>
+            <div>
+                {% if news_title.picture %}
+                <img src="{{news_title.picture.url}}" alt="img" width="250px" height="300px"><br><br>
+                {% endif %}
+                {% if news_title.video %}
+                <video controls src="{{news_title.video.url}}" width="250px" height="300px"></video> <br><br>
+                {% endif %}
+                {% if news_title.audio %}
+                <audio controls src="{{news_title.audio.url}}" width="250px" height="300px"></audio><br><br>
+                {% endif %}
+            </div>
+            <div class=" p-0  text-small">
+                <span class="date text-muted">{{news_title.datetime}}</span>
+                <span class="date text-muted">Share: {{news_title.share_num}} </span>
+            </div>
+        </div>
+    {% endfor %}
+    {% if approved_news.comment_news %}
+        {% for comment in approved_news.comment_news %}
+        <div class="col-12 shadow-sm py-1 px-auto  mb-1">
+            <div class=" p-1 ">
+                <span class="date text-muted">You commented on</span>
+                {% if comment.post_title %}
+                <a  href="{% url 'newsbody' comment.post_title %}">
+                    <span style='color:#0e399c' class="font-weight-bold">
+                        {{comment.post_title}}
+                    </span>
+                </a></br>
+                <span style="background-color: rgba(0,0,0, 0.01)" class="font-weight-bold">
+                    {{comment.comment_post}}
+                </span>
+                {% else %}
+                <a  href="{% url 'postbody' comment.userp_id %}">
+                    <span style='color:#0e399c' class="font-weight-bold">
+                        {{comment.comment_post}}
+                    </span>
+                </a>
+                {% endif %}
+            </div>
+            <div>
+                {% if comment.picture %}
+                <img src="{{comment.picture.url}}" alt="img" width="250px" height="300px"><br><br>
+                {% endif %}
+                {% if comment.video %}
+                <video controls src="{{comment.video.url}}" width="250px" height="300px"></video> <br><br>
+                {% endif %}
+                {% if comment.audio %}
+                <audio controls src="{{comment.audio.url}}" width="250px" height="300px"></audio><br><br>
+                {% endif %}
+            </div>
+            <div class=" p-0  text-small">
+                <span class="date text-muted">{{comment.comment_date}}</span>
+            </div>
+        </div>
+        {% endfor %}
+    {% endif %}
+    {% if approved_news.share_news%}
+        {% for sharepost in approved_news.share_news %}
+        <div class="col-12 shadow-sm py-1 px-auto  mb-1">
+                <div class=" p-1 ">
+                    <span class="date text-muted">You shared </span>
+                    <a  href="{% url 'newsbody' sharepost.post_title %}">
+                        <span style='color:#0e399c' class="font-weight-bold">
+                        {{sharepost.post_title}}
+                    </span>
+                    </a>
+                </div>
+                <div>
+                    {% if sharepost.picture %}
+                    <img src="{{sharepost.picture.url}}" alt="img" width="250px" height="300px"><br><br>
+                    {% endif %}
+                    {% if sharepost.video %}
+                    <video controls src="{{sharepost.video.url}}" width="250px" height="300px"></video> <br><br>
+                    {% endif %}
+                    {% if sharepost.audio %}
+                    <audio controls src="{{sharepost.audio.url}}" width="250px" height="300px"></audio><br><br>
+                    {% endif %}
+                </div>
+                <div class=" p-0  text-small">
+                    <span class="date text-muted">{{sharepost.datetime}}</span>
+                </div>
+        </div>
+        {% endfor %}
+    {% endif %}
+    {% if approved_news.user_post %}
+        {% for userpost in approved_news.user_post %}
+            <div class="col-12 shadow-sm py-1 px-auto  mb-1">
+                <div class=" p-1 ">
+                    <span class="date text-muted">You posted</span>
+                        <span style='color:#0e399c' class="font-weight-bold">
+                        <a style="color:#0e399c" href="{% url 'postbody' userpost.userp_id %}">
+                        {{userpost.post_content}}
+                        </a>
+                    </span>
+                </div>
+                <div>
+                    {% if userpost.picture %}
+                    <img src="{{userpost.picture.url}}" alt="img" width="250px" height="300px"><br><br>
+                    {% endif %}
+                    {% if userpost.video %}
+                    <video controls src="{{userpost.video.url}}" width="250px" height="300px"></video> <br><br>
+                    {% endif %}
+                    {% if userpost.audio %}
+                    <audio controls src="{{userpost.audio.url}}" width="250px" height="300px"></audio><br><br>
+                    {% endif %}
+                </div>
+                <div class=" p-0  text-small">
+                    <span class="date text-muted">{{userpost.datetime}}</span>
+                    <span class="date text-muted">Share: {{userpost.share_num}} </span>
+                </div>
+            </div>
+        {% endfor %}
+    {% endif %}
+{% else %}
+<div class="sorry" >Sorry no news to display</div>
+{% endif %}
+
+{% endblock bodycontent%}
