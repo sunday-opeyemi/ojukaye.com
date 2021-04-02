@@ -107,10 +107,10 @@ if DJANGO_HOST == "production":
     DATABASES = {
         'default': {
             'ENGINE': 'mysql.connector.django',
-            'NAME': 'sundayopeyemi$ojukaye',
-            'USER': 'sundayopeyemi',
-            'PASSWORD': 'sundayschool',
-            'HOST': 'sundayopeyemi.mysql.pythonanywhere-services.com',
+            'NAME': 'myusername$ojukaye',
+            'USER': 'myusername',
+            'PASSWORD': 'mypassword',
+            'HOST': 'myusername.mysql.pythonanywhere-services.com',
             'PORT': '3306',
             'OPTIONS': {
                 'autocommit': True,
@@ -122,7 +122,7 @@ if DJANGO_HOST == "production":
     EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
     EMAIL_HOST = 'smtp.gmail.com' # mail service smtp
     EMAIL_HOST_USER = 'sunday.opeyemi2018@gmail.com' # email id
-    EMAIL_HOST_PASSWORD = 'sundayschool123' #password
+    EMAIL_HOST_PASSWORD = 'mypassword' #password
     EMAIL_PORT = 587
     EMAIL_USE_TLS = True
 
