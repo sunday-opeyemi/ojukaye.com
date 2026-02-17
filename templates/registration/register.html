@@ -1,0 +1,275 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Create Account - Ojukaye{% endblock %}
+
+{% block content %}
+<div class="auth-page">
+    <div class="auth-container">
+        <!-- Left Side - Branding -->
+        <div class="auth-left">
+            <div class="auth-left-content">
+                <div class="auth-logo-area">
+                    <img src="{% static 'images/logo.jpeg' %}" alt="Ojukaye Logo" class="auth-logo">
+                    <h2>Join Ojukaye Today!</h2>
+                    <p>Create your account and become part of Nigeria's fastest growing news and discussion community.</p>
+                </div>
+                
+                <div class="auth-features">
+                    <div class="auth-feature-item">
+                        <i class="fas fa-bolt"></i>
+                        <span>Fast & real-time updates</span>
+                    </div>
+                    <div class="auth-feature-item">
+                        <i class="fas fa-comments"></i>
+                        <span>Engage in discussions</span>
+                    </div>
+                    <div class="auth-feature-item">
+                        <i class="fas fa-newspaper"></i>
+                        <span>Curated news feed</span>
+                    </div>
+                    <div class="auth-feature-item">
+                        <i class="fas fa-shield-alt"></i>
+                        <span>Secure & private</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="auth-footer">
+                <p>By joining, you agree to our Terms of Service and Privacy Policy</p>
+            </div>
+        </div>
+        
+        <!-- Right Side - Registration Form -->
+        <div class="auth-right">
+            <div class="auth-header">
+                <h1>Create Account</h1>
+                <p>Get started with your free account</p>
+            </div>
+            
+            <form method="post" action="{% url 'register' %}" class="auth-form" novalidate>
+                {% csrf_token %}
+                
+                {% if form.non_field_errors %}
+                <div class="alert alert-error">
+                    <i class="fas fa-exclamation-circle"></i>
+                    <div class="alert-content">
+                        <div class="alert-message">{{ form.non_field_errors.0 }}</div>
+                    </div>
+                </div>
+                {% endif %}
+                
+                <!-- Account Type Selection -->
+                <div class="form-group">
+                    <label class="form-label">
+                        <i class="fas fa-user-tag"></i> Account Type
+                    </label>
+                    <div class="account-type-selector">
+                        <label class="account-type-card">
+                            <input type="radio" name="account_type" value="individual" {% if form.account_type.value == 'individual' or not form.account_type.value %}checked{% endif %}>
+                            <div class="account-type-content">
+                                <i class="fas fa-user"></i>
+                                <span>Individual</span>
+                                <small>Personal account</small>
+                            </div>
+                        </label>
+                        <label class="account-type-card">
+                            <input type="radio" name="account_type" value="business" {% if form.account_type.value == 'business' %}checked{% endif %}>
+                            <div class="account-type-content">
+                                <i class="fas fa-building"></i>
+                                <span>Business</span>
+                                <small>For organizations</small>
+                            </div>
+                        </label>
+                    </div>
+                    {% if form.account_type.errors %}
+                    <div class="form-error">
+                        <i class="fas fa-exclamation-circle"></i> {{ form.account_type.errors.0 }}
+                    </div>
+                    {% endif %}
+                </div>
+                
+                <!-- Basic Information -->
+                <div class="form-group">
+                    <label for="id_username" class="form-label">
+                        <i class="fas fa-user"></i> Username
+                    </label>
+                    <input type="text" 
+                           name="username" 
+                           id="id_username" 
+                           class="form-input" 
+                           placeholder="Choose a username" 
+                           required
+                           value="{{ form.username.value|default:'' }}">
+                    {% if form.username.errors %}
+                    <div class="form-error">
+                        <i class="fas fa-exclamation-circle"></i> {{ form.username.errors.0 }}
+                    </div>
+                    {% endif %}
+                    <small style="color: var(--gray-500); font-size: 0.75rem; margin-top: 0.25rem;">
+                        Letters, digits and @/./+/-/_ only.
+                    </small>
+                </div>
+                
+                <div class="form-group">
+                    <label for="id_email" class="form-label">
+                        <i class="fas fa-envelope"></i> Email Address
+                    </label>
+                    <input type="email" 
+                           name="email" 
+                           id="id_email" 
+                           class="form-input" 
+                           placeholder="your@email.com" 
+                           required
+                           value="{{ form.email.value|default:'' }}">
+                    {% if form.email.errors %}
+                    <div class="form-error">
+                        <i class="fas fa-exclamation-circle"></i> {{ form.email.errors.0 }}
+                    </div>
+                    {% endif %}
+                </div>
+                
+                <!-- Business Fields (Hidden by default, shown when business is selected) -->
+                <div class="business-fields" style="display: none;">
+                    <h3 style="font-size: 1rem; margin-bottom: 1rem; color: var(--gray-700);">
+                        <i class="fas fa-building" style="color: var(--primary);"></i> Business Information
+                    </h3>
+                    
+                    <div class="form-group">
+                        <label for="id_business_name" class="form-label">
+                            <i class="fas fa-store"></i> Business Name
+                        </label>
+                        <input type="text" 
+                               name="business_name" 
+                               id="id_business_name" 
+                               class="form-input" 
+                               placeholder="Your business name"
+                               value="{{ form.business_name.value|default:'' }}">
+                        {% if form.business_name.errors %}
+                        <div class="form-error">
+                            <i class="fas fa-exclamation-circle"></i> {{ form.business_name.errors.0 }}
+                        </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="id_business_email" class="form-label">
+                            <i class="fas fa-envelope"></i> Business Email
+                        </label>
+                        <input type="email" 
+                               name="business_email" 
+                               id="id_business_email" 
+                               class="form-input" 
+                               placeholder="business@example.com"
+                               value="{{ form.business_email.value|default:'' }}">
+                        {% if form.business_email.errors %}
+                        <div class="form-error">
+                            <i class="fas fa-exclamation-circle"></i> {{ form.business_email.errors.0 }}
+                        </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="id_business_phone" class="form-label">
+                            <i class="fas fa-phone"></i> Business Phone
+                        </label>
+                        <input type="text" 
+                               name="business_phone" 
+                               id="id_business_phone" 
+                               class="form-input" 
+                               placeholder="+234 800 000 0000"
+                               value="{{ form.business_phone.value|default:'' }}">
+                    </div>
+                    
+                    <small style="color: var(--gray-500); font-size: 0.75rem; display: block; margin-top: 0.5rem;">
+                        <i class="fas fa-info-circle"></i> Business accounts require verification. You'll receive an email with next steps.
+                    </small>
+                </div>
+                
+                <!-- Password Fields -->
+                <div class="form-group">
+                    <label for="id_password1" class="form-label">
+                        <i class="fas fa-lock"></i> Password
+                    </label>
+                    <div class="password-wrapper">
+                        <input type="password" 
+                               name="password1" 
+                               id="id_password1" 
+                               class="form-input" 
+                               placeholder="Create a password" 
+                               required>
+                        <button type="button" class="password-toggle">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                    </div>
+                    {% if form.password1.errors %}
+                    <div class="form-error">
+                        <i class="fas fa-exclamation-circle"></i> {{ form.password1.errors.0 }}
+                    </div>
+                    {% endif %}
+                    <small style="color: var(--gray-500); font-size: 0.75rem; margin-top: 0.25rem;">
+                        At least 8 characters. Can't be entirely numeric.
+                    </small>
+                </div>
+                
+                <div class="form-group">
+                    <label for="id_password2" class="form-label">
+                        <i class="fas fa-lock"></i> Confirm Password
+                    </label>
+                    <div class="password-wrapper">
+                        <input type="password" 
+                               name="password2" 
+                               id="id_password2" 
+                               class="form-input" 
+                               placeholder="Confirm your password" 
+                               required>
+                        <button type="button" class="password-toggle">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                    </div>
+                    {% if form.password2.errors %}
+                    <div class="form-error">
+                        <i class="fas fa-exclamation-circle"></i> {{ form.password2.errors.0 }}
+                    </div>
+                    {% endif %}
+                </div>
+                
+                <!-- Terms Agreement -->
+                <div class="form-group">
+                    <label class="remember-me" style="margin-top: 0.5rem;">
+                        <input type="checkbox" name="agree_terms" id="agree_terms" required>
+                        <span style="font-size: 0.875rem;">
+                            I agree to the <a href="{% url 'terms' %}" target="_blank">Terms of Service</a> and 
+                            <a href="{% url 'privacy' %}" target="_blank">Privacy Policy</a>
+                        </span>
+                    </label>
+                </div>
+                
+                <button type="submit" class="btn btn-primary btn-block btn-lg">
+                    <i class="fas fa-user-plus"></i> Create Account
+                </button>
+            </form>
+            
+            <div class="auth-divider">
+                <span>OR</span>
+            </div>
+            
+            <div class="social-login">
+                {% comment %} <a href="{% url 'social:begin' 'google-oauth2' %}" class="btn-social google"> {% endcomment %}
+                    {% comment %} <i class="fab fa-google"></i> {% endcomment %}
+                    {% comment %} Google {% endcomment %}
+                </a>
+                {% comment %} <a href="{% url 'social:begin' 'facebook' %}" class="btn-social facebook"> {% endcomment %}
+                    {% comment %} <i class="fab fa-facebook-f"></i> {% endcomment %}
+                    {% comment %} Facebook {% endcomment %}
+                </a>
+            </div>
+            
+            <div class="auth-switch">
+                Already have an account?
+                <a href="{% url 'login' %}">Sign in</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

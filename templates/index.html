@@ -1,0 +1,680 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ user.username }}'s Home - Ojukaye{% endblock %}
+
+{% block content %}
+<div class="home-container">
+    <div class="home-grid">
+        <!-- ===== LEFT SIDEBAR - USER PROFILE ===== -->
+        <aside class="left-sidebar">
+            <!-- User Profile Card -->
+            <div class="sidebar-card">
+                <div class="profile-card">
+                    <div class="profile-cover">
+                        {% if user.profile.cover_photo %}
+                        <img src="{{ user.profile.cover_photo.url }}" alt="Cover">
+                        {% else %}
+                        <div class="profile-cover-default"></div>
+                        {% endif %}
+                    </div>
+                    <div class="profile-info">
+                        <div class="profile-avatar-wrapper">
+                            {% if user.profile.profile_pic %}
+                            <img src="{{ user.profile.profile_pic.url }}" alt="{{ user.username }}" class="profile-avatar-large">
+                            {% else %}
+                            <div class="profile-avatar-placeholder">
+                                {{ user.username|first|upper }}
+                            </div>
+                            {% endif %}
+                        </div>
+                        <h3 class="profile-name">{{ user.get_full_name|default:user.username }}</h3>
+                        <p class="profile-username">@{{ user.username }}</p>
+                        
+                        {% if user.profile.bio %}
+                        <p class="profile-bio">{{ user.profile.bio|truncatechars:120 }}</p>
+                        {% endif %}
+                        
+                        <div class="profile-stats">
+                            <div class="stat">
+                                <span class="stat-value">{{ total_posts }}</span>
+                                <span class="stat-label">Posts</span>
+                            </div>
+                            <div class="stat">
+                                <span class="stat-value followers-count">{{ followers_count|default:user.followers.count }}</span>
+                                <span class="stat-label">Followers</span>
+                            </div>
+                            <div class="stat">
+                                <span class="stat-value following-count">{{ following_count|default:user.following.count }}</span>
+                                <span class="stat-label">Following</span>
+                            </div>
+                        </div>
+                        
+                        <div class="profile-actions">
+                            <a href="{% url 'profile_view' username=user.username %}" class="btn btn-outline btn-sm">
+                                <i class="fas fa-user"></i> View Profile
+                            </a>
+                            <a href="{% url 'edit_profile' %}" class="btn btn-outline btn-sm">
+                                <i class="fas fa-cog"></i> Edit
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- User Stats Card -->
+            <div class="sidebar-card">
+                <div class="card-header">
+                    <h3><i class="fas fa-chart-simple" style="color: var(--primary);"></i> Your Activity</h3>
+                </div>
+                <div class="user-stats">
+                    <div class="stat-row">
+                        <span><i class="fas fa-pen-to-square"></i> Posts Created</span>
+                        <span class="stat-number">{{ total_posts }}</span>
+                    </div>
+                    <div class="stat-row">
+                        <span><i class="fas fa-heart"></i> Likes Given</span>
+                        <span class="stat-number">{{ total_likes_given }}</span>
+                    </div>
+                    <div class="stat-row">
+                        <span><i class="fas fa-comment"></i> Comments Made</span>
+                        <span class="stat-number">{{ total_comments }}</span>
+                    </div>
+                    <div class="stat-row">
+                        <span><i class="fas fa-retweet"></i> Reposts</span>
+                        <span class="stat-number">{{ total_reposts }}</span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Quick Links -->
+            <div class="sidebar-card">
+                <div class="sidebar-menu">
+                    <a href="{% url 'home' %}" class="menu-item active">
+                        <i class="fas fa-home"></i>
+                        <span>Home</span>
+                    </a>
+                    <a href="{% url 'online_news' %}" class="menu-item">
+                        <i class="fas fa-newspaper"></i>
+                        <span>Online News</span>
+                    </a>
+                    <a href="{% url 'profile_view' username=user.username %}" class="menu-item">
+                        <i class="fas fa-user"></i>
+                        <span>Profile</span>
+                    </a>
+                    <a href="{% url 'bookmarks' %}" class="menu-item">
+                        <i class="fas fa-bookmark"></i>
+                        <span>Saved</span>
+                    </a>
+                    <a href="{% url 'notifications' %}" class="menu-item">
+                        <i class="fas fa-bell"></i>
+                        <span>Notifications</span>
+                        {% if user.notifications.unread.count > 0 %}
+                        <span class="badge">{{ user.notifications.unread.count }}</span>
+                        {% endif %}
+                    </a>
+                    
+                    {% if user.is_staff or user.is_superuser %}
+                    <div class="menu-divider"></div>
+                    <div class="menu-section-title">Admin</div>
+                    <a href="{% url 'admin_dashboard' %}" class="menu-item">
+                        <i class="fas fa-tachometer-alt"></i>
+                        <span>Dashboard</span>
+                    </a>
+                    <a href="{% url 'admin_posts' %}" class="menu-item">
+                        <i class="fas fa-file-alt"></i>
+                        <span>Manage Posts</span>
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- Footer Links -->
+            <div class="sidebar-footer">
+                <a href="{% url 'about' %}">About</a>
+                <a href="{% url 'privacy' %}">Privacy</a>
+                <a href="{% url 'terms' %}">Terms</a>
+                <a href="{% url 'help' %}">Help</a>
+                <p class="copyright">© {% now "Y" %} Ojukaye</p>
+            </div>
+        </aside>
+
+        <!-- ===== MAIN CONTENT - PERSONAL FEED ===== -->
+        <main class="main-feed">
+            <!-- Create Post Section -->
+            <div class="create-post-card">
+                <div class="create-post-header">
+                    <div class="user-avatar-small">
+                        {% if user.profile.profile_pic %}
+                        <img src="{{ user.profile.profile_pic.url }}" alt="{{ user.username }}">
+                        {% else %}
+                        <div class="avatar-placeholder">{{ user.username|first|upper }}</div>
+                        {% endif %}
+                    </div>
+                    <a href="{% url 'create_post' %}" class="create-post-input">
+                        What's on your mind, {{ user.first_name|default:user.username }}?
+                    </a>
+                </div>
+                
+                <div class="create-post-actions">
+                    <a href="{% url 'create_post' %}?type=discussion" class="action-btn">
+                        <i class="fas fa-comment-dots" style="color: var(--primary);"></i>
+                        <span>Discussion</span>
+                    </a>
+                    <a href="{% url 'create_post' %}?type=user_news" class="action-btn">
+                        <i class="fas fa-newspaper" style="color: #10b981;"></i>
+                        <span>News</span>
+                    </a>
+                    <a href="{% url 'create_post' %}?type=profile_post" class="action-btn">
+                        <i class="fas fa-user" style="color: #8b5cf6;"></i>
+                        <span>Profile Post</span>
+                    </a>
+                    <button class="action-btn image-upload-trigger" onclick="document.getElementById('quickImageUpload').click()">
+                        <i class="fas fa-image" style="color: #f59e0b;"></i>
+                        <span>Photo</span>
+                    </button>
+                    <input type="file" id="quickImageUpload" accept="image/*" style="display: none;" onchange="quickImageUpload(this)">
+                </div>
+            </div>
+            
+            <!-- Feed Tabs -->
+            <div class="feed-tabs">
+                <div class="tab-buttons">
+                    <button class="tab-btn active" data-tab="your-posts">
+                        <i class="fas fa-pen-to-square"></i> Your Posts
+                    </button>
+                    <button class="tab-btn" data-tab="interacted">
+                        <i class="fas fa-heart"></i> Interacted
+                    </button>
+                    <button class="tab-btn" data-tab="activities">
+                        <i class="fas fa-clock"></i> Recent Activity
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Tab Content -->
+            <div class="tab-content">
+                <!-- YOUR POSTS TAB -->
+                <div class="tab-pane active" id="your-posts">
+                    {% if user_posts %}
+                        {% for post in user_posts %}
+                        <article class="post-card">
+                            <!-- Post Header -->
+                            <div class="post-header">
+                                <div class="post-author">
+                                    <div class="author-avatar">
+                                        {% if post.author.profile.profile_pic %}
+                                        <img src="{{ post.author.profile.profile_pic.url }}" alt="{{ post.author.username }}">
+                                        {% else %}
+                                        <div class="avatar-placeholder">{{ post.author.username|first|upper }}</div>
+                                        {% endif %}
+                                    </div>
+                                    <div class="author-info">
+                                        <div class="author-name-wrapper">
+                                            <a href="{% url 'profile_view' username=post.author.username %}" class="author-name">
+                                                {{ post.author.get_full_name|default:post.author.username }}
+                                            </a>
+                                            {% if post.author.profile.is_verified_business %}
+                                            <span class="verified-badge" title="Verified Business">
+                                                <i class="fas fa-check-circle"></i>
+                                            </span>
+                                            {% endif %}
+                                            <span class="post-badge">
+                                                {% if post.post_type == 'user_news' %}
+                                                News
+                                                {% elif post.post_type == 'profile_post' %}
+                                                Profile Post
+                                                {% else %}
+                                                Discussion
+                                                {% endif %}
+                                            </span>
+                                        </div>
+                                        <div class="post-meta">
+                                            <span class="post-time" title="{{ post.published_at }}">
+                                                <i class="far fa-clock"></i> 
+                                                <time datetime="{{ post.published_at|date:'c' }}">{{ post.published_at|timesince }} ago</time>
+                                            </span>
+                                            {% if post.category %}
+                                            <span class="post-category">
+                                                <i class="far fa-folder"></i> {{ post.category.name }}
+                                            </span>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="post-actions-menu">
+                                    <button class="post-menu-btn" onclick="togglePostMenu(this)">
+                                        <i class="fas fa-ellipsis-h"></i>
+                                    </button>
+                                    <div class="post-dropdown">
+                                        <a href="{% url 'post_detail' post.id %}">View Post</a>
+                                        <a href="{% url 'edit_post' post.id %}">Edit</a>
+                                        <a href="#" onclick="deletePost({{ post.id }})" style="color: var(--danger);">Delete</a>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Post Content -->
+                            <div class="post-content">
+                                <a href="{% url 'post_detail' post.id %}" class="post-link">
+                                    <h3 class="post-title">{{ post.title }}</h3>
+                                    <p class="post-text">{{ post.content|truncatechars:300 }}</p>
+                                </a>
+                                
+                                {% if post.image %}
+                                <div class="post-image">
+                                    <img src="{{ post.image.url }}" alt="{{ post.title }}">
+                                </div>
+                                {% elif post.image_url %}
+                                <div class="post-image">
+                                    <img src="{{ post.image_url }}" alt="{{ post.title }}">
+                                </div>
+                                {% endif %}
+                            </div>
+                            
+                            <!-- Post Stats -->
+                            <div class="post-stats">
+                                <span class="stat-item">
+                                    <i class="fas fa-eye"></i> {{ post.views }}
+                                </span>
+                                <span class="stat-item">
+                                    <i class="fas fa-heart"></i> {{ post.likes.count }}
+                                </span>
+                                <span class="stat-item">
+                                    <i class="fas fa-comment"></i> {{ post.comments.count }}
+                                </span>
+                                <span class="stat-item">
+                                    <i class="fas fa-retweet"></i> {{ post.repost_count|default:0 }}
+                                </span>
+                            </div>
+                            
+                            <!-- Post Actions -->
+                            <div class="post-actions">
+                                <button class="post-action-btn like-btn {% if user in post.likes.all %}liked{% endif %}" 
+                                        data-post-id="{{ post.id }}">
+                                    <i class="{% if user in post.likes.all %}fas{% else %}far{% endif %} fa-heart"></i>
+                                    <span class="like-count">{{ post.likes.count }}</span>
+                                </button>
+                                
+                                <a href="{% url 'post_detail' post.id %}#comments" class="post-action-btn">
+                                    <i class="far fa-comment"></i>
+                                    <span>{{ post.comments.count }}</span>
+                                </a>
+                                
+                                <button class="post-action-btn bookmark-btn {% if user in post.bookmarks.all %}bookmarked{% endif %}"
+                                        data-post-id="{{ post.id }}">
+                                    <i class="{% if user in post.bookmarks.all %}fas{% else %}far{% endif %} fa-bookmark"></i>
+                                </button>
+                                
+                                <button class="post-action-btn share-btn" 
+                                        data-title="{{ post.title }}"
+                                        data-url="{% url 'post_detail' post.id %}">
+                                    <i class="far fa-share-square"></i>
+                                </button>
+                            </div>
+                        </article>
+                        {% endfor %}
+                        
+                        <div class="view-all-link">
+                            <a href="{% url 'profile_view' username=user.username %}" class="btn btn-outline btn-block">
+                                View All Your Posts
+                            </a>
+                        </div>
+                    {% else %}
+                    <!-- Empty State - No Posts -->
+                    <div class="empty-state-container">
+                        <div class="empty-state-icon">
+                            <i class="fas fa-pen-to-square"></i>
+                        </div>
+                        <h3>You haven't posted yet</h3>
+                        <p>Share your thoughts, news, or updates with the community!</p>
+                        <a href="{% url 'create_post' %}" class="btn btn-primary">
+                            <i class="fas fa-plus-circle"></i> Create Your First Post
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+                
+                <!-- INTERACTED POSTS TAB -->
+                <div class="tab-pane" id="interacted">
+                    {% for item in interacted_posts %}
+                    <article class="post-card interacted-post">
+                        <!-- Post Header -->
+                        <div class="post-header">
+                            <div class="post-author">
+                                <div class="author-avatar">
+                                    {% if item.post.author.profile.profile_pic %}
+                                    <img src="{{ item.post.author.profile.profile_pic.url }}" alt="{{ item.post.author.username }}">
+                                    {% else %}
+                                    <div class="avatar-placeholder">{{ item.post.author.username|first|upper }}</div>
+                                    {% endif %}
+                                </div>
+                                <div class="author-info">
+                                    <div class="author-name-wrapper">
+                                        {% if item.post.author and item.post.author.username %}
+                                        <a href="{% url 'profile_view' username=item.post.author.username %}" class="author-name">
+                                            {{ item.post.author.get_full_name|default:item.post.author.username }}
+                                        </a>
+                                        {% else %}
+                                        <span class="author-name">
+                                            {{ item.post.external_source|default:'News Bot' }}
+                                        </span>
+                                        {% endif %}
+                                        
+                                        <span class="interaction-badge">
+                                            {% if user.is_authenticated %}
+                                                {% if item.user_liked %}
+                                                <span class="badge liked"><i class="fas fa-heart"></i> Liked</span>
+                                                {% endif %}
+                                                
+                                                {% if item.user_commented %}
+                                                <span class="badge commented"><i class="fas fa-comment"></i> Commented</span>
+                                                {% endif %}
+                                                
+                                                {% if item.user_reposted %}
+                                                <span class="badge reposted"><i class="fas fa-retweet"></i> Reposted</span>
+                                                {% endif %}
+                                            {% endif %}
+                                        </span>
+                                    </div>
+                                    <div class="post-meta">
+                                        <span class="post-time" title="{{ item.post.published_at }}">
+                                            <i class="far fa-clock"></i> 
+                                            <time datetime="{{ item.post.published_at|date:'c' }}">{{ item.post.published_at|timesince }} ago</time>
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Post Content Preview -->
+                        <div class="post-content">
+                            <a href="{% url 'post_detail' item.post.id %}" class="post-link">
+                                <h4 class="post-title-small">{{ item.post.title }}</h4>
+                                <p class="post-text-small">{{ item.post.content|truncatechars:200 }}</p>
+                            </a>
+                        </div>
+                        
+                        <!-- Quick Actions -->
+                        <div class="post-actions compact">
+                            <a href="{% url 'post_detail' item.post.id %}" class="btn btn-sm btn-outline">
+                                <i class="fas fa-eye"></i> View Post
+                            </a>
+                        </div>
+                    </article>
+                    {% empty %}
+                    <!-- Empty state -->
+                    <div class="empty-state-container">
+                        <div class="empty-state-icon">
+                            <i class="fas fa-heart"></i>
+                        </div>
+                        <h3>No interactions yet</h3>
+                        <p>When you like, comment, or repost posts, they'll appear here</p>
+                        <a href="{% url 'online_news' %}" class="btn btn-primary">
+                            <i class="fas fa-newspaper"></i> Browse News
+                        </a>
+                    </div>
+                    {% endfor %}
+                </div>
+                
+                <!-- RECENT ACTIVITY TAB -->
+                <div class="tab-pane" id="activities">
+                    {% if recent_activities %}
+                    <div class="activity-feed">
+                        {% for activity in recent_activities %}
+                        <div class="activity-item">
+                            <div class="activity-icon">
+                                {% if activity.activity_type == 'post_created' %}
+                                <i class="fas fa-pen-to-square" style="color: var(--primary);"></i>
+                                {% elif activity.activity_type == 'post_liked' %}
+                                <i class="fas fa-heart" style="color: #ef4444;"></i>
+                                {% elif activity.activity_type == 'comment_created' %}
+                                <i class="fas fa-comment" style="color: #10b981;"></i>
+                                {% elif activity.activity_type == 'post_reposted' %}
+                                <i class="fas fa-retweet" style="color: #8b5cf6;"></i>
+                                {% elif activity.activity_type == 'post_saved' %}
+                                <i class="fas fa-bookmark" style="color: #f59e0b;"></i>
+                                {% else %}
+                                <i class="fas fa-circle"></i>
+                                {% endif %}
+                            </div>
+                            <div class="activity-content">
+                                <div class="activity-text">
+                                    {{ activity.details.message|default:activity.get_activity_type_display }}
+                                    {% if activity.post %}
+                                    <a href="{% url 'post_detail' activity.post.id %}" class="activity-post-link">
+                                        {{ activity.post.title|truncatechars:50 }}
+                                    </a>
+                                    {% endif %}
+                                </div>
+                                <div class="activity-time">
+                                    <i class="far fa-clock"></i> {{ activity.created_at|timesince }} ago
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    <div class="view-all-link">
+                        <a href="{% url 'activity_feed' %}" class="btn btn-outline btn-block">
+                            View All Activity
+                        </a>
+                    </div>
+                    {% else %}
+                    <div class="empty-state-container">
+                        <div class="empty-state-icon">
+                            <i class="fas fa-clock"></i>
+                        </div>
+                        <h3>No recent activity</h3>
+                        <p>Your activities will appear here as you interact with the platform</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </main>
+
+        <!-- ===== RIGHT SIDEBAR - SUGGESTIONS & RECOMMENDATIONS ===== -->
+        <aside class="right-sidebar">
+            <!-- Suggested Users -->
+            <div class="sidebar-card">
+                <div class="card-header">
+                    <h3><i class="fas fa-user-plus" style="color: var(--primary);"></i> Who to Follow</h3>
+                </div>
+                <div class="suggested-users-list">
+                    {% for suggested_user in suggested_users %}
+                    <div class="suggested-user">
+                        <div class="user-info">
+                            <div class="user-avatar-small">
+                                {% if suggested_user.profile.profile_pic %}
+                                <img src="{{ suggested_user.profile.profile_pic.url }}" alt="{{ suggested_user.username }}">
+                                {% else %}
+                                <div class="avatar-placeholder">{{ suggested_user.username|first|upper }}</div>
+                                {% endif %}
+                            </div>
+                            <div class="user-details">
+                                <a href="{% url 'profile_view' username=suggested_user.username %}" class="user-name">
+                                    {{ suggested_user.get_full_name|default:suggested_user.username }}
+                                </a>
+                                <span class="user-username">@{{ suggested_user.username }}</span>
+                            </div>
+                        </div>
+                        <button class="btn-follow" data-username="{{ suggested_user.username }}">
+                            <i class="fas fa-plus"></i> Follow
+                        </button>
+                    </div>
+                    {% empty %}
+                    <div class="empty-state small">
+                        <p>No suggestions right now</p>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            
+            <!-- Quick Links to Online News -->
+            <div class="sidebar-card">
+                <div class="card-header">
+                    <h3><i class="fas fa-newspaper" style="color: var(--primary);"></i> Latest News</h3>
+                </div>
+                <div class="quick-news">
+                    <p>Stay updated with the latest happenings in Nigeria and around the world</p>
+                    <a href="{% url 'online_news' %}" class="btn btn-primary btn-block">
+                        <i class="fas fa-arrow-right"></i> Go to Online News
+                    </a>
+                </div>
+            </div>
+            
+            <!-- Your Bookmarks Summary -->
+            <div class="sidebar-card">
+                <div class="card-header">
+                    <h3><i class="fas fa-bookmark" style="color: var(--primary);"></i> Your Bookmarks</h3>
+                </div>
+                <div class="bookmarks-summary">
+                    {% with bookmark_count=user.bookmarked_posts.count %}
+                    <div class="summary-stat">
+                        <span class="stat-number">{{ bookmark_count }}</span>
+                        <span class="stat-label">Saved posts</span>
+                    </div>
+                    {% if bookmark_count > 0 %}
+                    <a href="{% url 'bookmarks' %}" class="btn btn-outline btn-sm btn-block">
+                        View All Bookmarks
+                    </a>
+                    {% else %}
+                    <p class="empty-message">No bookmarks yet</p>
+                    {% endif %}
+                    {% endwith %}
+                </div>
+            </div>
+        </aside>
+    </div>
+</div>
+
+<script>
+    // Tab switching functionality
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            // Remove active class from all tabs and panes
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+            
+            // Add active class to clicked tab
+            this.classList.add('active');
+            
+            // Show corresponding pane
+            const tabId = this.dataset.tab;
+            document.getElementById(tabId).classList.add('active');
+        });
+    });
+    
+    // Toggle post menu
+    function togglePostMenu(btn) {
+        const dropdown = btn.nextElementSibling;
+        dropdown.classList.toggle('active');
+        
+        // Close other open menus
+        document.querySelectorAll('.post-dropdown.active').forEach(el => {
+            if (el !== dropdown) el.classList.remove('active');
+        });
+    }
+    
+    // Close dropdowns when clicking outside
+    document.addEventListener('click', function(e) {
+        if (!e.target.closest('.post-actions-menu')) {
+            document.querySelectorAll('.post-dropdown.active').forEach(el => {
+                el.classList.remove('active');
+            });
+        }
+    });
+    
+    // Delete post function
+    function deletePost(postId) {
+        if (confirm('Are you sure you want to delete this post?')) {
+            fetch(`/post/${postId}/delete/`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': '{{ csrf_token }}',
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            }).then(response => {
+                if (response.ok) {
+                    window.location.reload();
+                }
+            });
+        }
+    }
+    
+    // Quick image upload
+    function quickImageUpload(input) {
+        if (input.files && input.files[0]) {
+            // Redirect to create post with image
+            const formData = new FormData();
+            formData.append('image', input.files[0]);
+            formData.append('quick_upload', 'true');
+            
+            // You can either redirect to create post page or handle via AJAX
+            window.location.href = "{% url 'create_post' %}?quick_upload=true";
+        }
+    }
+    
+    // Like button functionality
+    document.querySelectorAll('.like-btn').forEach(btn => {
+        btn.addEventListener('click', function(e) {
+            e.preventDefault();
+            const postId = this.dataset.postId;
+            const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+            
+            fetch(`/post/${postId}/like/`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': csrfToken,
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.liked !== undefined) {
+                    const icon = this.querySelector('i');
+                    const countSpan = this.querySelector('.like-count');
+                    
+                    if (data.liked) {
+                        icon.classList.remove('far');
+                        icon.classList.add('fas');
+                        this.classList.add('liked');
+                    } else {
+                        icon.classList.remove('fas');
+                        icon.classList.add('far');
+                        this.classList.remove('liked');
+                    }
+                    
+                    countSpan.textContent = data.like_count;
+                }
+            });
+        });
+    });
+    
+    // Follow button functionality
+    document.querySelectorAll('.btn-follow').forEach(btn => {
+        btn.addEventListener('click', function(e) {
+            e.preventDefault();
+            const username = this.dataset.username;
+            
+            fetch(`/follow/${username}/`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': '{{ csrf_token }}',
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.followed) {
+                    this.innerHTML = '<i class="fas fa-check"></i> Following';
+                    this.classList.add('following');
+                } else {
+                    this.innerHTML = '<i class="fas fa-plus"></i> Follow';
+                    this.classList.remove('following');
+                }
+            });
+        });
+    });
+</script>
+{% endblock %}

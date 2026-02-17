@@ -1,0 +1,1021 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Saved Posts - Ojukaye{% endblock %}
+
+{% block content %}
+<div class="saved-posts-container">
+    <!-- Header -->
+    <div class="saved-posts-header">
+        <div class="header-left">
+            <h1 class="saved-posts-title">
+                <i class="fas fa-bookmark" style="color: var(--primary);"></i>
+                Saved Posts
+            </h1>
+            <p class="saved-posts-subtitle">Your collection of saved articles and discussions</p>
+        </div>
+        
+        <div class="header-right">
+            <div class="saved-stats">
+                <span class="stat">
+                    <i class="fas fa-bookmark"></i>
+                    {{ bookmarks|length }} saved
+                </span>
+            </div>
+            {% if bookmarks %}
+            <button class="btn btn-outline" onclick="exportBookmarks()">
+                <i class="fas fa-download"></i> Export
+            </button>
+            {% endif %}
+        </div>
+    </div>
+    
+    <!-- Filters & Sort -->
+    <div class="saved-filters">
+        <div class="filter-group">
+            <label class="filter-label">Sort by:</label>
+            <select class="form-input" onchange="sortPosts(this.value)">
+                <option value="newest">Newest saved</option>
+                <option value="oldest">Oldest saved</option>
+                <option value="recent">Most recent</option>
+                <option value="popular">Most popular</option>
+            </select>
+        </div>
+        
+        <div class="filter-group">
+            <label class="filter-label">Filter:</label>
+            <select class="form-input" onchange="filterPosts(this.value)">
+                <option value="all">All posts</option>
+                <option value="discussion">Discussions</option>
+                <option value="news">News</option>
+                <option value="profile">Profile posts</option>
+            </select>
+        </div>
+        
+        <div class="search-mini">
+            <i class="fas fa-search"></i>
+            <input type="text" placeholder="Search saved posts..." class="form-input" id="searchSaved">
+        </div>
+    </div>
+    
+    <!-- Collections/Categories -->
+    <div class="saved-collections">
+        <h2 class="collections-title">
+            <i class="fas fa-folder"></i> Collections
+        </h2>
+        <div class="collections-grid">
+            <div class="collection-card active">
+                <div class="collection-icon">
+                    <i class="fas fa-bookmark"></i>
+                </div>
+                <div class="collection-info">
+                    <h3>All saves</h3>
+                    <span>{{ bookmarks|length }} items</span>
+                </div>
+            </div>
+            
+            <div class="collection-card">
+                <div class="collection-icon" style="background: #dbeafe;">
+                    <i class="fas fa-newspaper" style="color: var(--primary);"></i>
+                </div>
+                <div class="collection-info">
+                    <h3>News</h3>
+                    <span>{{ news_count|default:"0" }} items</span>
+                </div>
+            </div>
+            
+            <div class="collection-card">
+                <div class="collection-icon" style="background: #fee2e2;">
+                    <i class="fas fa-comments" style="color: #ef4444;"></i>
+                </div>
+                <div class="collection-info">
+                    <h3>Discussions</h3>
+                    <span>{{ discussion_count|default:"0" }} items</span>
+                </div>
+            </div>
+            
+            <div class="collection-card">
+                <div class="collection-icon" style="background: #dcfce7;">
+                    <i class="fas fa-user" style="color: #10b981;"></i>
+                </div>
+                <div class="collection-info">
+                    <h3>Profile posts</h3>
+                    <span>{{ profile_count|default:"0" }} items</span>
+                </div>
+            </div>
+            
+            <button class="collection-card add-collection">
+                <div class="collection-icon" style="background: var(--gray-200);">
+                    <i class="fas fa-plus" style="color: var(--gray-600);"></i>
+                </div>
+                <div class="collection-info">
+                    <h3>Create collection</h3>
+                    <span>Organize saves</span>
+                </div>
+            </button>
+        </div>
+    </div>
+    
+    <!-- Saved Posts Grid -->
+    <div class="saved-posts-grid">
+        {% if bookmarks %}
+            {% for post in bookmarks %}
+            <div class="saved-post-card" data-post-id="{{ post.id }}">
+                <div class="saved-post-image">
+                    <a href="{% url 'post_detail' post.id %}">
+                        {% if post.image %}
+                        <img src="{{ post.image.url }}" alt="{{ post.title }}">
+                        {% elif post.image_url %}
+                        <img src="{{ post.image_url }}" alt="{{ post.title }}">
+                        {% else %}
+                        <div class="post-image-placeholder">
+                            <i class="fas fa-file-alt"></i>
+                        </div>
+                        {% endif %}
+                    </a>
+                    
+                    <div class="saved-post-type">
+                        {% if post.post_type == 'news' or post.is_auto_fetched %}
+                        <span class="badge news">News</span>
+                        {% elif post.post_type == 'discussion' %}
+                        <span class="badge discussion">Discussion</span>
+                        {% elif post.post_type == 'profile_post' %}
+                        <span class="badge profile">Profile</span>
+                        {% else %}
+                        <span class="badge">Post</span>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <div class="saved-post-content">
+                    <div class="saved-post-header">
+                        <div class="saved-post-author">
+                            <div class="author-avatar-mini">
+                                {% if post.author.profile.profile_pic %}
+                                <img src="{{ post.author.profile.profile_pic.url }}" alt="{{ post.author.username }}">
+                                {% else %}
+                                <div class="avatar-placeholder">{{ post.author.username|first|upper }}</div>
+                                {% endif %}
+                            </div>
+                            <span class="author-name">{{ post.author.get_full_name|default:post.author.username }}</span>
+                        </div>
+                        
+                        <button class="remove-saved-btn" onclick="removeBookmark({{ post.id }})" title="Remove from saved">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    
+                    <h3 class="saved-post-title">
+                        <a href="{% url 'post_detail' post.id %}">{{ post.title|truncatechars:60 }}</a>
+                    </h3>
+                    
+                    <p class="saved-post-excerpt">{{ post.content|truncatechars:100 }}</p>
+                    
+                    <div class="saved-post-footer">
+                        <div class="saved-post-meta">
+                            <span class="meta-item">
+                                <i class="fas fa-eye"></i> {{ post.views }}
+                            </span>
+                            <span class="meta-item">
+                                <i class="fas fa-heart"></i> {{ post.likes.count }}
+                            </span>
+                            <span class="meta-item">
+                                <i class="fas fa-comment"></i> {{ post.comments.count }}
+                            </span>
+                            <span class="meta-item">
+                                <i class="far fa-clock"></i> {{ post.published_at|timesince }} ago
+                            </span>
+                        </div>
+                        
+                        <div class="saved-post-actions">
+                            <a href="{% url 'post_detail' post.id %}" class="btn btn-sm btn-primary">
+                                Read More
+                            </a>
+                            <button class="btn-icon" onclick="addToCollection({{ post.id }})">
+                                <i class="fas fa-folder-plus"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+        <!-- Empty State -->
+        <div class="empty-state-container full-width">
+            <div class="empty-state-icon">
+                <i class="fas fa-bookmark"></i>
+            </div>
+            <h3>No saved posts yet</h3>
+            <p>When you save posts, they'll appear here for easy access.</p>
+            <div class="empty-state-actions">
+                <a href="{% url 'index' %}" class="btn btn-primary">
+                    <i class="fas fa-home"></i> Browse Home
+                </a>
+                <a href="{% url 'online_news' %}" class="btn btn-outline">
+                    <i class="fas fa-newspaper"></i> Read News
+                </a>
+            </div>
+            
+            <div class="suggested-posts">
+                <h4>Suggested for you</h4>
+                <div class="suggested-grid">
+                    {% for post in trending_posts|slice:":3" %}
+                    <div class="suggested-card">
+                        <div class="suggested-image">
+                            {% if post.image %}
+                            <img src="{{ post.image.url }}" alt="{{ post.title }}">
+                            {% else %}
+                            <div class="placeholder"></div>
+                            {% endif %}
+                        </div>
+                        <div class="suggested-content">
+                            <h5>{{ post.title|truncatechars:40 }}</h5>
+                            <button class="btn btn-sm btn-outline" onclick="quickSave({{ post.id }})">
+                                <i class="fas fa-bookmark"></i> Save
+                            </button>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+    
+    <!-- Pagination -->
+    {% if bookmarks.has_next %}
+    <div class="pagination-container">
+        <button class="btn btn-outline btn-block" onclick="loadMoreSaved()">
+            <i class="fas fa-chevron-down"></i> Load More
+        </button>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Add to Collection Modal -->
+<div class="modal" id="collectionModal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3><i class="fas fa-folder-plus"></i> Add to Collection</h3>
+            <button class="modal-close" onclick="closeCollectionModal()">&times;</button>
+        </div>
+        <div class="modal-body">
+            <p class="modal-description">Select a collection or create a new one</p>
+            
+            <div class="collections-list">
+                <div class="collection-item">
+                    <input type="radio" name="collection" id="collection1" value="news">
+                    <label for="collection1">
+                        <i class="fas fa-newspaper"></i>
+                        <span>News</span>
+                        <span class="item-count">12 items</span>
+                    </label>
+                </div>
+                
+                <div class="collection-item">
+                    <input type="radio" name="collection" id="collection2" value="discussions">
+                    <label for="collection2">
+                        <i class="fas fa-comments"></i>
+                        <span>Discussions</span>
+                        <span class="item-count">8 items</span>
+                    </label>
+                </div>
+                
+                <div class="collection-item">
+                    <input type="radio" name="collection" id="collection3" value="tech">
+                    <label for="collection3">
+                        <i class="fas fa-microchip"></i>
+                        <span>Technology</span>
+                        <span class="item-count">5 items</span>
+                    </label>
+                </div>
+            </div>
+            
+            <div class="create-collection">
+                <h4>Or create new collection</h4>
+                <div class="input-group">
+                    <input type="text" placeholder="Collection name" class="form-input" id="newCollectionName">
+                    <button class="btn btn-outline" onclick="createCollection()">Create</button>
+                </div>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-outline" onclick="closeCollectionModal()">Cancel</button>
+            <button class="btn btn-primary" onclick="saveToCollection()">Save</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Remove bookmark
+    function removeBookmark(postId) {
+        if (confirm('Remove this post from your saved items?')) {
+            fetch(`/post/${postId}/bookmark/`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': '{{ csrf_token }}',
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            }).then(response => {
+                if (response.ok) {
+                    const postCard = document.querySelector(`.saved-post-card[data-post-id="${postId}"]`);
+                    if (postCard) {
+                        postCard.style.animation = 'slideOut 0.3s ease';
+                        setTimeout(() => {
+                            postCard.remove();
+                            // Show empty state if no posts left
+                            if (document.querySelectorAll('.saved-post-card').length === 0) {
+                                location.reload();
+                            }
+                        }, 300);
+                    }
+                    showNotification('Post removed from saved', 'success');
+                }
+            });
+        }
+    }
+    
+    // Quick save from suggested
+    function quickSave(postId) {
+        fetch(`/post/${postId}/bookmark/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': '{{ csrf_token }}',
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        }).then(response => {
+            if (response.ok) {
+                showNotification('Post saved! View in your saved items', 'success');
+            }
+        });
+    }
+    
+    // Sort posts
+    function sortPosts(value) {
+        const url = new URL(window.location);
+        url.searchParams.set('sort', value);
+        window.location = url.toString();
+    }
+    
+    // Filter posts
+    function filterPosts(value) {
+        const url = new URL(window.location);
+        if (value === 'all') {
+            url.searchParams.delete('filter');
+        } else {
+            url.searchParams.set('filter', value);
+        }
+        window.location = url.toString();
+    }
+    
+    // Search saved posts
+    const searchInput = document.getElementById('searchSaved');
+    if (searchInput) {
+        let debounceTimer;
+        searchInput.addEventListener('input', function() {
+            clearTimeout(debounceTimer);
+            debounceTimer = setTimeout(() => {
+                const query = this.value.trim();
+                const url = new URL(window.location);
+                if (query) {
+                    url.searchParams.set('q', query);
+                } else {
+                    url.searchParams.delete('q');
+                }
+                window.location = url.toString();
+            }, 500);
+        });
+    }
+    
+    // Export bookmarks
+    function exportBookmarks() {
+        fetch('/api/export-bookmarks/')
+            .then(response => response.blob())
+            .then(blob => {
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'ojukaye-saved-posts.html';
+                a.click();
+                window.URL.revokeObjectURL(url);
+            });
+    }
+    
+    // Collection modal
+    let currentPostId = null;
+    
+    function addToCollection(postId) {
+        currentPostId = postId;
+        document.getElementById('collectionModal').classList.add('active');
+    }
+    
+    function closeCollectionModal() {
+        document.getElementById('collectionModal').classList.remove('active');
+        currentPostId = null;
+    }
+    
+    function createCollection() {
+        const name = document.getElementById('newCollectionName').value.trim();
+        if (name) {
+            // API call to create collection
+            fetch('/api/collections/create/', {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': '{{ csrf_token }}',
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ name: name })
+            }).then(response => response.json())
+              .then(data => {
+                  showNotification('Collection created!', 'success');
+                  // Add to collections list
+              });
+        }
+    }
+    
+    function saveToCollection() {
+        const collection = document.querySelector('input[name="collection"]:checked');
+        if (collection && currentPostId) {
+            fetch(`/api/collections/${collection.value}/add/${currentPostId}/`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': '{{ csrf_token }}',
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            }).then(response => {
+                if (response.ok) {
+                    showNotification('Added to collection', 'success');
+                    closeCollectionModal();
+                }
+            });
+        }
+    }
+    
+    // Load more saved posts
+    function loadMoreSaved() {
+        const page = parseInt(new URLSearchParams(window.location.search).get('page') || '1') + 1;
+        
+        fetch(`/bookmarks/?page=${page}`, {
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        }).then(response => response.text())
+          .then(html => {
+              const parser = new DOMParser();
+              const doc = parser.parseFromString(html, 'text/html');
+              const newPosts = doc.querySelector('.saved-posts-grid').innerHTML;
+              document.querySelector('.saved-posts-grid').innerHTML += newPosts;
+              
+              const url = new URL(window.location);
+              url.searchParams.set('page', page);
+              window.history.pushState({}, '', url);
+          });
+    }
+    
+    // Close modal when clicking outside
+    window.addEventListener('click', function(e) {
+        if (e.target.classList.contains('modal')) {
+            closeCollectionModal();
+        }
+    });
+</script>
+
+<style>
+    .saved-posts-container {
+        max-width: 1200px;
+        margin: 0 auto;
+    }
+    
+    .saved-posts-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 2rem;
+    }
+    
+    .saved-posts-title {
+        font-size: 2rem;
+        font-weight: 700;
+        color: var(--gray-900);
+        margin-bottom: 0.5rem;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+    }
+    
+    .saved-posts-subtitle {
+        color: var(--gray-600);
+    }
+    
+    .saved-stats {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.5rem 1rem;
+        background: var(--gray-100);
+        border-radius: var(--radius-full);
+        color: var(--gray-700);
+        font-weight: 600;
+    }
+    
+    .saved-filters {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        margin-bottom: 2rem;
+        padding: 1.25rem;
+        background: var(--white);
+        border-radius: var(--radius-lg);
+        border: 1px solid var(--gray-200);
+        flex-wrap: wrap;
+    }
+    
+    .filter-group {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    
+    .filter-label {
+        font-size: 0.875rem;
+        font-weight: 600;
+        color: var(--gray-700);
+        white-space: nowrap;
+    }
+    
+    .filter-group select {
+        min-width: 160px;
+    }
+    
+    .search-mini {
+        flex: 1;
+        position: relative;
+        min-width: 250px;
+    }
+    
+    .search-mini i {
+        position: absolute;
+        left: 1rem;
+        top: 50%;
+        transform: translateY(-50%);
+        color: var(--gray-500);
+    }
+    
+    .search-mini input {
+        padding-left: 2.5rem;
+        width: 100%;
+    }
+    
+    .saved-collections {
+        margin-bottom: 2rem;
+    }
+    
+    .collections-title {
+        font-size: 1.125rem;
+        font-weight: 600;
+        color: var(--gray-800);
+        margin-bottom: 1rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    
+    .collections-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+        gap: 1rem;
+    }
+    
+    .collection-card {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        padding: 1rem;
+        background: var(--white);
+        border-radius: var(--radius-lg);
+        border: 1px solid var(--gray-200);
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+    
+    .collection-card:hover {
+        border-color: var(--primary);
+        box-shadow: var(--shadow-sm);
+    }
+    
+    .collection-card.active {
+        border-color: var(--primary);
+        background: var(--primary-soft);
+    }
+    
+    .collection-icon {
+        width: 48px;
+        height: 48px;
+        border-radius: var(--radius-md);
+        background: var(--gray-100);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.25rem;
+        color: var(--gray-700);
+        flex-shrink: 0;
+    }
+    
+    .collection-info h3 {
+        font-size: 0.9375rem;
+        font-weight: 600;
+        color: var(--gray-900);
+        margin-bottom: 0.125rem;
+    }
+    
+    .collection-info span {
+        font-size: 0.75rem;
+        color: var(--gray-600);
+    }
+    
+    .add-collection {
+        border: 2px dashed var(--gray-300);
+        background: var(--gray-50);
+    }
+    
+    .add-collection:hover {
+        border-color: var(--primary);
+        background: var(--white);
+    }
+    
+    .saved-posts-grid {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 1.5rem;
+    }
+    
+    .saved-post-card {
+        display: grid;
+        grid-template-columns: 240px 1fr;
+        gap: 1.5rem;
+        background: var(--white);
+        border-radius: var(--radius-lg);
+        border: 1px solid var(--gray-200);
+        overflow: hidden;
+        transition: all 0.2s;
+    }
+    
+    .saved-post-card:hover {
+        box-shadow: var(--shadow-md);
+    }
+    
+    .saved-post-image {
+        position: relative;
+        height: 100%;
+        min-height: 180px;
+    }
+    
+    .saved-post-image img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+    
+    .post-image-placeholder {
+        width: 100%;
+        height: 100%;
+        background: var(--gray-100);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--gray-400);
+        font-size: 3rem;
+    }
+    
+    .saved-post-type {
+        position: absolute;
+        top: 1rem;
+        left: 1rem;
+    }
+    
+    .badge {
+        padding: 0.25rem 0.75rem;
+        border-radius: var(--radius-full);
+        font-size: 0.75rem;
+        font-weight: 600;
+    }
+    
+    .badge.news {
+        background: #fee2e2;
+        color: #991b1b;
+    }
+    
+    .badge.discussion {
+        background: #dbeafe;
+        color: #1e40af;
+    }
+    
+    .badge.profile {
+        background: #dcfce7;
+        color: #166534;
+    }
+    
+    .saved-post-content {
+        padding: 1.25rem;
+        display: flex;
+        flex-direction: column;
+    }
+    
+    .saved-post-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 0.75rem;
+    }
+    
+    .saved-post-author {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    
+    .author-avatar-mini {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        overflow: hidden;
+    }
+    
+    .author-avatar-mini img,
+    .author-avatar-mini .avatar-placeholder {
+        width: 100%;
+        height: 100%;
+    }
+    
+    .author-name {
+        font-size: 0.875rem;
+        font-weight: 600;
+        color: var(--gray-800);
+    }
+    
+    .remove-saved-btn {
+        width: 32px;
+        height: 32px;
+        border: none;
+        background: var(--gray-100);
+        border-radius: 50%;
+        color: var(--gray-600);
+        cursor: pointer;
+        transition: all 0.2s;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .remove-saved-btn:hover {
+        background: #fee2e2;
+        color: #ef4444;
+    }
+    
+    .saved-post-title {
+        font-size: 1.125rem;
+        font-weight: 700;
+        margin-bottom: 0.5rem;
+        line-height: 1.4;
+    }
+    
+    .saved-post-title a {
+        color: var(--gray-900);
+        text-decoration: none;
+    }
+    
+    .saved-post-title a:hover {
+        color: var(--primary);
+    }
+    
+    .saved-post-excerpt {
+        color: var(--gray-700);
+        margin-bottom: 1rem;
+        line-height: 1.6;
+        flex: 1;
+    }
+    
+    .saved-post-footer {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-top: auto;
+    }
+    
+    .saved-post-meta {
+        display: flex;
+        gap: 0.75rem;
+        font-size: 0.75rem;
+        color: var(--gray-600);
+        flex-wrap: wrap;
+    }
+    
+    .meta-item {
+        display: flex;
+        align-items: center;
+        gap: 0.25rem;
+    }
+    
+    .saved-post-actions {
+        display: flex;
+        gap: 0.5rem;
+    }
+    
+    .btn-icon {
+        width: 36px;
+        height: 36px;
+        border: 1px solid var(--gray-200);
+        background: var(--white);
+        border-radius: var(--radius-md);
+        color: var(--gray-600);
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+    
+    .btn-icon:hover {
+        background: var(--gray-100);
+        color: var(--primary);
+        border-color: var(--primary);
+    }
+    
+    /* Suggested Posts */
+    .suggested-posts {
+        margin-top: 3rem;
+        padding-top: 2rem;
+        border-top: 1px solid var(--gray-200);
+    }
+    
+    .suggested-posts h4 {
+        font-size: 1.125rem;
+        font-weight: 600;
+        color: var(--gray-800);
+        margin-bottom: 1.5rem;
+    }
+    
+    .suggested-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 1.5rem;
+    }
+    
+    .suggested-card {
+        background: var(--white);
+        border-radius: var(--radius-lg);
+        border: 1px solid var(--gray-200);
+        overflow: hidden;
+    }
+    
+    .suggested-image {
+        height: 120px;
+        overflow: hidden;
+    }
+    
+    .suggested-image img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+    
+    .suggested-content {
+        padding: 1rem;
+    }
+    
+    .suggested-content h5 {
+        font-size: 0.875rem;
+        font-weight: 600;
+        color: var(--gray-900);
+        margin-bottom: 0.75rem;
+        line-height: 1.4;
+    }
+    
+    /* Collection Modal */
+    .collections-list {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+        margin-bottom: 1.5rem;
+    }
+    
+    .collection-item {
+        padding: 0.5rem;
+        border-radius: var(--radius-md);
+        transition: background 0.2s;
+    }
+    
+    .collection-item:hover {
+        background: var(--gray-100);
+    }
+    
+    .collection-item label {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        cursor: pointer;
+        width: 100%;
+    }
+    
+    .collection-item input[type="radio"] {
+        margin: 0;
+    }
+    
+    .collection-item i {
+        width: 20px;
+        color: var(--gray-600);
+    }
+    
+    .collection-item span {
+        flex: 1;
+        color: var(--gray-800);
+    }
+    
+    .item-count {
+        font-size: 0.75rem;
+        color: var(--gray-600);
+    }
+    
+    .create-collection {
+        padding-top: 1rem;
+        border-top: 1px solid var(--gray-200);
+    }
+    
+    .create-collection h4 {
+        font-size: 0.875rem;
+        font-weight: 600;
+        color: var(--gray-800);
+        margin-bottom: 0.75rem;
+    }
+    
+    .input-group {
+        display: flex;
+        gap: 0.5rem;
+    }
+    
+    /* Responsive */
+    @media (max-width: 992px) {
+        .saved-posts-header {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 1rem;
+        }
+        
+        .saved-post-card {
+            grid-template-columns: 200px 1fr;
+        }
+        
+        .suggested-grid {
+            grid-template-columns: repeat(2, 1fr);
+        }
+    }
+    
+    @media (max-width: 768px) {
+        .saved-filters {
+            flex-direction: column;
+            align-items: stretch;
+        }
+        
+        .filter-group {
+            width: 100%;
+        }
+        
+        .filter-group select {
+            width: 100%;
+        }
+        
+        .saved-post-card {
+            grid-template-columns: 1fr;
+        }
+        
+        .saved-post-image {
+            height: 200px;
+        }
+        
+        .suggested-grid {
+            grid-template-columns: 1fr;
+        }
+        
+        .collections-grid {
+            grid-template-columns: repeat(2, 1fr);
+        }
+    }
+    
+    @media (max-width: 576px) {
+        .saved-post-footer {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 1rem;
+        }
+        
+        .saved-post-actions {
+            width: 100%;
+        }
+        
+        .saved-post-actions .btn {
+            flex: 1;
+        }
+        
+        .collections-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+{% endblock %}

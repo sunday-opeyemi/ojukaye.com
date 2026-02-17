@@ -1,0 +1,1397 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Account Settings - {{ user.username }} - Ojukaye{% endblock %}
+
+{% block extra_css %}
+<style>
+    .settings-wrapper {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 2rem 1rem;
+    }
+
+    .settings-header {
+        margin-bottom: 2rem;
+    }
+
+    .settings-header h1 {
+        font-size: 2rem;
+        font-weight: 700;
+        color: var(--gray-900);
+        margin-bottom: 0.5rem;
+    }
+
+    .settings-header p {
+        color: var(--gray-600);
+        font-size: 1rem;
+    }
+
+    .settings-grid {
+        display: grid;
+        grid-template-columns: 280px 1fr;
+        gap: 1.5rem;
+    }
+
+    /* Settings Sidebar */
+    .settings-sidebar {
+        background: var(--white);
+        border-radius: var(--radius-lg);
+        border: 1px solid var(--gray-200);
+        overflow: hidden;
+        height: fit-content;
+        position: sticky;
+        top: 2rem;
+    }
+
+    .sidebar-header {
+        padding: 1.5rem;
+        background: var(--gray-50);
+        border-bottom: 1px solid var(--gray-200);
+        text-align: center;
+    }
+
+    .sidebar-avatar {
+        width: 80px;
+        height: 80px;
+        margin: 0 auto 1rem;
+        position: relative;
+    }
+
+    .sidebar-avatar img {
+        width: 100%;
+        height: 100%;
+        border-radius: 50%;
+        object-fit: cover;
+        border: 3px solid var(--white);
+        box-shadow: var(--shadow-md);
+    }
+
+    .avatar-placeholder {
+        width: 80px;
+        height: 80px;
+        border-radius: 50%;
+        background: linear-gradient(145deg, var(--primary), var(--primary-dark));
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 2rem;
+        font-weight: 600;
+        margin: 0 auto 1rem;
+        border: 3px solid var(--white);
+        box-shadow: var(--shadow-md);
+    }
+
+    .sidebar-username {
+        font-size: 1.125rem;
+        font-weight: 700;
+        color: var(--gray-900);
+        margin-bottom: 0.25rem;
+    }
+
+    .sidebar-email {
+        font-size: 0.875rem;
+        color: var(--gray-600);
+    }
+
+    .sidebar-nav {
+        padding: 1rem;
+    }
+
+    .nav-section {
+        margin-bottom: 1.5rem;
+    }
+
+    .nav-section-title {
+        font-size: 0.75rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: var(--gray-600);
+        padding: 0 0.75rem;
+        margin-bottom: 0.5rem;
+    }
+
+    .nav-item {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        padding: 0.75rem 1rem;
+        color: var(--gray-700);
+        text-decoration: none;
+        border-radius: var(--radius-md);
+        transition: all 0.2s;
+        margin-bottom: 0.25rem;
+    }
+
+    .nav-item i {
+        width: 1.25rem;
+        color: var(--gray-600);
+    }
+
+    .nav-item:hover {
+        background: var(--gray-100);
+        color: var(--primary);
+    }
+
+    .nav-item:hover i {
+        color: var(--primary);
+    }
+
+    .nav-item.active {
+        background: var(--primary-soft);
+        color: var(--primary-dark);
+        font-weight: 600;
+    }
+
+    .nav-item.active i {
+        color: var(--primary);
+    }
+
+    /* Settings Content */
+    .settings-content {
+        background: var(--white);
+        border-radius: var(--radius-lg);
+        border: 1px solid var(--gray-200);
+        overflow: hidden;
+    }
+
+    .content-header {
+        padding: 1.5rem;
+        border-bottom: 1px solid var(--gray-200);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 1rem;
+    }
+
+    .content-header h2 {
+        font-size: 1.25rem;
+        font-weight: 700;
+        color: var(--gray-900);
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .content-header h2 i {
+        color: var(--primary);
+    }
+
+    .content-body {
+        padding: 1.5rem;
+    }
+
+    /* Settings Sections */
+    .settings-section {
+        display: none;
+    }
+
+    .settings-section.active {
+        display: block;
+    }
+
+    .form-group {
+        margin-bottom: 1.5rem;
+    }
+
+    .form-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1rem;
+    }
+
+    label {
+        display: block;
+        font-size: 0.875rem;
+        font-weight: 600;
+        color: var(--gray-700);
+        margin-bottom: 0.5rem;
+    }
+
+    .form-control {
+        width: 100%;
+        padding: 0.625rem 0.875rem;
+        border: 1.5px solid var(--gray-200);
+        border-radius: var(--radius-md);
+        font-size: 0.9375rem;
+        transition: all 0.2s;
+    }
+
+    .form-control:focus {
+        outline: none;
+        border-color: var(--primary);
+        box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
+    }
+
+    .form-control.is-invalid {
+        border-color: var(--danger);
+    }
+
+    .invalid-feedback {
+        color: var(--danger);
+        font-size: 0.75rem;
+        margin-top: 0.25rem;
+    }
+
+    .help-text {
+        font-size: 0.75rem;
+        color: var(--gray-600);
+        margin-top: 0.25rem;
+    }
+
+    .checkbox-group {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+    }
+
+    .checkbox-group input[type="checkbox"] {
+        width: 1.25rem;
+        height: 1.25rem;
+        border-radius: var(--radius-sm);
+        accent-color: var(--primary);
+    }
+
+    .radio-group {
+        display: flex;
+        gap: 1.5rem;
+    }
+
+    .radio-option {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    /* Avatar Upload */
+    .avatar-upload {
+        display: flex;
+        align-items: center;
+        gap: 1.5rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .current-avatar {
+        width: 100px;
+        height: 100px;
+        border-radius: 50%;
+        object-fit: cover;
+        border: 3px solid var(--gray-200);
+    }
+
+    .avatar-placeholder-large {
+        width: 100px;
+        height: 100px;
+        border-radius: 50%;
+        background: linear-gradient(145deg, var(--primary), var(--primary-dark));
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 2.5rem;
+        font-weight: 600;
+        border: 3px solid var(--gray-200);
+    }
+
+    .avatar-upload-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.5rem 1rem;
+        background: var(--gray-100);
+        border: 1px solid var(--gray-300);
+        border-radius: var(--radius-md);
+        color: var(--gray-700);
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+
+    .avatar-upload-btn:hover {
+        background: var(--gray-200);
+    }
+
+    #avatarInput {
+        display: none;
+    }
+
+    /* Two Factor Auth */
+    .two-factor-section {
+        background: var(--gray-50);
+        border-radius: var(--radius-lg);
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .two-factor-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 1rem;
+    }
+
+    .two-factor-title {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+    }
+
+    .two-factor-title i {
+        font-size: 1.5rem;
+        color: var(--primary);
+    }
+
+    .two-factor-title h3 {
+        font-size: 1rem;
+        font-weight: 600;
+        color: var(--gray-900);
+        margin-bottom: 0.25rem;
+    }
+
+    .two-factor-title p {
+        font-size: 0.875rem;
+        color: var(--gray-600);
+    }
+
+    /* Connected Accounts */
+    .connected-account {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 1rem;
+        background: var(--gray-50);
+        border-radius: var(--radius-md);
+        margin-bottom: 0.75rem;
+    }
+
+    .account-info {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }
+
+    .account-info i {
+        font-size: 1.5rem;
+    }
+
+    .account-info .fa-google { color: #DB4437; }
+    .account-info .fa-facebook { color: #4267B2; }
+    .account-info .fa-twitter { color: #1DA1F2; }
+    .account-info .fa-github { color: #333; }
+
+    .account-details h4 {
+        font-size: 0.9375rem;
+        font-weight: 600;
+        color: var(--gray-900);
+        margin-bottom: 0.125rem;
+    }
+
+    .account-details span {
+        font-size: 0.75rem;
+        color: var(--gray-600);
+    }
+
+    /* Danger Zone */
+    .danger-zone {
+        border: 1px solid #fee2e2;
+        border-radius: var(--radius-lg);
+        background: #fff5f5;
+    }
+
+    .danger-header {
+        padding: 1rem 1.5rem;
+        background: #fee2e2;
+        border-bottom: 1px solid #fecaca;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+    }
+
+    .danger-header i {
+        color: #dc2626;
+    }
+
+    .danger-header h3 {
+        color: #991b1b;
+        font-size: 1rem;
+        font-weight: 700;
+        margin: 0;
+    }
+
+    .danger-body {
+        padding: 1.5rem;
+    }
+
+    .btn {
+        padding: 0.625rem 1.25rem;
+        border-radius: var(--radius-md);
+        font-weight: 600;
+        font-size: 0.875rem;
+        transition: all 0.2s;
+        border: none;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .btn-primary {
+        background: var(--primary);
+        color: white;
+    }
+
+    .btn-primary:hover {
+        background: var(--primary-dark);
+        transform: translateY(-1px);
+        box-shadow: var(--shadow-md);
+    }
+
+    .btn-outline {
+        background: transparent;
+        border: 1.5px solid var(--gray-300);
+        color: var(--gray-700);
+    }
+
+    .btn-outline:hover {
+        background: var(--gray-100);
+    }
+
+    .btn-danger {
+        background: #dc2626;
+        color: white;
+    }
+
+    .btn-danger:hover {
+        background: #b91c1c;
+    }
+
+    .btn-sm {
+        padding: 0.375rem 0.75rem;
+        font-size: 0.75rem;
+    }
+
+    .btn-block {
+        width: 100%;
+        justify-content: center;
+    }
+
+    /* Alert Messages */
+    .alert {
+        padding: 1rem 1.25rem;
+        border-radius: var(--radius-md);
+        margin-bottom: 1.5rem;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+    }
+
+    .alert-success {
+        background: #dcfce7;
+        color: #166534;
+        border: 1px solid #86efac;
+    }
+
+    .alert-warning {
+        background: #fef3c7;
+        color: #92400e;
+        border: 1px solid #fde68a;
+    }
+
+    .alert-error {
+        background: #fee2e2;
+        color: #991b1b;
+        border: 1px solid #fecaca;
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+        .settings-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .settings-sidebar {
+            position: static;
+        }
+
+        .form-row {
+            grid-template-columns: 1fr;
+        }
+
+        .avatar-upload {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+    }
+
+    /* Admin Badge */
+    .admin-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.25rem;
+        padding: 0.25rem 0.5rem;
+        background: var(--primary-soft);
+        color: var(--primary-dark);
+        border-radius: var(--radius-full);
+        font-size: 0.75rem;
+        font-weight: 600;
+        margin-left: 0.5rem;
+    }
+
+    .admin-badge i {
+        font-size: 0.75rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="settings-wrapper">
+    <!-- Header -->
+    <div class="settings-header">
+        <h1>Account Settings</h1>
+        <p>Manage your account settings and preferences</p>
+    </div>
+
+    <!-- Alert Messages -->
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags }}">
+                <i class="fas {% if message.tags == 'success' %}fa-check-circle{% elif message.tags == 'warning' %}fa-exclamation-triangle{% elif message.tags == 'error' %}fa-exclamation-circle{% else %}fa-info-circle{% endif %}"></i>
+                {{ message }}
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    <div class="settings-grid">
+        <!-- Sidebar Navigation -->
+        <div class="settings-sidebar">
+            <div class="sidebar-header">
+                <div class="sidebar-avatar">
+                    {% if user.profile.profile_pic %}
+                        <img src="{{ user.profile.profile_pic.url }}" alt="{{ user.username }}">
+                    {% else %}
+                        <div class="avatar-placeholder">
+                            {{ user.username|first|upper }}
+                        </div>
+                    {% endif %}
+                </div>
+                <div class="sidebar-username">{{ user.get_full_name|default:user.username }}</div>
+                <div class="sidebar-email">{{ user.email|default:"No email added" }}</div>
+                {% if user.is_staff %}
+                    <span class="admin-badge">
+                        <i class="fas fa-shield-alt"></i> Admin
+                    </span>
+                {% endif %}
+            </div>
+
+            <div class="sidebar-nav">
+                <div class="nav-section">
+                    <div class="nav-section-title">Profile</div>
+                    <a href="#" class="nav-item active" data-section="profile">
+                        <i class="fas fa-user"></i> Edit Profile
+                    </a>
+                    <a href="#" class="nav-item" data-section="account">
+                        <i class="fas fa-lock"></i> Account Security
+                    </a>
+                    <a href="#" class="nav-item" data-section="notifications">
+                        <i class="fas fa-bell"></i> Notifications
+                    </a>
+                </div>
+
+                <div class="nav-section">
+                    <div class="nav-section-title">Preferences</div>
+                    <a href="#" class="nav-item" data-section="privacy">
+                        <i class="fas fa-shield-alt"></i> Privacy
+                    </a>
+                    <a href="#" class="nav-item" data-section="appearance">
+                        <i class="fas fa-palette"></i> Appearance
+                    </a>
+                    <a href="#" class="nav-item" data-section="language">
+                        <i class="fas fa-language"></i> Language & Region
+                    </a>
+                </div>
+
+                <div class="nav-section">
+                    <div class="nav-section-title">Content</div>
+                    <a href="#" class="nav-item" data-section="posts">
+                        <i class="fas fa-file-alt"></i> My Posts
+                    </a>
+                    <a href="#" class="nav-item" data-section="comments">
+                        <i class="fas fa-comments"></i> My Comments
+                    </a>
+                    <a href="#" class="nav-item" data-section="bookmarks">
+                        <i class="fas fa-bookmark"></i> Saved Posts
+                    </a>
+                </div>
+
+                {% if user.is_staff %}
+                <div class="nav-section">
+                    <div class="nav-section-title">Administration</div>
+                    <a href="{% url 'admin_dashboard' %}" class="nav-item">
+                        <i class="fas fa-tachometer-alt"></i> Admin Dashboard
+                    </a>
+                    <a href="{% url 'admin_system_settings' %}" class="nav-item">
+                        <i class="fas fa-cogs"></i> System Settings
+                    </a>
+                    <a href="{% url 'admin_posts' %}" class="nav-item">
+                        <i class="fas fa-file-alt"></i> Manage Posts
+                    </a>
+                    <a href="{% url 'admin:index' %}" class="nav-item">
+                        <i class="fas fa-database"></i> Django Admin
+                    </a>
+                </div>
+                {% endif %}
+
+                <div class="nav-section">
+                    <a href="#" class="nav-item" data-section="danger">
+                        <i class="fas fa-exclamation-triangle" style="color: #dc2626;"></i> 
+                        <span style="color: #dc2626;">Danger Zone</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Settings Content -->
+        <div class="settings-content">
+            <!-- Profile Section -->
+            <div id="profile-section" class="settings-section active">
+                <div class="content-header">
+                    <h2><i class="fas fa-user"></i> Edit Profile</h2>
+                    <span class="badge" style="background: var(--primary-soft); color: var(--primary-dark); padding: 0.25rem 0.75rem; border-radius: var(--radius-full); font-size: 0.75rem;">
+                        <i class="fas fa-check-circle"></i> Public Profile
+                    </span>
+                </div>
+                <div class="content-body">
+                    <form method="post" action="{% url 'edit_profile' %}" enctype="multipart/form-data">
+                        {% csrf_token %}
+                        
+                        <!-- Avatar Upload -->
+                        <div class="avatar-upload">
+                            {% if user.profile.profile_pic %}
+                                <img src="{{ user.profile.profile_pic.url }}" alt="{{ user.username }}" class="current-avatar">
+                            {% else %}
+                                <div class="avatar-placeholder-large">
+                                    {{ user.username|first|upper }}
+                                </div>
+                            {% endif %}
+                            <div>
+                                <label for="avatarInput" class="avatar-upload-btn">
+                                    <i class="fas fa-camera"></i> Change Photo
+                                </label>
+                                <input type="file" id="avatarInput" name="profile_pic" accept="image/*">
+                                <p class="help-text" style="margin-top: 0.5rem;">
+                                    <i class="fas fa-info-circle"></i>
+                                    JPG, PNG or GIF. Max 5MB.
+                                </p>
+                            </div>
+                        </div>
+
+                        <!-- Profile Form -->
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="id_first_name">First Name</label>
+                                <input type="text" name="first_name" id="id_first_name" class="form-control" value="{{ user.first_name|default:'' }}" placeholder="Enter your first name">
+                            </div>
+                            <div class="form-group">
+                                <label for="id_last_name">Last Name</label>
+                                <input type="text" name="last_name" id="id_last_name" class="form-control" value="{{ user.last_name|default:'' }}" placeholder="Enter your last name">
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="id_username">Username</label>
+                            <input type="text" name="username" id="id_username" class="form-control" value="{{ user.username }}" required>
+                            <div class="help-text">
+                                <i class="fas fa-info-circle"></i>
+                                This will be your public username (e.g., @username)
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="id_email">Email Address</label>
+                            <input type="email" name="email" id="id_email" class="form-control" value="{{ user.email|default:'' }}" placeholder="your@email.com">
+                            <div class="help-text">
+                                <i class="fas fa-info-circle"></i>
+                                We'll never share your email with anyone else.
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="id_bio">Bio</label>
+                            <textarea name="bio" id="id_bio" class="form-control" rows="4" placeholder="Tell us about yourself...">{{ user.profile.bio|default:'' }}</textarea>
+                            <div class="help-text">
+                                <i class="fas fa-info-circle"></i>
+                                Brief description for your profile. Max 160 characters.
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="id_location">Location</label>
+                            <input type="text" name="location" id="id_location" class="form-control" value="{{ user.profile.location|default:'' }}" placeholder="City, Country">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="id_website">Website</label>
+                            <input type="url" name="website" id="id_website" class="form-control" value="{{ user.profile.website|default:'' }}" placeholder="https://example.com">
+                        </div>
+
+                        <hr style="margin: 1.5rem 0; border: 0; border-top: 1px solid var(--gray-200);">
+
+                        <div style="display: flex; gap: 1rem; justify-content: flex-end;">
+                            <button type="reset" class="btn btn-outline">
+                                <i class="fas fa-undo"></i> Reset
+                            </button>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save"></i> Save Changes
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Account Security Section -->
+            <div id="account-section" class="settings-section">
+                <div class="content-header">
+                    <h2><i class="fas fa-lock"></i> Account Security</h2>
+                </div>
+                <div class="content-body">
+                    <!-- Change Password -->
+                    {% comment %} <form method="post" action="{% url 'change_password' %}"> {% endcomment %}
+                        {% csrf_token %}
+                        <h3 style="font-size: 1rem; font-weight: 600; margin-bottom: 1rem; color: var(--gray-800);">
+                            Change Password
+                        </h3>
+
+                        <div class="form-group">
+                            <label for="id_current_password">Current Password</label>
+                            <input type="password" name="current_password" id="id_current_password" class="form-control" required>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="id_new_password">New Password</label>
+                                <input type="password" name="new_password" id="id_new_password" class="form-control" required>
+                                <div class="help-text">
+                                    Minimum 8 characters, at least one number and one letter
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label for="id_confirm_password">Confirm New Password</label>
+                                <input type="password" name="confirm_password" id="id_confirm_password" class="form-control" required>
+                            </div>
+                        </div>
+
+                        <div style="display: flex; gap: 1rem; margin-bottom: 2rem;">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-key"></i> Update Password
+                            </button>
+                        </div>
+                    </form>
+
+                    <!-- Two-Factor Authentication -->
+                    <div class="two-factor-section">
+                        <div class="two-factor-header">
+                            <div class="two-factor-title">
+                                <i class="fas fa-shield-alt"></i>
+                                <div>
+                                    <h3>Two-Factor Authentication (2FA)</h3>
+                                    <p>Add an extra layer of security to your account</p>
+                                </div>
+                            </div>
+                            <button class="btn btn-outline btn-sm">
+                                <i class="fas fa-plus"></i> Enable
+                            </button>
+                        </div>
+                        <p style="font-size: 0.875rem; color: var(--gray-600); margin: 0;">
+                            Two-factor authentication adds an additional layer of security to your account by requiring more than just a password to sign in.
+                        </p>
+                    </div>
+
+                    <!-- Active Sessions -->
+                    <h3 style="font-size: 1rem; font-weight: 600; margin-bottom: 1rem; color: var(--gray-800);">
+                        <i class="fas fa-desktop"></i> Active Sessions
+                    </h3>
+
+                    <div style="background: var(--gray-50); border-radius: var(--radius-md); padding: 1rem; margin-bottom: 1rem;">
+                        <div style="display: flex; align-items: center; justify-content: space-between;">
+                            <div style="display: flex; align-items: center; gap: 1rem;">
+                                <i class="fas fa-laptop" style="font-size: 1.25rem; color: var(--primary);"></i>
+                                <div>
+                                    <div style="font-weight: 600; color: var(--gray-900);">Current Session</div>
+                                    <div style="font-size: 0.75rem; color: var(--gray-600);">
+                                        Chrome on Windows • {{ request.session.session_key|slice:":8" }}...
+                                    </div>
+                                </div>
+                            </div>
+                            <span style="padding: 0.25rem 0.5rem; background: #dcfce7; color: #166534; border-radius: var(--radius-full); font-size: 0.75rem; font-weight: 600;">
+                                Active Now
+                            </span>
+                        </div>
+                    </div>
+
+                    <button class="btn btn-outline btn-sm">
+                        <i class="fas fa-sign-out-alt"></i> Sign Out All Other Sessions
+                    </button>
+                </div>
+            </div>
+
+            <!-- Notifications Section -->
+            <div id="notifications-section" class="settings-section">
+                <div class="content-header">
+                    <h2><i class="fas fa-bell"></i> Notification Settings</h2>
+                </div>
+                <div class="content-body">
+                    {% comment %} <form method="post" action="{% url 'update_notifications' %}"> {% endcomment %}
+                        {% csrf_token %}
+                        
+                        <h3 style="font-size: 0.9375rem; font-weight: 600; margin-bottom: 1rem; color: var(--gray-800);">
+                            Email Notifications
+                        </h3>
+
+                        <div class="form-group">
+                            <div class="checkbox-group">
+                                <input type="checkbox" name="email_comments" id="email_comments" checked>
+                                <label for="email_comments">Someone comments on my post</label>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <div class="checkbox-group">
+                                <input type="checkbox" name="email_replies" id="email_replies" checked>
+                                <label for="email_replies">Someone replies to my comment</label>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <div class="checkbox-group">
+                                <input type="checkbox" name="email_likes" id="email_likes">
+                                <label for="email_likes">Someone likes my post or comment</label>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <div class="checkbox-group">
+                                <input type="checkbox" name="email_followers" id="email_followers" checked>
+                                <label for="email_followers">Someone follows me</label>
+                            </div>
+                        </div>
+
+                        <hr style="margin: 1.5rem 0; border: 0; border-top: 1px solid var(--gray-200);">
+
+                        <h3 style="font-size: 0.9375rem; font-weight: 600; margin-bottom: 1rem; color: var(--gray-800);">
+                            Push Notifications
+                        </h3>
+
+                        <div class="form-group">
+                            <div class="checkbox-group">
+                                <input type="checkbox" name="push_likes" id="push_likes">
+                                <label for="push_likes">Likes</label>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <div class="checkbox-group">
+                                <input type="checkbox" name="push_comments" id="push_comments" checked>
+                                <label for="push_comments">Comments and replies</label>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <div class="checkbox-group">
+                                <input type="checkbox" name="push_follows" id="push_follows" checked>
+                                <label for="push_follows">New followers</label>
+                            </div>
+                        </div>
+
+                        <div style="display: flex; gap: 1rem; justify-content: flex-end; margin-top: 1.5rem;">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save"></i> Save Preferences
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Privacy Section -->
+            <div id="privacy-section" class="settings-section">
+                <div class="content-header">
+                    <h2><i class="fas fa-shield-alt"></i> Privacy Settings</h2>
+                </div>
+                <div class="content-body">
+                    {% comment %} <form method="post" action="{% url 'update_privacy' %}"> {% endcomment %}
+                        {% csrf_token %}
+
+                        <div class="form-group">
+                            <label for="profile_visibility">Profile Visibility</label>
+                            <select name="profile_visibility" id="profile_visibility" class="form-control">
+                                <option value="public" selected>Public - Everyone can see your profile</option>
+                                <option value="followers">Followers Only - Only followers can see your profile</option>
+                                <option value="private">Private - Only you can see your profile</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <div class="checkbox-group">
+                                <input type="checkbox" name="show_email" id="show_email">
+                                <label for="show_email">Show email address on profile</label>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <div class="checkbox-group">
+                                <input type="checkbox" name="show_location" id="show_location" checked>
+                                <label for="show_location">Show location on profile</label>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <div class="checkbox-group">
+                                <input type="checkbox" name="allow_search" id="allow_search" checked>
+                                <label for="allow_search">Allow search engines to index your profile</label>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <div class="checkbox-group">
+                                <input type="checkbox" name="allow_tagging" id="allow_tagging" checked>
+                                <label for="allow_tagging">Allow others to tag you in posts</label>
+                            </div>
+                        </div>
+
+                        <hr style="margin: 1.5rem 0; border: 0; border-top: 1px solid var(--gray-200);">
+
+                        <h3 style="font-size: 0.9375rem; font-weight: 600; margin-bottom: 1rem; color: var(--gray-800);">
+                            Data & Privacy
+                        </h3>
+
+                        <div style="display: flex; flex-direction: column; gap: 0.75rem; margin-bottom: 1.5rem;">
+                            <a href="#" style="color: var(--primary); text-decoration: none; font-size: 0.875rem;">
+                                <i class="fas fa-download"></i> Download your data
+                            </a>
+                            <a href="#" style="color: var(--primary); text-decoration: none; font-size: 0.875rem;">
+                                <i class="fas fa-file-export"></i> Export posts and comments
+                            </a>
+                            <a href="#" style="color: var(--primary); text-decoration: none; font-size: 0.875rem;">
+                                <i class="fas fa-history"></i> Activity log
+                            </a>
+                        </div>
+
+                        <div style="display: flex; gap: 1rem; justify-content: flex-end;">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save"></i> Save Privacy Settings
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Appearance Section -->
+            <div id="appearance-section" class="settings-section">
+                <div class="content-header">
+                    <h2><i class="fas fa-palette"></i> Appearance</h2>
+                </div>
+                <div class="content-body">
+                    {% comment %} <form method="post" action="{% url 'update_appearance' %}"> {% endcomment %}
+                        {% csrf_token %}
+
+                        <div class="form-group">
+                            <label>Theme</label>
+                            <div class="radio-group">
+                                <div class="radio-option">
+                                    <input type="radio" name="theme" id="theme_light" value="light" checked>
+                                    <label for="theme_light">
+                                        <i class="fas fa-sun"></i> Light
+                                    </label>
+                                </div>
+                                <div class="radio-option">
+                                    <input type="radio" name="theme" id="theme_dark" value="dark">
+                                    <label for="theme_dark">
+                                        <i class="fas fa-moon"></i> Dark
+                                    </label>
+                                </div>
+                                <div class="radio-option">
+                                    <input type="radio" name="theme" id="theme_system" value="system">
+                                    <label for="theme_system">
+                                        <i class="fas fa-laptop"></i> System Default
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="font_size">Font Size</label>
+                            <select name="font_size" id="font_size" class="form-control">
+                                <option value="small">Small</option>
+                                <option value="medium" selected>Medium</option>
+                                <option value="large">Large</option>
+                                <option value="xlarge">Extra Large</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <div class="checkbox-group">
+                                <input type="checkbox" name="reduced_motion" id="reduced_motion">
+                                <label for="reduced_motion">Reduce motion (prefers-reduced-motion)</label>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <div class="checkbox-group">
+                                <input type="checkbox" name="compact_mode" id="compact_mode">
+                                <label for="compact_mode">Compact mode (show more content)</label>
+                            </div>
+                        </div>
+
+                        <div style="display: flex; gap: 1rem; justify-content: flex-end;">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save"></i> Save Appearance
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Language & Region Section -->
+            <div id="language-section" class="settings-section">
+                <div class="content-header">
+                    <h2><i class="fas fa-language"></i> Language & Region</h2>
+                </div>
+                <div class="content-body">
+                    {% comment %} <form method="post" action="{% url 'update_preferences' %}"> {% endcomment %}
+                        {% csrf_token %}
+
+                        <div class="form-group">
+                            <label for="language">Language</label>
+                            <select name="language" id="language" class="form-control">
+                                <option value="en" selected>English (US)</option>
+                                <option value="en-gb">English (UK)</option>
+                                <option value="es">Español</option>
+                                <option value="fr">Français</option>
+                                <option value="de">Deutsch</option>
+                                <option value="pt">Português</option>
+                                <option value="ar">العربية</option>
+                                <option value="zh">中文</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="timezone">Time Zone</label>
+                            <select name="timezone" id="timezone" class="form-control">
+                                <option value="UTC">UTC (Coordinated Universal Time)</option>
+                                <option value="America/New_York">Eastern Time (US & Canada)</option>
+                                <option value="America/Chicago">Central Time (US & Canada)</option>
+                                <option value="America/Denver">Mountain Time (US & Canada)</option>
+                                <option value="America/Los_Angeles">Pacific Time (US & Canada)</option>
+                                <option value="Europe/London">London</option>
+                                <option value="Europe/Paris">Paris</option>
+                                <option value="Asia/Tokyo">Tokyo</option>
+                                <option value="Asia/Shanghai">Shanghai</option>
+                                <option value="Australia/Sydney">Sydney</option>
+                                <option value="Africa/Lagos" selected>Lagos</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="date_format">Date Format</label>
+                            <select name="date_format" id="date_format" class="form-control">
+                                <option value="M d, Y">Jan 1, 2024</option>
+                                <option value="d M Y">1 Jan 2024</option>
+                                <option value="Y-m-d">2024-01-01</option>
+                                <option value="d/m/Y">01/01/2024</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="time_format">Time Format</label>
+                            <select name="time_format" id="time_format" class="form-control">
+                                <option value="12">12-hour (1:30 PM)</option>
+                                <option value="24">24-hour (13:30)</option>
+                            </select>
+                        </div>
+
+                        <div style="display: flex; gap: 1rem; justify-content: flex-end;">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save"></i> Save Preferences
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- My Posts Section -->
+            <div id="posts-section" class="settings-section">
+                <div class="content-header">
+                    <h2><i class="fas fa-file-alt"></i> My Posts</h2>
+                    <a href="{% url 'create_post' %}" class="btn btn-primary btn-sm">
+                        <i class="fas fa-plus"></i> New Post
+                    </a>
+                </div>
+                <div class="content-body">
+                    {% if user_posts %}
+                        <div style="display: flex; flex-direction: column; gap: 1rem;">
+                            {% for post in user_posts|slice:":10" %}
+                                <div style="display: flex; align-items: center; justify-content: space-between; padding: 1rem; background: var(--gray-50); border-radius: var(--radius-md);">
+                                    <div>
+                                        <h4 style="font-size: 0.9375rem; font-weight: 600; margin-bottom: 0.25rem;">
+                                            <a href="{% url 'post_detail' post.id %}" style="color: var(--gray-900); text-decoration: none;">
+                                                {{ post.title|truncatechars:60 }}
+                                            </a>
+                                        </h4>
+                                        <div style="display: flex; gap: 1rem; font-size: 0.75rem; color: var(--gray-600);">
+                                            <span><i class="far fa-clock"></i> {{ post.created_at|timesince }} ago</span>
+                                            <span><i class="fas fa-heart"></i> {{ post.likes.count }}</span>
+                                            <span><i class="fas fa-comment"></i> {{ post.comments.count }}</span>
+                                            <span><i class="fas fa-eye"></i> {{ post.views }}</span>
+                                        </div>
+                                    </div>
+                                    <div style="display: flex; gap: 0.5rem;">
+                                        <a href="{% url 'post_detail' post.id %}" class="btn btn-outline btn-sm">
+                                            <i class="fas fa-eye"></i> View
+                                        </a>
+                                        <a href="#" class="btn btn-outline btn-sm">
+                                            <i class="fas fa-edit"></i> Edit
+                                        </a>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                        {% if user_posts.count > 10 %}
+                            <div style="text-align: center; margin-top: 1.5rem;">
+                                <a href="#" class="btn btn-outline">View All Posts</a>
+                            </div>
+                        {% endif %}
+                    {% else %}
+                        <div style="text-align: center; padding: 3rem 1rem;">
+                            <i class="fas fa-file-alt" style="font-size: 3rem; color: var(--gray-400); margin-bottom: 1rem;"></i>
+                            <p style="color: var(--gray-600); margin-bottom: 1.5rem;">You haven't created any posts yet.</p>
+                            <a href="{% url 'create_post' %}" class="btn btn-primary">
+                                <i class="fas fa-plus"></i> Create Your First Post
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- My Comments Section -->
+            <div id="comments-section" class="settings-section">
+                <div class="content-header">
+                    <h2><i class="fas fa-comments"></i> My Comments</h2>
+                </div>
+                <div class="content-body">
+                    {% if user_comments %}
+                        <div style="display: flex; flex-direction: column; gap: 1rem;">
+                            {% for comment in user_comments|slice:":10" %}
+                                <div style="padding: 1rem; background: var(--gray-50); border-radius: var(--radius-md);">
+                                    <p style="font-size: 0.9375rem; color: var(--gray-800); margin-bottom: 0.5rem;">
+                                        {{ comment.content|truncatechars:120 }}
+                                    </p>
+                                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                                        <div style="display: flex; gap: 1rem; font-size: 0.75rem; color: var(--gray-600);">
+                                            <span><i class="far fa-clock"></i> {{ comment.created_at|timesince }} ago</span>
+                                            <span>on <a href="{% url 'post_detail' comment.post.id %}" style="color: var(--primary);">{{ comment.post.title|truncatechars:30 }}</a></span>
+                                            <span><i class="fas fa-heart"></i> {{ comment.likes.count }}</span>
+                                        </div>
+                                        <div style="display: flex; gap: 0.5rem;">
+                                            <a href="{% url 'post_detail' comment.post.id %}#comment-{{ comment.id }}" class="btn btn-outline btn-sm">
+                                                <i class="fas fa-eye"></i> View
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div style="text-align: center; padding: 3rem 1rem;">
+                            <i class="fas fa-comments" style="font-size: 3rem; color: var(--gray-400); margin-bottom: 1rem;"></i>
+                            <p style="color: var(--gray-600);">You haven't made any comments yet.</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Bookmarks Section -->
+            <div id="bookmarks-section" class="settings-section">
+                <div class="content-header">
+                    <h2><i class="fas fa-bookmark"></i> Saved Posts</h2>
+                </div>
+                <div class="content-body">
+                    {% if user_bookmarks %}
+                        <div style="display: flex; flex-direction: column; gap: 1rem;">
+                            {% for post in user_bookmarks|slice:":10" %}
+                                <div style="display: flex; align-items: center; justify-content: space-between; padding: 1rem; background: var(--gray-50); border-radius: var(--radius-md);">
+                                    <div>
+                                        <h4 style="font-size: 0.9375rem; font-weight: 600; margin-bottom: 0.25rem;">
+                                            <a href="{% url 'post_detail' post.id %}" style="color: var(--gray-900); text-decoration: none;">
+                                                {{ post.title|truncatechars:60 }}
+                                            </a>
+                                        </h4>
+                                        <div style="display: flex; gap: 1rem; font-size: 0.75rem; color: var(--gray-600);">
+                                            <span>by <a href="{% url 'profile_view' post.author.username %}" style="color: var(--primary);">@{{ post.author.username }}</a></span>
+                                            <span><i class="far fa-clock"></i> {{ post.created_at|timesince }} ago</span>
+                                        </div>
+                                    </div>
+                                    <div style="display: flex; gap: 0.5rem;">
+                                        <a href="{% url 'post_detail' post.id %}" class="btn btn-outline btn-sm">
+                                            <i class="fas fa-eye"></i> Read
+                                        </a>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div style="text-align: center; padding: 3rem 1rem;">
+                            <i class="fas fa-bookmark" style="font-size: 3rem; color: var(--gray-400); margin-bottom: 1rem;"></i>
+                            <p style="color: var(--gray-600);">You haven't saved any posts yet.</p>
+                            <a href="{% url 'home' %}" class="btn btn-primary">
+                                <i class="fas fa-compass"></i> Discover Posts
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Danger Zone Section -->
+            <div id="danger-section" class="settings-section">
+                <div class="content-header" style="border-bottom-color: #fee2e2;">
+                    <h2 style="color: #dc2626;"><i class="fas fa-exclamation-triangle"></i> Danger Zone</h2>
+                </div>
+                <div class="content-body">
+                    <div class="danger-zone">
+                        <div class="danger-header">
+                            <i class="fas fa-trash"></i>
+                            <h3>Delete Account</h3>
+                        </div>
+                        <div class="danger-body">
+                            <p style="color: var(--gray-700); margin-bottom: 1rem;">
+                                Once you delete your account, there is no going back. Please be certain.
+                                This action will permanently delete:
+                            </p>
+                            <ul style="margin-bottom: 1.5rem; padding-left: 1.5rem; color: var(--gray-600); font-size: 0.875rem;">
+                                <li>Your profile and personal information</li>
+                                <li>All your posts and comments</li>
+                                <li>Your followers and following relationships</li>
+                                <li>All your saved posts and activity history</li>
+                            </ul>
+                            <div style="display: flex; gap: 1rem; align-items: center;">
+                                <button class="btn btn-danger" onclick="confirmDeleteAccount()">
+                                    <i class="fas fa-trash"></i> Delete Account
+                                </button>
+                                <span style="font-size: 0.75rem; color: var(--gray-500);">
+                                    This action cannot be undone
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div style="margin-top: 1.5rem; padding: 1rem; background: var(--gray-50); border-radius: var(--radius-md);">
+                        <h4 style="font-size: 0.875rem; font-weight: 600; color: var(--gray-800); margin-bottom: 0.5rem;">
+                            <i class="fas fa-download"></i> Export Data
+                        </h4>
+                        <p style="font-size: 0.875rem; color: var(--gray-600); margin-bottom: 1rem;">
+                            Get a copy of all your data including posts, comments, and profile information.
+                        </p>
+                        <button class="btn btn-outline btn-sm">
+                            <i class="fas fa-file-export"></i> Request Data Export
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Navigation between settings sections
+    document.querySelectorAll('.nav-item[data-section]').forEach(item => {
+        item.addEventListener('click', function(e) {
+            e.preventDefault();
+            
+            // Remove active class from all nav items
+            document.querySelectorAll('.nav-item').forEach(nav => {
+                nav.classList.remove('active');
+            });
+            
+            // Add active class to clicked nav item
+            this.classList.add('active');
+            
+            // Get section id
+            const section = this.dataset.section;
+            
+            // Hide all sections
+            document.querySelectorAll('.settings-section').forEach(s => {
+                s.classList.remove('active');
+            });
+            
+            // Show selected section
+            document.getElementById(`${section}-section`).classList.add('active');
+            
+            // Update URL hash
+            window.location.hash = section;
+        });
+    });
+
+    // Check for hash in URL on page load
+    window.addEventListener('load', function() {
+        const hash = window.location.hash.substring(1);
+        if (hash) {
+            const navItem = document.querySelector(`.nav-item[data-section="${hash}"]`);
+            if (navItem) {
+                navItem.click();
+            }
+        }
+    });
+
+    // Avatar upload preview
+    document.getElementById('avatarInput')?.addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const avatar = document.querySelector('.current-avatar, .avatar-placeholder-large');
+                if (avatar) {
+                    if (avatar.classList.contains('avatar-placeholder-large')) {
+                        // Replace placeholder with image
+                        const newImg = document.createElement('img');
+                        newImg.src = e.target.result;
+                        newImg.className = 'current-avatar';
+                        avatar.parentNode.replaceChild(newImg, avatar);
+                    } else {
+                        avatar.src = e.target.result;
+                    }
+                }
+            }
+            reader.readAsDataURL(file);
+        }
+    });
+
+    // Confirm account deletion
+    function confirmDeleteAccount() {
+        if (confirm('Are you absolutely sure you want to delete your account? This action cannot be undone.')) {
+            const password = prompt('Please enter your password to confirm:');
+            if (password) {
+                // Submit delete account form
+                {% comment %} window.location.href = '{% url "delete_account" %}'; {% endcomment %}
+            }
+        }
+    }
+
+    // Toggle dark mode
+    document.querySelectorAll('input[name="theme"]').forEach(radio => {
+        radio.addEventListener('change', function() {
+            if (this.value === 'dark') {
+                document.body.classList.add('dark-mode');
+            } else if (this.value === 'light') {
+                document.body.classList.remove('dark-mode');
+            } else {
+                // System default - check prefers-color-scheme
+                if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+                    document.body.classList.add('dark-mode');
+                } else {
+                    document.body.classList.remove('dark-mode');
+                }
+            }
+        });
+    });
+</script>
+{% endblock %}

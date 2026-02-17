@@ -1,0 +1,127 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Login - Ojukaye{% endblock %}
+
+{% block content %}
+<div class="auth-page">
+    <div class="auth-container">
+        <!-- Left Side - Branding -->
+        <div class="auth-left">
+            <div class="auth-left-content">
+                <div class="auth-logo-area">
+                    <img src="{% static 'images/logo.jpeg' %}" alt="Ojukaye Logo" class="auth-logo">
+                    <h2>Welcome Back!</h2>
+                    <p>Stay connected with the latest news, discussions, and trends from Nigeria and beyond.</p>
+                </div>
+                
+                <div class="auth-features">
+                    <div class="auth-feature-item">
+                        <i class="fas fa-check-circle"></i>
+                        <span>Real-time news updates</span>
+                    </div>
+                    <div class="auth-feature-item">
+                        <i class="fas fa-check-circle"></i>
+                        <span>Engage in meaningful discussions</span>
+                    </div>
+                    <div class="auth-feature-item">
+                        <i class="fas fa-check-circle"></i>
+                        <span>Connect with like-minded people</span>
+                    </div>
+                    <div class="auth-feature-item">
+                        <i class="fas fa-check-circle"></i>
+                        <span>Share your thoughts and ideas</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="auth-footer">
+                <p>© 2025 Ojukaye. All rights reserved.</p>
+            </div>
+        </div>
+        
+        <!-- Right Side - Login Form -->
+        <div class="auth-right">
+            <div class="auth-header">
+                <h1>Sign In</h1>
+                <p>Welcome back! Please enter your details</p>
+            </div>
+            
+            <form method="post" action="{% url 'login' %}" class="auth-form">
+                {% csrf_token %}
+                
+                {% if form.non_field_errors %}
+                <div class="alert alert-error">
+                    <i class="fas fa-exclamation-circle"></i>
+                    <div class="alert-content">
+                        <div class="alert-message">{{ form.non_field_errors.0 }}</div>
+                    </div>
+                </div>
+                {% endif %}
+                
+                <div class="form-group">
+                    <label for="id_username" class="form-label">
+                        <i class="fas fa-user"></i> Username
+                    </label>
+                    <input type="text" 
+                           name="username" 
+                           id="id_username" 
+                           class="form-input" 
+                           placeholder="Enter your username" 
+                           required 
+                           autofocus
+                           value="{{ form.username.value|default:'' }}">
+                    {% if form.username.errors %}
+                    <div class="form-error">
+                        <i class="fas fa-exclamation-circle"></i> {{ form.username.errors.0 }}
+                    </div>
+                    {% endif %}
+                </div>
+                
+                <div class="form-group">
+                    <label for="id_password" class="form-label">
+                        <i class="fas fa-lock"></i> Password
+                    </label>
+                    <div class="password-wrapper">
+                        <input type="password" 
+                               name="password" 
+                               id="id_password" 
+                               class="form-input" 
+                               placeholder="Enter your password" 
+                               required>
+                        <button type="button" class="password-toggle">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                    </div>
+                    {% if form.password.errors %}
+                    <div class="form-error">
+                        <i class="fas fa-exclamation-circle"></i> {{ form.password.errors.0 }}
+                    </div>
+                    {% endif %}
+                </div>
+                
+                <div class="form-options">
+                    <label class="remember-me">
+                        <input type="checkbox" name="remember" id="remember">
+                        <span>Remember me</span>
+                    </label>
+                    {% comment %} <a href="{% url 'password_reset' %}" class="forgot-password"> {% endcomment %}
+                        Forgot password?
+                    </a>
+                </div>
+                
+                <button type="submit" class="btn btn-primary btn-block btn-lg">
+                    <i class="fas fa-sign-in-alt"></i> Sign In
+                </button>
+                
+                <input type="hidden" name="next" value="{{ next }}">
+            </form>
+            
+            <div class="auth-divider">
+                Don't have an account?
+                <a href="{% url 'register' %}">Create account</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

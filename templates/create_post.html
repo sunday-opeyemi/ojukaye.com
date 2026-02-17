@@ -1,0 +1,723 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Create Post - Ojukaye{% endblock %}
+
+{% block content %}
+<div class="create-post-page">
+    <div class="create-post-container">
+        <!-- Header -->
+        <div class="create-post-header">
+            <h1><i class="fas fa-pen-to-square"></i> Create Post</h1>
+            <p>Share your thoughts, news, or updates with the community</p>
+        </div>
+        
+        <!-- Post Type Selection -->
+        <div class="post-type-selector">
+            <div class="post-type-cards">
+                <label class="post-type-card {% if request.GET.type == 'discussion' or not request.GET.type %}active{% endif %}">
+                    <input type="radio" name="post_type" value="discussion" 
+                           {% if request.GET.type == 'discussion' or not request.GET.type %}checked{% endif %}>
+                    <div class="post-type-content">
+                        <i class="fas fa-comments"></i>
+                        <h3>Discussion</h3>
+                        <p>Start a conversation, ask questions, or share opinions</p>
+                    </div>
+                </label>
+                
+                <label class="post-type-card {% if request.GET.type == 'user_news' %}active{% endif %}">
+                    <input type="radio" name="post_type" value="user_news" 
+                           {% if request.GET.type == 'user_news' %}checked{% endif %}>
+                    <div class="post-type-content">
+                        <i class="fas fa-newspaper"></i>
+                        <h3>News</h3>
+                        <p>Share a news article with proper source attribution</p>
+                    </div>
+                </label>
+                
+                <label class="post-type-card {% if request.GET.type == 'profile_post' %}active{% endif %}">
+                    <input type="radio" name="post_type" value="profile_post" 
+                           {% if request.GET.type == 'profile_post' %}checked{% endif %}>
+                    <div class="post-type-content">
+                        <i class="fas fa-user"></i>
+                        <h3>Profile Post</h3>
+                        <p>Personal post only visible on your profile</p>
+                    </div>
+                </label>
+            </div>
+        </div>
+        
+        <!-- Privacy Settings -->
+        <div class="privacy-settings">
+            <h3><i class="fas fa-lock"></i> Who can view this post?</h3>
+            
+            <div class="privacy-options">
+                <label class="privacy-option">
+                    <input type="radio" name="privacy" value="public" checked>
+                    <span class="privacy-icon"><i class="fas fa-globe"></i></span>
+                    <span class="privacy-label">
+                        <strong>Public</strong>
+                        <small>Everyone can see this post</small>
+                    </span>
+                </label>
+                
+                <label class="privacy-option">
+                    <input type="radio" name="privacy" value="followers">
+                    <span class="privacy-icon"><i class="fas fa-users"></i></span>
+                    <span class="privacy-label">
+                        <strong>Followers Only</strong>
+                        <small>Only people who follow you can see this post</small>
+                    </span>
+                </label>
+                
+                <label class="privacy-option">
+                    <input type="radio" name="privacy" value="private">
+                    <span class="privacy-icon"><i class="fas fa-lock"></i></span>
+                    <span class="privacy-label">
+                        <strong>Private</strong>
+                        <small>Only you can see this post</small>
+                    </span>
+                </label>
+                
+                <label class="privacy-option">
+                    <input type="radio" name="privacy" value="specific">
+                    <span class="privacy-icon"><i class="fas fa-user-tag"></i></span>
+                    <span class="privacy-label">
+                        <strong>Specific Followers</strong>
+                        <small>Select specific followers who can view</small>
+                    </span>
+                </label>
+            </div>
+            
+            <!-- Specific followers selection -->
+            <div id="specific-followers-field" style="display: none; margin-top: 1rem;">
+                <label for="{{ form.allowed_viewers.id_for_label }}" class="form-label">
+                    <i class="fas fa-user-check"></i> Select Followers
+                </label>
+                {{ form.allowed_viewers }}
+                <small class="form-text">Hold Ctrl/Cmd to select multiple followers</small>
+            </div>
+        </div>
+
+
+        <!-- Create Post Form -->
+        <form method="post" enctype="multipart/form-data" class="create-post-form" id="createPostForm">
+            {% csrf_token %}
+            
+            <!-- Title Field -->
+            <div class="form-group">
+                <label for="{{ form.title.id_for_label }}" class="form-label">
+                    <i class="fas fa-heading"></i> Title
+                </label>
+                <input type="text" 
+                       name="{{ form.title.name }}" 
+                       id="{{ form.title.id_for_label }}" 
+                       class="form-control {% if form.title.errors %}error{% endif %}"
+                       placeholder="Enter a descriptive title"
+                       value="{{ form.title.value|default:'' }}"
+                       required>
+                {% if form.title.errors %}
+                <div class="form-error">
+                    <i class="fas fa-exclamation-circle"></i> {{ form.title.errors.0 }}
+                </div>
+                {% endif %}
+            </div>
+            
+            <!-- Content Field -->
+            <div class="form-group">
+                <label for="{{ form.content.id_for_label }}" class="form-label">
+                    <i class="fas fa-align-left"></i> Content
+                </label>
+                <textarea name="{{ form.content.name }}" 
+                          id="{{ form.content.id_for_label }}" 
+                          class="form-control {% if form.content.errors %}error{% endif %}"
+                          rows="8"
+                          placeholder="Write your post content here..."
+                          required>{{ form.content.value|default:'' }}</textarea>
+                {% if form.content.errors %}
+                <div class="form-error">
+                    <i class="fas fa-exclamation-circle"></i> {{ form.content.errors.0 }}
+                </div>
+                {% endif %}
+            </div>
+            
+            <!-- Category Field (Hidden for profile posts) -->
+            <div class="form-group category-field" id="categoryField">
+                <label for="{{ form.category.id_for_label }}" class="form-label">
+                    <i class="fas fa-tag"></i> Category
+                </label>
+                <select name="{{ form.category.name }}" 
+                        id="{{ form.category.id_for_label }}" 
+                        class="form-control {% if form.category.errors %}error{% endif %}">
+                    <option value="">Select a category</option>
+                    {% for category in categories %}
+                    <option value="{{ category.id }}" {% if form.category.value == category.id %}selected{% endif %}>
+                        {{ category.name }}
+                    </option>
+                    {% endfor %}
+                </select>
+                {% if form.category.errors %}
+                <div class="form-error">
+                    <i class="fas fa-exclamation-circle"></i> {{ form.category.errors.0 }}
+                </div>
+                {% endif %}
+            </div>
+            
+            <!-- News Source Fields (Hidden by default) -->
+            <div id="newsSourceFields" style="display: none;">
+                <div class="form-group">
+                    <label for="{{ form.source_url.id_for_label }}" class="form-label">
+                        <i class="fas fa-link"></i> Source URL <span class="required-star">*</span>
+                    </label>
+                    <input type="url" 
+                           name="{{ form.source_url.name }}" 
+                           id="{{ form.source_url.id_for_label }}" 
+                           class="form-control {% if form.source_url.errors %}error{% endif %}"
+                           placeholder="https://example.com/news-article"
+                           value="{{ form.source_url.value|default:'' }}">
+                    {% if form.source_url.errors %}
+                    <div class="form-error">
+                        <i class="fas fa-exclamation-circle"></i> {{ form.source_url.errors.0 }}
+                    </div>
+                    {% endif %}
+                    <small class="form-text">Required for news posts. Must be a valid URL.</small>
+                </div>
+                
+                <div class="form-group">
+                    <label for="{{ form.source_name.id_for_label }}" class="form-label">
+                        <i class="fas fa-newspaper"></i> Source Name
+                    </label>
+                    <input type="text" 
+                           name="{{ form.source_name.name }}" 
+                           id="{{ form.source_name.id_for_label }}" 
+                           class="form-control {% if form.source_name.errors %}error{% endif %}"
+                           placeholder="e.g., BBC News, Premium Times"
+                           value="{{ form.source_name.value|default:'' }}">
+                    <small class="form-text">The name of the news source or website.</small>
+                </div>
+            </div>
+            
+            <!-- Image Upload -->
+            <div class="form-group">
+                <label class="form-label">
+                    <i class="fas fa-image"></i> Image (Optional)
+                </label>
+                <div class="image-upload-area" id="imageUploadArea">
+                    <input type="file" 
+                           name="{{ form.image.name }}" 
+                           id="{{ form.image.id_for_label }}" 
+                           accept="image/*"
+                           style="display: none;">
+                    <div class="upload-placeholder">
+                        <i class="fas fa-cloud-upload-alt"></i>
+                        <p>Click or drag to upload an image</p>
+                        <span class="upload-hint">PNG, JPG, GIF up to 10MB</span>
+                    </div>
+                    <div class="image-preview" style="display: none;">
+                        <img src="" alt="Preview">
+                        <button type="button" class="remove-image-btn">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Post Settings -->
+            <div class="post-settings">
+                <h3><i class="fas fa-cog"></i> Post Settings</h3>
+                
+                <div class="settings-grid">
+                    <label class="setting-checkbox">
+                        <input type="checkbox" name="{{ form.allow_comments.name }}" 
+                               {% if form.allow_comments.value %}checked{% endif %}>
+                        <span>
+                            <i class="fas fa-comments"></i>
+                            <strong>Allow Comments</strong>
+                            <small>Let others comment on your post</small>
+                        </span>
+                    </label>
+                    
+                    <label class="setting-checkbox">
+                        <input type="checkbox" name="{{ form.allow_sharing.name }}"
+                               {% if form.allow_sharing.value %}checked{% endif %}>
+                        <span>
+                            <i class="fas fa-share-alt"></i>
+                            <strong>Allow Sharing</strong>
+                            <small>Let others share your post</small>
+                        </span>
+                    </label>
+                </div>
+            </div>
+            
+            <!-- Form Actions -->
+            <div class="form-actions">
+                <a href="javascript:history.back()" class="btn btn-outline">
+                    <i class="fas fa-times"></i> Cancel
+                </a>
+                <button type="submit" class="btn btn-primary btn-lg">
+                    <i class="fas fa-paper-plane"></i> Publish Post
+                </button>
+            </div>
+        </form>
+        
+        <!-- Posting Guidelines -->
+        <div class="posting-guidelines">
+            <h4><i class="fas fa-info-circle"></i> Posting Guidelines</h4>
+            <ul>
+                <li><i class="fas fa-check-circle"></i> Be respectful and constructive in your discussions</li>
+                <li><i class="fas fa-check-circle"></i> Verify news sources before sharing</li>
+                <li><i class="fas fa-check-circle"></i> No spam, harassment, or misinformation</li>
+                <li><i class="fas fa-check-circle"></i> Profile posts are only visible on your profile</li>
+                <li><i class="fas fa-check-circle"></i> News posts require admin approval before going public</li>
+            </ul>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const postTypeRadios = document.querySelectorAll('input[name="post_type"]');
+        const categoryField = document.getElementById('categoryField');
+        const newsSourceFields = document.getElementById('newsSourceFields');
+        const imageUpload = document.getElementById('{{ form.image.id_for_label }}');
+        const uploadArea = document.getElementById('imageUploadArea');
+        const uploadPlaceholder = uploadArea.querySelector('.upload-placeholder');
+        const imagePreview = uploadArea.querySelector('.image-preview');
+        const previewImg = imagePreview.querySelector('img');
+        
+        // Handle post type changes
+        function handlePostTypeChange() {
+            const selectedType = document.querySelector('input[name="post_type"]:checked').value;
+            
+            // Update active state on cards
+            document.querySelectorAll('.post-type-card').forEach(card => {
+                card.classList.remove('active');
+            });
+            document.querySelector(`input[name="post_type"][value="${selectedType}"]`).closest('.post-type-card').classList.add('active');
+            
+            // Show/hide fields based on post type
+            if (selectedType === 'profile_post') {
+                categoryField.style.display = 'none';
+                newsSourceFields.style.display = 'none';
+                
+                // Remove required from category
+                const categorySelect = document.getElementById('{{ form.category.id_for_label }}');
+                if (categorySelect) categorySelect.required = false;
+                
+            } else if (selectedType === 'user_news') {
+                categoryField.style.display = 'block';
+                newsSourceFields.style.display = 'block';
+                
+                // Make source URL required
+                const sourceUrl = document.getElementById('{{ form.source_url.id_for_label }}');
+                if (sourceUrl) sourceUrl.required = true;
+                
+                // Make category required
+                const categorySelect = document.getElementById('{{ form.category.id_for_label }}');
+                if (categorySelect) categorySelect.required = true;
+                
+            } else { // discussion
+                categoryField.style.display = 'block';
+                newsSourceFields.style.display = 'none';
+                
+                // Remove required from source URL
+                const sourceUrl = document.getElementById('{{ form.source_url.id_for_label }}');
+                if (sourceUrl) sourceUrl.required = false;
+                
+                // Make category optional but show field
+                const categorySelect = document.getElementById('{{ form.category.id_for_label }}');
+                if (categorySelect) categorySelect.required = false;
+            }
+        }
+        
+        postTypeRadios.forEach(radio => {
+            radio.addEventListener('change', handlePostTypeChange);
+        });
+        
+        // Initial call
+        handlePostTypeChange();
+        
+        // Image upload handling
+        uploadArea.addEventListener('click', function(e) {
+            if (!e.target.closest('.remove-image-btn')) {
+                imageUpload.click();
+            }
+        });
+        
+        uploadArea.addEventListener('dragover', function(e) {
+            e.preventDefault();
+            uploadArea.classList.add('dragover');
+        });
+        
+        uploadArea.addEventListener('dragleave', function(e) {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+        });
+        
+        uploadArea.addEventListener('drop', function(e) {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            
+            const files = e.dataTransfer.files;
+            if (files.length > 0 && files[0].type.startsWith('image/')) {
+                imageUpload.files = files;
+                handleImagePreview(files[0]);
+            }
+        });
+        
+        imageUpload.addEventListener('change', function(e) {
+            if (this.files.length > 0) {
+                handleImagePreview(this.files[0]);
+            }
+        });
+        
+        function handleImagePreview(file) {
+            const reader = new FileReader();
+            
+            reader.onload = function(e) {
+                previewImg.src = e.target.result;
+                uploadPlaceholder.style.display = 'none';
+                imagePreview.style.display = 'block';
+            };
+            
+            reader.readAsDataURL(file);
+        }
+        
+        // Remove image
+        document.querySelector('.remove-image-btn').addEventListener('click', function(e) {
+            e.stopPropagation();
+            imageUpload.value = '';
+            previewImg.src = '';
+            uploadPlaceholder.style.display = 'block';
+            imagePreview.style.display = 'none';
+        });
+        
+        // Form validation
+        document.getElementById('createPostForm').addEventListener('submit', function(e) {
+            const postType = document.querySelector('input[name="post_type"]:checked').value;
+            
+            if (postType === 'user_news') {
+                const sourceUrl = document.getElementById('{{ form.source_url.id_for_label }}');
+                if (!sourceUrl.value.trim()) {
+                    e.preventDefault();
+                    showNotification('Source URL is required for news posts', 'error');
+                    sourceUrl.focus();
+                }
+            }
+        });
+        document.querySelectorAll('input[name="privacy"]').forEach(radio => {
+            radio.addEventListener('change', function() {
+                const specificField = document.getElementById('specific-followers-field');
+                if (this.value === 'specific') {
+                    specificField.style.display = 'block';
+                } else {
+                    specificField.style.display = 'none';
+                }
+            });
+        });
+    });
+</script>
+
+<style>
+    .create-post-page {
+        max-width: 900px;
+        margin: 0 auto;
+        padding: 2rem 0;
+    }
+    
+    .create-post-container {
+        background: var(--white);
+        border-radius: var(--radius-lg);
+        border: 1px solid var(--gray-200);
+        padding: 2rem;
+    }
+    
+    .create-post-header {
+        text-align: center;
+        margin-bottom: 2rem;
+    }
+    
+    .create-post-header h1 {
+        font-size: 2rem;
+        font-weight: 700;
+        color: var(--gray-900);
+        margin-bottom: 0.5rem;
+    }
+    
+    .create-post-header h1 i {
+        color: var(--primary);
+    }
+    
+    .create-post-header p {
+        color: var(--gray-600);
+    }
+    
+    .post-type-cards {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 1rem;
+        margin-bottom: 2rem;
+    }
+    
+    .post-type-card {
+        position: relative;
+        cursor: pointer;
+    }
+    
+    .post-type-card input[type="radio"] {
+        position: absolute;
+        opacity: 0;
+    }
+    
+    .post-type-content {
+        padding: 1.5rem 1rem;
+        border: 2px solid var(--gray-200);
+        border-radius: var(--radius-lg);
+        text-align: center;
+        transition: all 0.2s;
+    }
+    
+    .post-type-card:hover .post-type-content {
+        border-color: var(--primary);
+        background: var(--primary-light);
+    }
+    
+    .post-type-card.active .post-type-content {
+        border-color: var(--primary);
+        background: var(--primary-soft);
+    }
+    
+    .post-type-content i {
+        font-size: 2rem;
+        color: var(--gray-600);
+        margin-bottom: 0.5rem;
+    }
+    
+    .post-type-card.active .post-type-content i {
+        color: var(--primary);
+    }
+    
+    .post-type-content h3 {
+        font-size: 1.125rem;
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+        color: var(--gray-800);
+    }
+    
+    .post-type-content p {
+        font-size: 0.875rem;
+        color: var(--gray-600);
+        margin-bottom: 0;
+    }
+    
+    .create-post-form .form-group {
+        margin-bottom: 1.5rem;
+    }
+    
+    .form-control {
+        width: 100%;
+        padding: 0.75rem 1rem;
+        border: 1.5px solid var(--gray-200);
+        border-radius: var(--radius-md);
+        font-size: 1rem;
+        transition: all 0.2s;
+    }
+    
+    .form-control:focus {
+        outline: none;
+        border-color: var(--primary);
+        box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
+    }
+    
+    .form-control.error {
+        border-color: var(--danger);
+        background: #fef2f2;
+    }
+    
+    .form-text {
+        display: block;
+        margin-top: 0.25rem;
+        font-size: 0.75rem;
+        color: var(--gray-600);
+    }
+    
+    .required-star {
+        color: var(--danger);
+    }
+    
+    .image-upload-area {
+        border: 2px dashed var(--gray-300);
+        border-radius: var(--radius-lg);
+        padding: 2rem;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+    
+    .image-upload-area:hover,
+    .image-upload-area.dragover {
+        border-color: var(--primary);
+        background: var(--primary-light);
+    }
+    
+    .upload-placeholder i {
+        font-size: 3rem;
+        color: var(--gray-400);
+        margin-bottom: 0.5rem;
+    }
+    
+    .upload-placeholder p {
+        font-size: 1rem;
+        color: var(--gray-700);
+        margin-bottom: 0.25rem;
+    }
+    
+    .upload-hint {
+        font-size: 0.75rem;
+        color: var(--gray-600);
+    }
+    
+    .image-preview {
+        position: relative;
+        display: inline-block;
+    }
+    
+    .image-preview img {
+        max-width: 100%;
+        max-height: 300px;
+        border-radius: var(--radius-md);
+    }
+    
+    .remove-image-btn {
+        position: absolute;
+        top: 0.5rem;
+        right: 0.5rem;
+        width: 32px;
+        height: 32px;
+        background: rgba(0,0,0,0.5);
+        border: none;
+        border-radius: 50%;
+        color: white;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+    
+    .remove-image-btn:hover {
+        background: rgba(0,0,0,0.7);
+        transform: scale(1.1);
+    }
+    
+    .post-settings {
+        background: var(--gray-50);
+        border-radius: var(--radius-lg);
+        padding: 1.5rem;
+        margin: 1.5rem 0;
+    }
+    
+    .post-settings h3 {
+        font-size: 1rem;
+        font-weight: 600;
+        margin-bottom: 1rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        color: var(--gray-800);
+    }
+    
+    .settings-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 1rem;
+    }
+    
+    .setting-checkbox {
+        display: flex;
+        align-items: flex-start;
+        gap: 0.75rem;
+        cursor: pointer;
+    }
+    
+    .setting-checkbox input[type="checkbox"] {
+        width: 18px;
+        height: 18px;
+        margin-top: 0.125rem;
+        accent-color: var(--primary);
+    }
+    
+    .setting-checkbox span {
+        flex: 1;
+    }
+    
+    .setting-checkbox strong {
+        display: block;
+        font-size: 0.875rem;
+        color: var(--gray-800);
+    }
+    
+    .setting-checkbox small {
+        font-size: 0.75rem;
+        color: var(--gray-600);
+    }
+    
+    .form-actions {
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        gap: 1rem;
+        margin-top: 2rem;
+    }
+    
+    .posting-guidelines {
+        margin-top: 2rem;
+        padding-top: 1.5rem;
+        border-top: 1px solid var(--gray-200);
+    }
+    
+    .posting-guidelines h4 {
+        font-size: 1rem;
+        font-weight: 600;
+        margin-bottom: 1rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        color: var(--gray-800);
+    }
+    
+    .posting-guidelines ul {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+    }
+    
+    .posting-guidelines li {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.5rem 0;
+        font-size: 0.875rem;
+        color: var(--gray-700);
+    }
+    
+    .posting-guidelines li i {
+        color: var(--success);
+    }
+    
+    @media (max-width: 768px) {
+        .post-type-cards {
+            grid-template-columns: 1fr;
+        }
+        
+        .settings-grid {
+            grid-template-columns: 1fr;
+        }
+        
+        .form-actions {
+            flex-direction: column;
+        }
+        
+        .form-actions .btn {
+            width: 100%;
+        }
+    }
+</style>
+{% endblock %}

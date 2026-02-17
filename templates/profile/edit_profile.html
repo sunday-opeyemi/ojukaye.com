@@ -1,0 +1,409 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Edit Profile - Ojukaye{% endblock %}
+
+{% block content %}
+<div class="edit-profile-container">
+    <div class="edit-profile-header">
+        <h1 class="edit-profile-title">
+            <i class="fas fa-user-edit" style="color: var(--primary);"></i>
+            Edit Profile
+        </h1>
+        <p class="edit-profile-subtitle">Update your personal information and profile settings</p>
+    </div>
+    
+    <div class="edit-profile-grid">
+        <!-- Main Form -->
+        <div class="edit-profile-main">
+            <form method="POST" enctype="multipart/form-data" class="edit-profile-form">
+                {% csrf_token %}
+                
+                <!-- Profile Picture & Cover Section -->
+                <div class="form-section">
+                    <h2 class="form-section-title">
+                        <i class="fas fa-camera"></i>
+                        Profile Media
+                    </h2>
+                    
+                    <div class="media-upload-grid">
+                        <!-- Profile Picture -->
+                        <div class="media-upload-item">
+                            <label class="form-label">Profile Picture</label>
+                            <div class="avatar-upload">
+                                <div class="current-avatar">
+                                    {% if user.profile.profile_pic %}
+                                    <img src="{{ user.profile.profile_pic.url }}" alt="{{ user.username }}" id="profilePreview">
+                                    {% else %}
+                                    <div class="avatar-placeholder-large" id="profilePreviewPlaceholder">
+                                        {{ user.username|first|upper }}
+                                    </div>
+                                    {% endif %}
+                                </div>
+                                <div class="upload-controls">
+                                    <label for="{{ profile_form.profile_pic.id_for_label }}" class="btn btn-outline btn-sm">
+                                        <i class="fas fa-upload"></i> Upload Photo
+                                    </label>
+                                    {{ profile_form.profile_pic }}
+                                    <p class="form-hint">Recommended: 400x400px, max 2MB</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Cover Photo -->
+                        <div class="media-upload-item">
+                            <label class="form-label">Cover Photo</label>
+                            <div class="cover-upload">
+                                <div class="current-cover">
+                                    {% if user.profile.cover_photo %}
+                                    <img src="{{ user.profile.cover_photo.url }}" alt="Cover" id="coverPreview">
+                                    {% else %}
+                                    <div class="cover-placeholder" id="coverPreviewPlaceholder">
+                                        <i class="fas fa-mountain"></i>
+                                        <span>No cover photo</span>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                                <div class="upload-controls">
+                                    <label for="{{ profile_form.cover_photo.id_for_label }}" class="btn btn-outline btn-sm">
+                                        <i class="fas fa-upload"></i> Upload Cover
+                                    </label>
+                                    {{ profile_form.cover_photo }}
+                                    <p class="form-hint">Recommended: 1500x500px, max 5MB</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Personal Information -->
+                <div class="form-section">
+                    <h2 class="form-section-title">
+                        <i class="fas fa-user"></i>
+                        Personal Information
+                    </h2>
+                    
+                    <div class="form-grid-2">
+                        <div class="form-group">
+                            <label for="{{ user_form.first_name.id_for_label }}" class="form-label">
+                                <i class="fas fa-user"></i> First Name
+                            </label>
+                            {{ user_form.first_name }}
+                            {% if user_form.first_name.errors %}
+                            <div class="form-error">{{ user_form.first_name.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="{{ user_form.last_name.id_for_label }}" class="form-label">
+                                <i class="fas fa-user"></i> Last Name
+                            </label>
+                            {{ user_form.last_name }}
+                            {% if user_form.last_name.errors %}
+                            <div class="form-error">{{ user_form.last_name.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="{{ user_form.email.id_for_label }}" class="form-label">
+                            <i class="fas fa-envelope"></i> Email Address
+                        </label>
+                        {{ user_form.email }}
+                        {% if user_form.email.errors %}
+                        <div class="form-error">{{ user_form.email.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="{{ profile_form.bio.id_for_label }}" class="form-label">
+                            <i class="fas fa-align-left"></i> Bio
+                        </label>
+                        {{ profile_form.bio }}
+                        <div class="form-hint">
+                            <span id="bioCharCount">0</span>/500 characters
+                        </div>
+                        {% if profile_form.bio.errors %}
+                        <div class="form-error">{{ profile_form.bio.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="form-grid-2">
+                        <div class="form-group">
+                            <label for="{{ profile_form.location.id_for_label }}" class="form-label">
+                                <i class="fas fa-map-marker-alt"></i> Location
+                            </label>
+                            {{ profile_form.location }}
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="{{ profile_form.occupation.id_for_label }}" class="form-label">
+                                <i class="fas fa-briefcase"></i> Occupation
+                            </label>
+                            {{ profile_form.occupation }}
+                        </div>
+                    </div>
+                    
+                    <div class="form-grid-2">
+                        <div class="form-group">
+                            <label for="{{ profile_form.phone.id_for_label }}" class="form-label">
+                                <i class="fas fa-phone"></i> Phone Number
+                            </label>
+                            {{ profile_form.phone }}
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="{{ profile_form.date_of_birth.id_for_label }}" class="form-label">
+                                <i class="fas fa-calendar"></i> Date of Birth
+                            </label>
+                            {{ profile_form.date_of_birth }}
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="{{ profile_form.website.id_for_label }}" class="form-label">
+                            <i class="fas fa-link"></i> Website
+                        </label>
+                        {{ profile_form.website }}
+                    </div>
+                </div>
+                
+                <!-- Social Media Links -->
+                <div class="form-section">
+                    <h2 class="form-section-title">
+                        <i class="fas fa-share-alt"></i>
+                        Social Media Links
+                    </h2>
+                    
+                    <div class="form-group">
+                        <label for="{{ profile_form.twitter_handle.id_for_label }}" class="form-label">
+                            <i class="fab fa-twitter" style="color: #1da1f2;"></i> Twitter Handle
+                        </label>
+                        <div class="input-prefix">
+                            <span class="prefix">@</span>
+                            {{ profile_form.twitter_handle }}
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="{{ profile_form.facebook_url.id_for_label }}" class="form-label">
+                            <i class="fab fa-facebook" style="color: #1877f2;"></i> Facebook URL
+                        </label>
+                        {{ profile_form.facebook_url }}
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="{{ profile_form.instagram_url.id_for_label }}" class="form-label">
+                            <i class="fab fa-instagram" style="color: #e4405f;"></i> Instagram URL
+                        </label>
+                        {{ profile_form.instagram_url }}
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="{{ profile_form.linkedin_url.id_for_label }}" class="form-label">
+                            <i class="fab fa-linkedin" style="color: #0a66c2;"></i> LinkedIn URL
+                        </label>
+                        {{ profile_form.linkedin_url }}
+                    </div>
+                </div>
+                
+                <!-- Interests -->
+                <div class="form-section">
+                    <h2 class="form-section-title">
+                        <i class="fas fa-heart"></i>
+                        Interests
+                    </h2>
+                    
+                    <div class="form-group">
+                        <label for="{{ profile_form.interests.id_for_label }}" class="form-label">
+                            Interests (comma separated)
+                        </label>
+                        {{ profile_form.interests }}
+                        <div class="form-hint">e.g., Technology, Sports, Politics, Business</div>
+                    </div>
+                    
+                    <div class="interests-preview" id="interestsPreview">
+                        <!-- Interests will be previewed here -->
+                    </div>
+                </div>
+                
+                <!-- Privacy Settings -->
+                <div class="form-section">
+                    <h2 class="form-section-title">
+                        <i class="fas fa-shield-alt"></i>
+                        Privacy Settings
+                    </h2>
+                    
+                    <div class="privacy-options">
+                        <label class="privacy-option">
+                            {{ profile_form.privacy_level }}
+                            <span class="option-label">Profile Privacy</span>
+                            <span class="option-description">Control who can see your profile</span>
+                        </label>
+                        
+                        <label class="privacy-option">
+                            {{ profile_form.show_online_status }}
+                            <span class="option-label">Show Online Status</span>
+                            <span class="option-description">Let others see when you're active</span>
+                        </label>
+                        
+                        <label class="privacy-option">
+                            {{ profile_form.email_notifications }}
+                            <span class="option-label">Email Notifications</span>
+                            <span class="option-description">Receive notifications via email</span>
+                        </label>
+                    </div>
+                </div>
+                
+                <!-- Form Actions -->
+                <div class="form-actions">
+                    <a href="{% url 'profile_view' username=user.username %}" class="btn btn-outline">
+                        <i class="fas fa-times"></i> Cancel
+                    </a>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save"></i> Save Changes
+                    </button>
+                </div>
+            </form>
+        </div>
+        
+        <!-- Sidebar -->
+        <div class="edit-profile-sidebar">
+            <!-- Profile Preview Card -->
+            <div class="sidebar-card profile-preview-card">
+                <div class="card-header">
+                    <h3><i class="fas fa-eye"></i> Profile Preview</h3>
+                </div>
+                <div class="profile-preview">
+                    <div class="preview-cover">
+                        <div class="preview-avatar">
+                            {% if user.profile.profile_pic %}
+                            <img src="{{ user.profile.profile_pic.url }}" alt="{{ user.username }}">
+                            {% else %}
+                            <div class="avatar-placeholder">{{ user.username|first|upper }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="preview-info">
+                        <h4 id="previewName">{{ user.get_full_name|default:user.username }}</h4>
+                        <span id="previewUsername">@{{ user.username }}</span>
+                        <p id="previewBio">{{ user.profile.bio|truncatechars:80|default:"No bio yet" }}</p>
+                    </div>
+                    <div class="preview-stats">
+                        <div class="stat">
+                            <span class="stat-value">{{ user.posts.count }}</span>
+                            <span class="stat-label">Posts</span>
+                        </div>
+                        <div class="stat">
+                            <span class="stat-value">{{ user.followers.count }}</span>
+                            <span class="stat-label">Followers</span>
+                        </div>
+                        <div class="stat">
+                            <span class="stat-value">{{ user.following.count }}</span>
+                            <span class="stat-label">Following</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Character counter for bio
+        const bioField = document.querySelector('#{{ profile_form.bio.id_for_label }}');
+        const bioCharCount = document.querySelector('#bioCharCount');
+        
+        if (bioField && bioCharCount) {
+            bioField.addEventListener('input', function() {
+                bioCharCount.textContent = this.value.length;
+            });
+            
+            // Initial count
+            bioCharCount.textContent = bioField.value.length;
+        }
+        
+        // Profile preview updates
+        const firstNameField = document.querySelector('#{{ user_form.first_name.id_for_label }}');
+        const lastNameField = document.querySelector('#{{ user_form.last_name.id_for_label }}');
+        const previewName = document.querySelector('#previewName');
+        
+        if (firstNameField && lastNameField && previewName) {
+            function updatePreviewName() {
+                const firstName = firstNameField.value.trim();
+                const lastName = lastNameField.value.trim();
+                const fullName = `${firstName} ${lastName}`.trim() || '{{ user.username }}';
+                previewName.textContent = fullName;
+            }
+            
+            firstNameField.addEventListener('input', updatePreviewName);
+            lastNameField.addEventListener('input', updatePreviewName);
+        }
+        
+        // Bio preview
+        if (bioField) {
+            const previewBio = document.querySelector('#previewBio');
+            if (previewBio) {
+                bioField.addEventListener('input', function() {
+                    previewBio.textContent = this.value.slice(0, 80) + (this.value.length > 80 ? '...' : '');
+                });
+            }
+        }
+        
+        // Image previews
+        function setupImagePreview(inputId, previewId, placeholderId = null) {
+            const input = document.querySelector(inputId);
+            const preview = document.querySelector(previewId);
+            const placeholder = placeholderId ? document.querySelector(placeholderId) : null;
+            
+            if (input && preview) {
+                input.addEventListener('change', function() {
+                    const file = this.files[0];
+                    if (file) {
+                        const reader = new FileReader();
+                        reader.onload = function(e) {
+                            if (placeholder) placeholder.style.display = 'none';
+                            preview.src = e.target.result;
+                            preview.style.display = 'block';
+                        };
+                        reader.readAsDataURL(file);
+                    }
+                });
+            }
+        }
+        
+        setupImagePreview(
+            '#{{ profile_form.profile_pic.id_for_label }}', 
+            '#profilePreview', 
+            '#profilePreviewPlaceholder'
+        );
+        
+        setupImagePreview(
+            '#{{ profile_form.cover_photo.id_for_label }}', 
+            '#coverPreview', 
+            '#coverPreviewPlaceholder'
+        );
+        
+        // Interests preview
+        const interestsField = document.querySelector('#{{ profile_form.interests.id_for_label }}');
+        const interestsPreview = document.querySelector('#interestsPreview');
+        
+        if (interestsField && interestsPreview) {
+            function updateInterestsPreview() {
+                const interests = interestsField.value.split(',').map(i => i.trim()).filter(i => i);
+                if (interests.length > 0) {
+                    interestsPreview.innerHTML = interests.map(interest => 
+                        `<span class="interest-tag">${interest}</span>`
+                    ).join('');
+                } else {
+                    interestsPreview.innerHTML = '';
+                }
+            }
+            
+            interestsField.addEventListener('input', updateInterestsPreview);
+            updateInterestsPreview(); // Initial preview
+        }
+    });
+</script>
+{% endblock %}

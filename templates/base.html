@@ -1,0 +1,316 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.5">
+    <meta name="csrf-token" content="{{ csrf_token }}">
+    <title>{% block title %}Ojukaye - Nigeria's Modern News & Discussion{% endblock %}</title>
+    
+    <!-- Font Awesome 6 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{% static 'css/styles.css' %}">
+    
+    {% block extra_css %}{% endblock %}
+    <meta name="csrf-token" content="{{ csrf_token }}">
+</head>
+<body>
+    <!-- Navbar -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <!-- Mobile Menu Button -->
+            <button class="mobile-menu-btn" aria-label="Menu">
+                <i class="fas fa-bars"></i>
+            </button>
+            
+            <!-- Logo/Brand -->
+            <a href="{% url 'home' %}" class="nav-brand">
+                <img src="{% static 'images/logo.jpeg' %}" alt="Ojukaye" class="nav-logo">
+                <span class="brand-text">OJUKAYE<span style="color: var(--primary);">.</span></span>
+            </a>
+            
+            <!-- Search Bar -->
+            <div class="nav-center">
+                <form action="{% url 'search' %}" method="GET" class="search-wrapper">
+                    <i class="fas fa-search search-icon"></i>
+                    <input type="text" 
+                           name="q" 
+                           class="search-input" 
+                           placeholder="Search news, discussions, people..."
+                           value="{{ search_query|default:'' }}"
+                           autocomplete="off">
+                    <button type="submit" class="search-btn">Search</button>
+                </form>
+            </div>
+            
+            <!-- Right Navigation -->
+            <div class="nav-right">
+                <!-- Desktop Navigation Links -->
+                <div class="nav-links">
+                    <a href="{% url 'home' %}" class="nav-link {% if request.path == '/' %}active{% endif %}">
+                        <i class="fas fa-home"></i>
+                        <span>Home</span>
+                    </a>
+                    <a href="{% url 'online_news' %}" class="nav-link {% if 'online-news' in request.path %}active{% endif %}">
+                        <i class="fas fa-newspaper"></i>
+                        <span>Online News</span>
+                    </a>
+                    
+                    {% if user.is_authenticated %}
+                    <a href="{% url 'create_post' %}" class="nav-link">
+                        <i class="fas fa-pen-to-square"></i>
+                        <span>Create</span>
+                    </a>
+                    <a href="{% url 'notifications' %}" class="nav-link notification-icon">
+                        <i class="fas fa-bell"></i>
+                        {% if notification_count > 0 %}
+                        <span class="notification-badge">{{ notification_count|default:0 }}</span>
+                        {% endif %}
+                        <span>Notifications</span>
+                    </a>
+                    {% endif %}
+                </div>
+                
+                <!-- Auth Buttons / Profile Dropdown -->
+                {% if user.is_authenticated %}
+                <div class="nav-dropdown">
+                    <button class="nav-profile-btn">
+                        {% if user.profile.profile_pic %}
+                        <img src="{{ user.profile.profile_pic.url }}" alt="{{ user.username }}" class="nav-avatar">
+                        {% else %}
+                        <div class="nav-avatar-placeholder">
+                            {{ user.username|first|upper }}
+                        </div>
+                        {% endif %}
+                        <span class="nav-username">{{ user.username|truncatechars:10 }}</span>
+                        <i class="fas fa-chevron-down dropdown-arrow"></i>
+                    </button>
+                    
+                    <div class="dropdown-menu">
+                        <a href="{% url 'profile_view' username=user.username %}" class="dropdown-item">
+                            <i class="fas fa-user"></i>
+                            My Profile
+                        </a>
+                        <a href="{% url 'edit_profile' %}" class="dropdown-item">
+                            <i class="fas fa-user-edit"></i>
+                            Edit Profile
+                        </a>
+                        <a href="{% url 'bookmarks' %}" class="dropdown-item">
+                            <i class="fas fa-bookmark"></i>
+                            Saved Posts
+                        </a>
+                        
+                        {% if user.is_staff or user.is_superuser %}
+                        <div class="dropdown-divider"></div>
+                        <a href="{% url 'admin_dashboard' %}" class="dropdown-item admin-item">
+                            <i class="fas fa-tachometer-alt"></i>
+                            Admin Dashboard
+                        </a>
+                        <a href="{% url 'admin_posts' %}" class="dropdown-item admin-item">
+                            <i class="fas fa-file-alt"></i>
+                            Manage Posts
+                        </a>
+                        <a href="{% url 'fetch_news' %}" class="dropdown-item admin-item">
+                            <i class="fas fa-sync-alt"></i>
+                            Fetch News
+                        </a>
+                        {% endif %}
+                        
+                        <div class="dropdown-divider"></div>
+                        <a href="#" class="dropdown-item dark-mode-toggle">
+                            <i class="fas fa-moon"></i>
+                            Dark Mode
+                        </a>
+                        <a href="{% url 'settings' %}" class="dropdown-item">
+                            <i class="fas fa-sliders-h"></i>
+                            Settings
+                        </a>
+                        <div class="dropdown-divider"></div>
+                        <a href="{% url 'logout' %}" class="dropdown-item logout-item">
+                            <i class="fas fa-sign-out-alt"></i>
+                            Logout
+                        </a>
+                    </div>
+                </div>
+                {% else %}
+                <div class="nav-auth">
+                    <a href="{% url 'login' %}" class="btn-login">Sign In</a>
+                    <a href="{% url 'register' %}" class="btn-register">Register</a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Mobile Menu (Hidden by default) -->
+        <div class="mobile-menu">
+            <div class="mobile-menu-content">
+                <!-- Mobile Search -->
+                <form action="{% url 'search' %}" method="GET" class="search-wrapper mobile-search">
+                    <i class="fas fa-search search-icon"></i>
+                    <input type="text" name="q" class="search-input" placeholder="Search...">
+                </form>
+                
+                <!-- Mobile Navigation -->
+                <a href="{% url 'home' %}" class="mobile-nav-link">
+                    <i class="fas fa-home"></i>
+                    <span>Home</span>
+                </a>
+                <a href="{% url 'online_news' %}" class="mobile-nav-link">
+                    <i class="fas fa-newspaper"></i>
+                    <span>Online News</span>
+                </a>
+                
+                {% if user.is_authenticated %}
+                <a href="{% url 'create_post' %}" class="mobile-nav-link">
+                    <i class="fas fa-pen-to-square"></i>
+                    <span>Create Post</span>
+                </a>
+                <a href="{% url 'profile_view' username=user.username %}" class="mobile-nav-link">
+                    <i class="fas fa-user"></i>
+                    <span>Profile</span>
+                </a>
+                <a href="{% url 'notifications' %}" class="mobile-nav-link">
+                    <i class="fas fa-bell"></i>
+                    <span>Notifications</span>
+                    {% if notification_count > 0 %}
+                    <span class="mobile-badge">{{ notification_count }}</span>
+                    {% endif %}
+                </a>
+                <a href="{% url 'bookmarks' %}" class="mobile-nav-link">
+                    <i class="fas fa-bookmark"></i>
+                    <span>Saved</span>
+                </a>
+                
+                {% if user.is_staff or user.is_superuser %}
+                <div style="margin-top: 0.5rem; padding-top: 0.5rem; border-top: 1px solid var(--gray-200);">
+                    <a href="{% url 'admin_dashboard' %}" class="mobile-nav-link" style="color: var(--primary);">
+                        <i class="fas fa-tachometer-alt"></i>
+                        Admin Dashboard
+                    </a>
+                </div>
+                {% endif %}
+                
+                <a href="{% url 'logout' %}" class="mobile-nav-link" style="color: var(--danger); margin-top: 0.5rem;">
+                    <i class="fas fa-sign-out-alt"></i>
+                    <span>Logout</span>
+                </a>
+                {% else %}
+                <div style="display: flex; gap: 0.75rem; margin-top: 1rem;">
+                    <a href="{% url 'login' %}" class="btn-login" style="flex: 1; text-align: center;">Sign In</a>
+                    <a href="{% url 'register' %}" class="btn-register" style="flex: 1; text-align: center;">Register</a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </nav>
+    
+    <!-- Messages/Alerts Container -->
+    <div class="messages-container">
+        {% if messages %}
+            {% for message in messages %}
+            <div class="alert alert-{{ message.tags }}">
+                <div class="alert-content">
+                    <i class="fas 
+                        {% if message.tags == 'success' %}fa-check-circle
+                        {% elif message.tags == 'error' %}fa-exclamation-circle
+                        {% elif message.tags == 'warning' %}fa-exclamation-triangle
+                        {% else %}fa-info-circle{% endif %}">
+                    </i>
+                    <span>{{ message }}</span>
+                </div>
+                <button type="button" class="alert-close">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            {% endfor %}
+        {% endif %}
+    </div>
+    
+    <!-- Main Content -->
+    <main class="main-content">
+        {% block content %}{% endblock %}
+    </main>
+    
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="footer-container">
+            <div class="footer-section">
+                <div class="footer-brand">
+                    <img src="{% static 'images/logo.jpeg' %}" alt="Ojukaye" class="footer-logo">
+                    <span>Ojukaye</span>
+                </div>
+                <p class="footer-description">
+                    Nigeria's modern news and discussion platform. Stay informed, engage in meaningful conversations, and connect with your community.
+                </p>
+                <div class="footer-social">
+                    <a href="#" class="social-link"><i class="fab fa-twitter"></i></a>
+                    <a href="#" class="social-link"><i class="fab fa-facebook-f"></i></a>
+                    <a href="#" class="social-link"><i class="fab fa-instagram"></i></a>
+                    <a href="#" class="social-link"><i class="fab fa-linkedin-in"></i></a>
+                </div>
+            </div>
+            
+            <div class="footer-section">
+                <h3>Platform</h3>
+                <ul>
+                    <li><a href="{% url 'home' %}">Home</a></li>
+                    <li><a href="{% url 'online_news' %}">Online News</a></li>
+                    <li><a href="{% url 'trending_posts' %}">Trending</a></li>
+                    <li><a href="{% url 'discover' %}">Discover</a></li>
+                </ul>
+            </div>
+            
+            <div class="footer-section">
+                <h3>Resources</h3>
+                <ul>
+                    <li><a href="{% url 'help' %}">Help Center</a></li>
+                    <li><a href="{% url 'about' %}">About Us</a></li>
+                    <li><a href="{% url 'contact' %}">Contact</a></li>
+                    <li><a href="{% url 'privacy' %}">Privacy Policy</a></li>
+                    <li><a href="{% url 'terms' %}">Terms of Service</a></li>
+                </ul>
+            </div>
+            
+            <div class="footer-section">
+                <h3>Community Stats</h3>
+                <div class="footer-stats">
+                    <div class="stat-item">
+                        <span class="stat-value">{{ total_users|default:"0" }}</span>
+                        <span class="stat-label">Users</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-value">{{ total_posts|default:"0" }}</span>
+                        <span class="stat-label">Posts</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-value">{{ total_comments|default:"0" }}</span>
+                        <span class="stat-label">Comments</span>
+                    </div>
+                </div>
+                <p style="color: var(--gray-600); font-size: 0.875rem; margin-top: 1rem;">
+                    <i class="fas fa-users"></i> {{ online_users_count|default:"0" }} online now
+                </p>
+            </div>
+        </div>
+        
+        <div class="footer-bottom">
+            <p>&copy; {% now "Y" %} Ojukaye. All rights reserved.</p>
+        </div>
+    </footer>
+    
+    <!-- JavaScript -->
+    <script>
+        // Global variables
+        const isAuthenticated = {% if user.is_authenticated %}true{% else %}false{% endif %};
+        const currentUserId = {% if user.is_authenticated %}{{ user.id }}{% else %}null{% endif %};
+        const csrfToken = '{{ csrf_token }}';
+    </script>
+    <script src="{% static 'js/main.js' %}"></script>
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

@@ -1,0 +1,1195 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ post.title }} - Ojukaye{% endblock %}
+
+{% block content %}
+<div class="post-detail-page">
+    <div class="post-detail-grid">
+        <!-- Main Content -->
+        <main class="post-detail-main">
+            <!-- Post Card -->
+            <article class="post-detail-card">
+                <!-- Post Header -->
+                <div class="post-detail-header">
+                    <div class="post-author">
+                        <div class="author-avatar large">
+                            {% if post.author.profile.profile_pic %}
+                            <img src="{{ post.author.profile.profile_pic.url }}" alt="{{ post.author.username }}">
+                            {% else %}
+                            <div class="avatar-placeholder">{{ post.author.username|first|upper }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="author-info">
+                            <div class="author-name-wrapper">
+                                <a href="{% url 'profile_view' username=post.author.username %}" class="author-name">
+                                    {{ post.author.get_full_name|default:post.author.username }}
+                                </a>
+                                {% if post.author.profile.is_verified_business %}
+                                <span class="verified-badge" title="Verified Business">
+                                    <i class="fas fa-check-circle"></i>
+                                </span>
+                                {% endif %}
+                                <span class="post-type-badge">
+                                    {% if post.post_type == 'user_news' %}
+                                    News
+                                    {% elif post.post_type == 'profile_post' %}
+                                    Profile Post
+                                    {% else %}
+                                    Discussion
+                                    {% endif %}
+                                </span>
+                            </div>
+                            <div class="post-meta">
+                                <span class="post-time" title="{{ post.published_at }}">
+                                    <i class="far fa-clock"></i> {{ post.published_at|timesince }} ago
+                                </span>
+                                {% if post.category %}
+                                <span class="post-category">
+                                    <i class="far fa-folder"></i> 
+                                    <a href="{% url 'category_view' post.category.slug %}">{{ post.category.name }}</a>
+                                </span>
+                                {% endif %}
+                                <span class="post-views">
+                                    <i class="fas fa-eye"></i> {{ post.views }} views
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="post-actions-top">
+                        {% if user == post.author or user.is_staff %}
+                        <div class="post-admin-menu">
+                            <button class="menu-btn" onclick="togglePostMenu()">
+                                <i class="fas fa-ellipsis-h"></i>
+                            </button>
+                            <div class="menu-dropdown" id="postMenuDropdown">
+                                {% if user == post.author %}
+                                <a href="#" onclick="editPost({{ post.id }})">
+                                    <i class="fas fa-edit"></i> Edit
+                                </a>
+                                <a href="#" onclick="deletePost({{ post.id }})" style="color: var(--danger);">
+                                    <i class="fas fa-trash"></i> Delete
+                                </a>
+                                {% endif %}
+                                {% if user.is_staff %}
+                                <div class="menu-divider"></div>
+                                <a href="{% url 'admin:core_post_change' post.id %}" target="_blank">
+                                    <i class="fas fa-cog"></i> Admin
+                                </a>
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <!-- Post Title -->
+                <h1 class="post-detail-title">{{ post.title }}</h1>
+                
+                <!-- Verification Status -->
+                {% if post.is_auto_fetched %}
+                <div class="verification-status">
+                    {% if post.verification_status == 'verified' %}
+                    <span class="status-badge verified">
+                        <i class="fas fa-check-circle"></i> Verified News
+                    </span>
+                    <span class="verification-score">Confidence: {{ post.verification_score|floatformat:0 }}%</span>
+                    {% elif post.verification_status == 'fake' %}
+                    <span class="status-badge fake">
+                        <i class="fas fa-exclamation-triangle"></i> Fake News Detected
+                    </span>
+                    {% elif post.verification_status == 'pending' %}
+                    <span class="status-badge pending">
+                        <i class="fas fa-clock"></i> Verification Pending
+                    </span>
+                    {% endif %}
+                </div>
+                {% endif %}
+                
+                <!-- Post Content -->
+                <div class="post-detail-content">
+                    {{ post.content|linebreaks }}
+                </div>
+                
+                <!-- Post Media -->
+                {% if post.image %}
+                <div class="post-detail-image">
+                    <img src="{{ post.image.url }}" alt="{{ post.title }}">
+                </div>
+                {% elif post.image_url %}
+                <div class="post-detail-image">
+                    <img src="{{ post.image_url }}" alt="{{ post.title }}">
+                </div>
+                {% endif %}
+                
+                <!-- External Source -->
+                {% if post.external_source %}
+                <div class="external-source">
+                    <i class="fas fa-link"></i>
+                    <span>Source:</span>
+                    <a href="{{ post.external_url }}" target="_blank" rel="nofollow noopener">
+                        {{ post.external_source }}
+                    </a>
+                    {% if post.is_auto_fetched %}
+                    <span class="auto-fetched-badge">Auto-fetched</span>
+                    {% endif %}
+                </div>
+                {% endif %}
+                
+                <!-- Post Stats -->
+                <div class="post-detail-stats">
+                    <div class="stat-item">
+                        <i class="fas fa-heart"></i>
+                        <span id="likeCount">{{ post.likes.count }}</span> likes
+                    </div>
+                    <div class="stat-item">
+                        <i class="fas fa-comment"></i>
+                        <span>{{ post.comments.count }}</span> comments
+                    </div>
+                    <div class="stat-item">
+                        <i class="fas fa-retweet"></i>
+                        <span>{{ post.repost_count|default:0 }}</span> reposts
+                    </div>
+                    <div class="stat-item">
+                        <i class="fas fa-bookmark"></i>
+                        <span>{{ post.bookmarks.count }}</span> saved
+                    </div>
+                </div>
+                
+                <!-- Interaction Buttons -->
+                <div class="post-interaction-bar">
+                    <button class="interaction-btn like-btn {% if user_liked %}liked{% endif %}" 
+                            data-post-id="{{ post.id }}">
+                        <i class="{% if user_liked %}fas{% else %}far{% endif %} fa-heart"></i>
+                        <span>Like</span>
+                        <span class="count" id="likeCountBtn">{{ post.likes.count }}</span>
+                    </button>
+                    
+                    <a href="#comments" class="interaction-btn">
+                        <i class="far fa-comment"></i>
+                        <span>Comment</span>
+                        <span class="count">{{ post.comments.count }}</span>
+                    </a>
+                    
+                    <button class="interaction-btn repost-btn" onclick="showRepostModal()">
+                        <i class="far fa-retweet"></i>
+                        <span>Repost</span>
+                    </button>
+                    
+                    <button class="interaction-btn bookmark-btn {% if user_bookmarked %}bookmarked{% endif %}"
+                            data-post-id="{{ post.id }}">
+                        <i class="{% if user_bookmarked %}fas{% else %}far{% endif %} fa-bookmark"></i>
+                        <span>Save</span>
+                    </button>
+                    
+                    <button class="interaction-btn share-btn"
+                            data-title="{{ post.title }}"
+                            data-url="{% url 'post_detail' post.id %}">
+                        <i class="far fa-share-square"></i>
+                        <span>Share</span>
+                    </button>
+                </div>
+            </article>
+            
+            <!-- Comments Section -->
+            <div id="comments" class="comments-section">
+                <div class="comments-header">
+                    <h2><i class="fas fa-comments"></i> Comments ({{ post.comments.count }})</h2>
+                </div>
+                
+                <!-- Comment Form -->
+                {% if user.is_authenticated %}
+                <div class="comment-form-wrapper">
+                    <div class="comment-avatar">
+                        {% if user.profile.profile_pic %}
+                        <img src="{{ user.profile.profile_pic.url }}" alt="{{ user.username }}">
+                        {% else %}
+                        <div class="avatar-placeholder">{{ user.username|first|upper }}</div>
+                        {% endif %}
+                    </div>
+                    <form method="post" action="{% url 'post_detail' post.id %}" class="comment-form">
+                        {% csrf_token %}
+                        <input type="hidden" name="parent_id" id="parentCommentId" value="">
+                        <div class="comment-input-wrapper">
+                            <textarea name="content" 
+                                      id="commentContent"
+                                      class="comment-input" 
+                                      placeholder="Add a comment..."
+                                      rows="2"
+                                      required></textarea>
+                            <div class="comment-actions">
+                                <span class="reply-indicator" id="replyIndicator" style="display: none;">
+                                    Replying to <span id="replyToName"></span>
+                                    <button type="button" onclick="cancelReply()">
+                                        <i class="fas fa-times"></i>
+                                    </button>
+                                </span>
+                                <button type="submit" name="comment" class="btn btn-primary btn-sm">
+                                    <i class="fas fa-paper-plane"></i> Post
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                {% else %}
+                <div class="comment-login-prompt">
+                    <p><a href="{% url 'login' %}?next={{ request.path }}">Sign in</a> to join the discussion</p>
+                </div>
+                {% endif %}
+                
+                <!-- Comments List -->
+                <div class="comments-list">
+                    {% for comment in comments %}
+                    <div class="comment-thread" id="comment-{{ comment.id }}">
+                        <div class="comment-card">
+                            <div class="comment-header">
+                                <div class="comment-author">
+                                    <div class="comment-avatar">
+                                        {% if comment.user.profile.profile_pic %}
+                                        <img src="{{ comment.user.profile.profile_pic.url }}" alt="{{ comment.user.username }}">
+                                        {% else %}
+                                        <div class="avatar-placeholder">{{ comment.user.username|first|upper }}</div>
+                                        {% endif %}
+                                    </div>
+                                    <div class="comment-meta">
+                                        <a href="{% url 'profile_view' username=comment.user.username %}" class="comment-author-name">
+                                            {{ comment.user.get_full_name|default:comment.user.username }}
+                                        </a>
+                                        <span class="comment-time">{{ comment.created_at|timesince }} ago</span>
+                                    </div>
+                                </div>
+                                
+                                {% if user == comment.user or user.is_staff %}
+                                <button class="comment-delete-btn" onclick="deleteComment({{ comment.id }})">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="comment-body">
+                                <p>{{ comment.content }}</p>
+                            </div>
+                            
+                            <div class="comment-footer">
+                                <button class="comment-like-btn" onclick="likeComment({{ comment.id }})">
+                                    <i class="far fa-heart"></i>
+                                    <span class="like-count">{{ comment.likes.count }}</span>
+                                </button>
+                                
+                                <button class="comment-reply-btn" onclick="setReply('{{ comment.user.username }}', {{ comment.id }})">
+                                    <i class="far fa-reply"></i> Reply
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <!-- Replies -->
+                        {% if comment.replies.all %}
+                        <div class="replies">
+                            {% for reply in comment.replies.all %}
+                            <div class="comment-card reply" id="comment-{{ reply.id }}">
+                                <div class="comment-header">
+                                    <div class="comment-author">
+                                        <div class="comment-avatar small">
+                                            {% if reply.user.profile.profile_pic %}
+                                            <img src="{{ reply.user.profile.profile_pic.url }}" alt="{{ reply.user.username }}">
+                                            {% else %}
+                                            <div class="avatar-placeholder">{{ reply.user.username|first|upper }}</div>
+                                            {% endif %}
+                                        </div>
+                                        <div class="comment-meta">
+                                            <a href="{% url 'profile_view' username=reply.user.username %}" class="comment-author-name">
+                                                {{ reply.user.get_full_name|default:reply.user.username }}
+                                            </a>
+                                            <span class="comment-time">{{ reply.created_at|timesince }} ago</span>
+                                        </div>
+                                    </div>
+                                    
+                                    {% if user == reply.user or user.is_staff %}
+                                    <button class="comment-delete-btn" onclick="deleteComment({{ reply.id }})">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                    {% endif %}
+                                </div>
+                                
+                                <div class="comment-body">
+                                    <p><span class="reply-to">@{{ comment.user.username }}</span> {{ reply.content }}</p>
+                                </div>
+                                
+                                <div class="comment-footer">
+                                    <button class="comment-like-btn" onclick="likeComment({{ reply.id }})">
+                                        <i class="far fa-heart"></i>
+                                        <span class="like-count">{{ reply.likes.count }}</span>
+                                    </button>
+                                    
+                                    <button class="comment-reply-btn" onclick="setReply('{{ comment.user.username }}', {{ comment.id }})">
+                                        <i class="far fa-reply"></i> Reply
+                                    </button>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                    </div>
+                    {% empty %}
+                    <div class="no-comments">
+                        <i class="fas fa-comments"></i>
+                        <p>No comments yet. Be the first to share your thoughts!</p>
+                    </div>
+                    {% endfor %}
+                    
+                    <!-- Load More Comments -->
+                    {% if comments.count > 12 %}
+                    <div class="load-more-comments-container">
+                        <button id="loadMoreComments" class="btn btn-outline btn-block" 
+                                data-post-id="{{ post.id }}" 
+                                data-offset="12"
+                                data-total="{{ post.comments.count }}">
+                            Load More Comments
+                        </button>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </main>
+        
+        <!-- Sidebar -->
+        <aside class="post-detail-sidebar">
+            <!-- Author Card -->
+            <div class="sidebar-card author-card">
+                <div class="author-card-header">
+                    <h3>About the Author</h3>
+                </div>
+                <div class="author-card-body">
+                    <div class="author-card-avatar">
+                        {% if post.author.profile.profile_pic %}
+                        <img src="{{ post.author.profile.profile_pic.url }}" alt="{{ post.author.username }}">
+                        {% else %}
+                        <div class="avatar-placeholder">{{ post.author.username|first|upper }}</div>
+                        {% endif %}
+                    </div>
+                    <div class="author-card-info">
+                        <h4>
+                            <a href="{% url 'profile_view' username=post.author.username %}">
+                                {{ post.author.get_full_name|default:post.author.username }}
+                            </a>
+                        </h4>
+                        <p class="author-username">@{{ post.author.username }}</p>
+                        
+                        {% if post.author.profile.bio %}
+                        <p class="author-bio">{{ post.author.profile.bio|truncatechars:100 }}</p>
+                        {% endif %}
+                        
+                        <div class="author-stats">
+                            <div class="stat">
+                                <span class="stat-value">{{ post.author.posts.count }}</span>
+                                <span class="stat-label">Posts</span>
+                            </div>
+                            <div class="stat">
+                                <span class="stat-value">{{ post.author.followers.count }}</span>
+                                <span class="stat-label">Followers</span>
+                            </div>
+                        </div>
+                        
+                        {% if user.is_authenticated and user != post.author %}
+                        <button class="btn {% if is_following %}btn-outline{% else %}btn-primary{% endif %} btn-sm btn-block follow-btn"
+                                data-username="{{ post.author.username }}">
+                            <i class="fas {% if is_following %}fa-user-check{% else %}fa-user-plus{% endif %}"></i>
+                            {% if is_following %}Following{% else %}Follow{% endif %}
+                        </button>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Related Posts -->
+            {% if related_posts %}
+            <div class="sidebar-card">
+                <div class="card-header">
+                    <h3><i class="fas fa-link"></i> Related Posts</h3>
+                </div>
+                <div class="related-posts-list">
+                    {% for related in related_posts %}
+                    <a href="{% url 'post_detail' related.id %}" class="related-post-item">
+                        <div class="related-post-image">
+                            {% if related.image %}
+                            <img src="{{ related.image.url }}" alt="{{ related.title }}">
+                            {% elif related.image_url %}
+                            <img src="{{ related.image_url }}" alt="{{ related.title }}">
+                            {% else %}
+                            <img src="https://images.unsplash.com/photo-1588681664899-f142ff2dc9b1?w=800&q=80" alt="Post">
+                            {% endif %}
+                        </div>
+                        <div class="related-post-content">
+                            <h4>{{ related.title|truncatechars:60 }}</h4>
+                            <div class="related-post-meta">
+                                <span><i class="fas fa-eye"></i> {{ related.views }}</span>
+                                <span><i class="fas fa-heart"></i> {{ related.likes.count }}</span>
+                            </div>
+                        </div>
+                    </a>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+            
+            <!-- Trending in Category -->
+            {% if trending_in_category %}
+            <div class="sidebar-card">
+                <div class="card-header">
+                    <h3><i class="fas fa-fire"></i> Trending in {{ post.category.name }}</h3>
+                </div>
+                <div class="trending-list">
+                    {% for trending in trending_in_category %}
+                    <a href="{% url 'post_detail' trending.id %}" class="trending-item">
+                        <div class="trending-rank">#{{ forloop.counter }}</div>
+                        <div class="trending-content">
+                            <h4>{{ trending.title|truncatechars:50 }}</h4>
+                            <div class="trending-meta">
+                                <span><i class="fas fa-eye"></i> {{ trending.views }}</span>
+                                <span><i class="fas fa-heart"></i> {{ trending.likes.count }}</span>
+                            </div>
+                        </div>
+                    </a>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+        </aside>
+    </div>
+</div>
+
+<!-- Repost Modal -->
+<div id="repostModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3><i class="fas fa-retweet"></i> Repost</h3>
+            <button class="modal-close" onclick="closeRepostModal()">&times;</button>
+        </div>
+        <div class="modal-body">
+            <form method="post" action="{% url 'repost_post' post.id %}" id="repostForm">
+                {% csrf_token %}
+                <div class="form-group">
+                    <label for="repostContent">Add a comment (optional)</label>
+                    <textarea name="repost_content" 
+                              id="repostContent" 
+                              class="form-control" 
+                              rows="3"
+                              placeholder="What do you think about this post?"></textarea>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline" onclick="closeRepostModal()">Cancel</button>
+                    <button type="submit" name="repost" class="btn btn-primary">
+                        <i class="fas fa-retweet"></i> Repost
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Like Post
+    document.querySelectorAll('.like-btn').forEach(btn => {
+        btn.addEventListener('click', async function(e) {
+            e.preventDefault();
+            
+            if (!isAuthenticated) {
+                window.location.href = '/login/?next=' + encodeURIComponent(window.location.pathname);
+                return;
+            }
+            
+            const postId = this.dataset.postId;
+            
+            try {
+                const response = await fetch(`/post/${postId}/like/`, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': csrfToken,
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    
+                    // Update UI
+                    document.getElementById('likeCount').innerHTML = data.like_count;
+                    document.getElementById('likeCountBtn').innerHTML = data.like_count;
+                    
+                    if (data.liked) {
+                        this.classList.add('liked');
+                        this.querySelector('i').classList.remove('far');
+                        this.querySelector('i').classList.add('fas');
+                    } else {
+                        this.classList.remove('liked');
+                        this.querySelector('i').classList.remove('fas');
+                        this.querySelector('i').classList.add('far');
+                    }
+                }
+            } catch (error) {
+                console.error('Error liking post:', error);
+            }
+        });
+    });
+    
+    // Bookmark Post
+    document.querySelectorAll('.bookmark-btn').forEach(btn => {
+        btn.addEventListener('click', async function(e) {
+            e.preventDefault();
+            
+            if (!isAuthenticated) {
+                window.location.href = '/login/?next=' + encodeURIComponent(window.location.pathname);
+                return;
+            }
+            
+            const postId = this.dataset.postId;
+            
+            try {
+                const response = await fetch(`/post/${postId}/bookmark/`, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': csrfToken,
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    
+                    if (data.bookmarked) {
+                        this.classList.add('bookmarked');
+                        this.querySelector('i').classList.remove('far');
+                        this.querySelector('i').classList.add('fas');
+                        showNotification('Post saved to bookmarks!', 'success');
+                    } else {
+                        this.classList.remove('bookmarked');
+                        this.querySelector('i').classList.remove('fas');
+                        this.querySelector('i').classList.add('far');
+                        showNotification('Post removed from bookmarks', 'info');
+                    }
+                }
+            } catch (error) {
+                console.error('Error bookmarking post:', error);
+            }
+        });
+    });
+    
+    // Share Post
+    document.querySelectorAll('.share-btn').forEach(btn => {
+        btn.addEventListener('click', function(e) {
+            e.preventDefault();
+            
+            const title = this.dataset.title;
+            const url = this.dataset.url;
+            
+            if (navigator.share) {
+                navigator.share({
+                    title: title,
+                    url: url
+                }).catch(console.error);
+            } else {
+                navigator.clipboard.writeText(window.location.href).then(() => {
+                    showNotification('Link copied to clipboard!', 'success');
+                });
+            }
+        });
+    });
+    
+    // Follow/Unfollow
+    document.querySelectorAll('.follow-btn').forEach(btn => {
+        btn.addEventListener('click', async function(e) {
+            e.preventDefault();
+            
+            if (!isAuthenticated) {
+                window.location.href = '/login/?next=' + encodeURIComponent(window.location.pathname);
+                return;
+            }
+            
+            const username = this.dataset.username;
+            
+            try {
+                const response = await fetch(`/profile/${username}/follow/`, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': csrfToken,
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    
+                    if (data.followed) {
+                        this.classList.remove('btn-primary');
+                        this.classList.add('btn-outline');
+                        this.innerHTML = '<i class="fas fa-user-check"></i> Following';
+                    } else {
+                        this.classList.remove('btn-outline');
+                        this.classList.add('btn-primary');
+                        this.innerHTML = '<i class="fas fa-user-plus"></i> Follow';
+                    }
+                }
+            } catch (error) {
+                console.error('Error following user:', error);
+            }
+        });
+    });
+    
+    // Comment Functions
+    function setReply(username, commentId) {
+        document.getElementById('parentCommentId').value = commentId;
+        document.getElementById('replyToName').textContent = '@' + username;
+        document.getElementById('replyIndicator').style.display = 'flex';
+        document.getElementById('commentContent').focus();
+    }
+    
+    function cancelReply() {
+        document.getElementById('parentCommentId').value = '';
+        document.getElementById('replyIndicator').style.display = 'none';
+        document.getElementById('commentContent').placeholder = 'Add a comment...';
+    }
+    
+    function likeComment(commentId) {
+        if (!isAuthenticated) {
+            window.location.href = '/login/?next=' + encodeURIComponent(window.location.pathname);
+            return;
+        }
+        
+        fetch(`/comment/${commentId}/like/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': csrfToken,
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            const btn = document.querySelector(`#comment-${commentId} .comment-like-btn .like-count`);
+            if (btn) btn.textContent = data.like_count;
+        });
+    }
+    
+    function deleteComment(commentId) {
+        if (confirm('Are you sure you want to delete this comment?')) {
+            fetch(`/comment/${commentId}/delete/`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': csrfToken,
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(response => {
+                if (response.ok) {
+                    document.getElementById(`comment-${commentId}`).remove();
+                    showNotification('Comment deleted successfully', 'success');
+                }
+            });
+        }
+    }
+    
+    // Repost Modal
+    function showRepostModal() {
+        document.getElementById('repostModal').style.display = 'block';
+    }
+    
+    function closeRepostModal() {
+        document.getElementById('repostModal').style.display = 'none';
+    }
+    
+    // Post Management
+    function togglePostMenu() {
+        const menu = document.getElementById('postMenuDropdown');
+        menu.classList.toggle('active');
+    }
+    
+    function editPost(postId) {
+        window.location.href = `/post/${postId}/edit/`;
+    }
+    
+    function deletePost(postId) {
+        if (confirm('Are you sure you want to delete this post? This action cannot be undone.')) {
+            fetch(`/post/${postId}/delete/`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': csrfToken,
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(response => {
+                if (response.ok) {
+                    window.location.href = '/';
+                    showNotification('Post deleted successfully', 'success');
+                }
+            });
+        }
+    }
+    
+    // Load More Comments
+    document.addEventListener('DOMContentLoaded', function() {
+        const loadMoreBtn = document.getElementById('loadMoreComments');
+        
+        if (loadMoreBtn) {
+            loadMoreBtn.addEventListener('click', async function() {
+                const postId = this.dataset.postId;
+                const offset = this.dataset.offset;
+                
+                try {
+                    const response = await fetch(`/post/${postId}/comments/?offset=${offset}`, {
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest'
+                        }
+                    });
+                    
+                    if (response.ok) {
+                        const html = await response.text();
+                        document.querySelector('.comments-list').insertAdjacentHTML('beforeend', html);
+                        
+                        this.dataset.offset = parseInt(offset) + 12;
+                        
+                        if (parseInt(this.dataset.offset) >= parseInt(this.dataset.total)) {
+                            this.style.display = 'none';
+                        }
+                    }
+                } catch (error) {
+                    console.error('Error loading more comments:', error);
+                }
+            });
+        }
+    });
+    
+    // Close dropdowns when clicking outside
+    window.addEventListener('click', function(e) {
+        if (!e.target.closest('.post-admin-menu')) {
+            const menu = document.getElementById('postMenuDropdown');
+            if (menu) menu.classList.remove('active');
+        }
+    });
+</script>
+
+<style>
+    .post-detail-page {
+        max-width: 1400px;
+        margin: 0 auto;
+        padding: 2rem 1rem;
+    }
+    
+    .post-detail-grid {
+        display: grid;
+        grid-template-columns: 1fr 300px;
+        gap: 2rem;
+    }
+    
+    .post-detail-card {
+        background: var(--white);
+        border-radius: var(--radius-lg);
+        border: 1px solid var(--gray-200);
+        padding: 2rem;
+        margin-bottom: 2rem;
+    }
+    
+    .post-detail-header {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        margin-bottom: 1.5rem;
+    }
+    
+    .post-author {
+        display: flex;
+        gap: 1rem;
+    }
+    
+    .author-avatar.large {
+        width: 60px;
+        height: 60px;
+    }
+    
+    .author-avatar.large img,
+    .author-avatar.large .avatar-placeholder {
+        width: 100%;
+        height: 100%;
+        border-radius: 50%;
+    }
+    
+    .post-type-badge {
+        background: var(--gray-200);
+        color: var(--gray-700);
+        font-size: 0.75rem;
+        padding: 0.25rem 0.5rem;
+        border-radius: var(--radius-full);
+        margin-left: 0.5rem;
+    }
+    
+    .post-detail-title {
+        font-size: 2.25rem;
+        font-weight: 800;
+        line-height: 1.3;
+        margin-bottom: 1rem;
+        color: var(--gray-900);
+    }
+    
+    .verification-status {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        padding: 1rem;
+        background: var(--gray-50);
+        border-radius: var(--radius-md);
+        margin-bottom: 1.5rem;
+    }
+    
+    .status-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.375rem;
+        padding: 0.25rem 0.75rem;
+        border-radius: var(--radius-full);
+        font-size: 0.75rem;
+        font-weight: 600;
+    }
+    
+    .status-badge.verified {
+        background: #dcfce7;
+        color: #166534;
+    }
+    
+    .status-badge.fake {
+        background: #fee2e2;
+        color: #991b1b;
+    }
+    
+    .status-badge.pending {
+        background: #fef3c7;
+        color: #92400e;
+    }
+    
+    .post-detail-content {
+        font-size: 1.125rem;
+        line-height: 1.8;
+        color: var(--gray-800);
+        margin-bottom: 2rem;
+    }
+    
+    .post-detail-image {
+        margin: 1.5rem 0;
+        border-radius: var(--radius-lg);
+        overflow: hidden;
+    }
+    
+    .post-detail-image img {
+        width: 100%;
+        max-height: 600px;
+        object-fit: cover;
+    }
+    
+    .external-source {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 1rem;
+        background: var(--gray-50);
+        border-radius: var(--radius-md);
+        margin: 1.5rem 0;
+    }
+    
+    .auto-fetched-badge {
+        background: var(--primary-soft);
+        color: var(--primary-dark);
+        padding: 0.125rem 0.5rem;
+        border-radius: var(--radius-full);
+        font-size: 0.75rem;
+        margin-left: 0.5rem;
+    }
+    
+    .post-detail-stats {
+        display: flex;
+        gap: 2rem;
+        padding: 1.5rem 0;
+        border-top: 1px solid var(--gray-200);
+        border-bottom: 1px solid var(--gray-200);
+        margin: 1.5rem 0;
+    }
+    
+    .post-interaction-bar {
+        display: flex;
+        align-items: center;
+        justify-content: space-around;
+        margin-top: 1.5rem;
+    }
+    
+    .interaction-btn {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.625rem 1rem;
+        background: none;
+        border: none;
+        color: var(--gray-700);
+        font-size: 0.9375rem;
+        font-weight: 500;
+        cursor: pointer;
+        border-radius: var(--radius-full);
+        transition: all 0.2s;
+    }
+    
+    .interaction-btn:hover {
+        background: var(--gray-100);
+        color: var(--primary);
+    }
+    
+    .interaction-btn.liked {
+        color: #ef4444;
+    }
+    
+    .interaction-btn.bookmarked {
+        color: var(--primary);
+    }
+    
+    .comments-section {
+        background: var(--white);
+        border-radius: var(--radius-lg);
+        border: 1px solid var(--gray-200);
+        padding: 2rem;
+    }
+    
+    .comments-header {
+        margin-bottom: 1.5rem;
+    }
+    
+    .comments-header h2 {
+        font-size: 1.25rem;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    
+    .comment-form-wrapper {
+        display: flex;
+        gap: 1rem;
+        margin-bottom: 2rem;
+    }
+    
+    .comment-form {
+        flex: 1;
+    }
+    
+    .comment-input {
+        width: 100%;
+        padding: 0.75rem 1rem;
+        border: 1.5px solid var(--gray-200);
+        border-radius: var(--radius-lg);
+        resize: vertical;
+        transition: all 0.2s;
+    }
+    
+    .comment-input:focus {
+        outline: none;
+        border-color: var(--primary);
+        box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
+    }
+    
+    .comment-actions {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-top: 0.5rem;
+    }
+    
+    .reply-indicator {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-size: 0.875rem;
+        color: var(--primary);
+        background: var(--primary-soft);
+        padding: 0.375rem 0.75rem;
+        border-radius: var(--radius-full);
+    }
+    
+    .reply-indicator button {
+        background: none;
+        border: none;
+        color: var(--primary);
+        cursor: pointer;
+    }
+    
+    .comment-thread {
+        margin-bottom: 1.5rem;
+    }
+    
+    .comment-card {
+        padding: 1.5rem;
+        background: var(--gray-50);
+        border-radius: var(--radius-lg);
+        margin-bottom: 0.5rem;
+    }
+    
+    .comment-card.reply {
+        margin-left: 3rem;
+        background: var(--white);
+        border: 1px solid var(--gray-200);
+    }
+    
+    .comment-header {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        margin-bottom: 0.75rem;
+    }
+    
+    .comment-author {
+        display: flex;
+        gap: 0.75rem;
+    }
+    
+    .comment-avatar.small {
+        width: 32px;
+        height: 32px;
+    }
+    
+    .reply-to {
+        color: var(--primary);
+        font-weight: 600;
+        margin-right: 0.5rem;
+    }
+    
+    .comment-footer {
+        display: flex;
+        gap: 1rem;
+        margin-top: 0.75rem;
+    }
+    
+    .comment-like-btn,
+    .comment-reply-btn {
+        background: none;
+        border: none;
+        color: var(--gray-600);
+        font-size: 0.75rem;
+        cursor: pointer;
+        transition: color 0.2s;
+    }
+    
+    .comment-like-btn:hover,
+    .comment-reply-btn:hover {
+        color: var(--primary);
+    }
+    
+    .author-card {
+        margin-bottom: 1.5rem;
+    }
+    
+    .author-card-body {
+        padding: 1.5rem;
+        text-align: center;
+    }
+    
+    .author-card-avatar {
+        width: 80px;
+        height: 80px;
+        margin: 0 auto 1rem;
+    }
+    
+    .author-card-avatar img,
+    .author-card-avatar .avatar-placeholder {
+        width: 100%;
+        height: 100%;
+        border-radius: 50%;
+    }
+    
+    .related-posts-list {
+        padding: 0.5rem;
+    }
+    
+    .related-post-item {
+        display: flex;
+        gap: 0.75rem;
+        padding: 0.75rem;
+        text-decoration: none;
+        border-radius: var(--radius-md);
+        transition: background 0.2s;
+    }
+    
+    .related-post-item:hover {
+        background: var(--gray-100);
+    }
+    
+    .related-post-image {
+        width: 80px;
+        height: 60px;
+        border-radius: var(--radius-md);
+        overflow: hidden;
+        flex-shrink: 0;
+    }
+    
+    .related-post-image img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+    
+    .related-post-content {
+        flex: 1;
+    }
+    
+    .related-post-content h4 {
+        font-size: 0.875rem;
+        font-weight: 600;
+        color: var(--gray-900);
+        margin-bottom: 0.25rem;
+    }
+    
+    .modal {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0,0,0,0.5);
+        z-index: 1000;
+    }
+    
+    .modal-content {
+        position: relative;
+        top: 50%;
+        transform: translateY(-50%);
+        max-width: 500px;
+        margin: 0 auto;
+        background: white;
+        border-radius: var(--radius-lg);
+        box-shadow: var(--shadow-xl);
+    }
+    
+    @media (max-width: 992px) {
+        .post-detail-grid {
+            grid-template-columns: 1fr;
+        }
+        
+        .post-detail-sidebar {
+            display: none;
+        }
+    }
+    
+    @media (max-width: 768px) {
+        .post-detail-title {
+            font-size: 1.75rem;
+        }
+        
+        .post-interaction-bar {
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+        
+        .interaction-btn {
+            flex: 1;
+            justify-content: center;
+        }
+        
+        .comment-card.reply {
+            margin-left: 1rem;
+        }
+    }
+</style>
+{% endblock %}

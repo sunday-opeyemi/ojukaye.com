@@ -1,0 +1,734 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Online News - Ojukaye{% endblock %}
+
+{% block content %}
+<div class="online-news-container">
+    <div class="online-news-grid">
+        <!-- ===== LEFT SIDEBAR ===== -->
+        <aside class="left-sidebar">
+            <!-- Welcome Card for Guests -->
+            {% if not user.is_authenticated %}
+            <div class="sidebar-card guest-welcome">
+                <div class="guest-icon">
+                    <i class="fas fa-newspaper"></i>
+                </div>
+                <h3>Welcome to Ojukaye News</h3>
+                <p>Stay informed with the latest news from Nigeria and around the world</p>
+                <div class="guest-actions">
+                    <a href="{% url 'login' %}" class="btn btn-primary btn-block">Sign In</a>
+                    <a href="{% url 'register' %}" class="btn btn-outline btn-block">Register</a>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Categories Card -->
+            <div class="sidebar-card">
+                <div class="card-header">
+                    <h3><i class="fas fa-tags" style="color: var(--primary);"></i> News Categories</h3>
+                </div>
+                <div class="categories-list">
+                    <a href="?category=all" class="category-item {% if current_category == 'all' or not current_category %}active{% endif %}">
+                        <span class="category-name">All News</span>
+                        <span class="category-count">{{ total_news|default:"0" }}</span>
+                    </a>
+                    {% for category in categories %}
+                    <a href="?category={{ category.slug }}" class="category-item {% if current_category == category.slug %}active{% endif %}">
+                        <span class="category-name">
+                            {% if category.icon %}
+                            <i class="fas fa-{{ category.icon }}"></i>
+                            {% endif %}
+                            {{ category.name }}
+                        </span>
+                        <span class="category-count">{{ category.news_count }}</span>
+                    </a>
+                    {% empty %}
+                    <div class="empty-state small">
+                        <p>No categories yet</p>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Top News Sources -->
+            <div class="sidebar-card">
+                <div class="card-header">
+                    <h3><i class="fas fa-globe" style="color: var(--primary);"></i> Top Sources</h3>
+                </div>
+                <div class="sources-list">
+                    {% for source in top_sources %}
+                    <div class="source-item">
+                        <span class="source-name">{{ source.external_source|truncatechars:25 }}</span>
+                        <span class="source-count">{{ source.count }}</span>
+                    </div>
+                    {% empty %}
+                    <div class="empty-state small">
+                        <p>No sources yet</p>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Trending News (Sidebar) -->
+            <div class="sidebar-card">
+                <div class="card-header">
+                    <h3><i class="fas fa-fire" style="color: var(--primary);"></i> Trending News</h3>
+                </div>
+                <div class="trending-list">
+                    {% for news in trending_news %}
+                    <a href="{% url 'post_detail' news.id %}" class="trending-item">
+                        <div class="trending-rank">#{{ forloop.counter }}</div>
+                        <div class="trending-content">
+                            <h4>{{ news.title|truncatechars:50 }}</h4>
+                            <div class="trending-meta">
+                                <span><i class="fas fa-eye"></i> {{ news.views }}</span>
+                                <span><i class="fas fa-heart"></i> {{ news.likes.count }}</span>
+                                <span><i class="fas fa-comment"></i> {{ news.comments.count }}</span>
+                            </div>
+                        </div>
+                    </a>
+                    {% empty %}
+                    <div class="empty-state small">
+                        <i class="fas fa-chart-line"></i>
+                        <p>No trending news yet</p>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Footer Links -->
+            <div class="sidebar-footer">
+                <a href="{% url 'about' %}">About</a>
+                <a href="{% url 'privacy' %}">Privacy</a>
+                <a href="{% url 'terms' %}">Terms</a>
+                <a href="{% url 'help' %}">Help</a>
+                <p class="copyright">© {% now "Y" %} Ojukaye News</p>
+            </div>
+        </aside>
+
+        <!-- ===== MAIN CONTENT - NEWS FEED ===== -->
+        <main class="main-feed">
+            <!-- Banner Slider - MOVED FROM HOME PAGE -->
+            <div class="banner-slider-container">
+                <div class="banner-slider">
+                    {% for banner in banner_posts %}
+                    <div class="banner-slide {% if forloop.first %}active{% endif %}">
+                        <a href="{% url 'post_detail' banner.id %}" class="banner-link">
+                            <div class="banner-image">
+                                {% if banner.image %}
+                                <img src="{{ banner.image.url }}" alt="{{ banner.title }}">
+                                {% elif banner.image_url %}
+                                <img src="{{ banner.image_url }}" alt="{{ banner.title }}">
+                                {% else %}
+                                <img src="https://images.unsplash.com/photo-1588681664899-f142ff2dc9b1?w=800&q=80" alt="News banner">
+                                {% endif %}
+                                <div class="banner-overlay">
+                                    <div class="banner-content">
+                                        <span class="banner-category">{{ banner.category.name|default:"Breaking News" }}</span>
+                                        <h2 class="banner-title">{{ banner.title }}</h2>
+                                        <p class="banner-excerpt">{{ banner.content|truncatechars:120 }}</p>
+                                        <span class="banner-cta">Read Full Story <i class="fas fa-arrow-right"></i></span>
+                                    </div>
+                                </div>
+                            </div>
+                        </a>
+                    </div>
+                    {% empty %}
+                    <!-- Default Banners -->
+                    <div class="banner-slide active">
+                        <div class="banner-image">
+                            <img src="https://images.unsplash.com/photo-1588681664899-f142ff2dc9b1?w=800&q=80" alt="Welcome to Ojukaye News">
+                            <div class="banner-overlay">
+                                <div class="banner-content">
+                                    <span class="banner-category">Welcome</span>
+                                    <h2 class="banner-title">Welcome to Ojukaye News</h2>
+                                    <p class="banner-excerpt">Nigeria's premier source for verified news and information</p>
+                                    <span class="banner-cta">Explore Now <i class="fas fa-arrow-right"></i></span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="banner-slide">
+                        <div class="banner-image">
+                            <img src="https://images.unsplash.com/photo-1551135049-8a33b2fb2f7f?w=800&q=80" alt="Latest News">
+                            <div class="banner-overlay">
+                                <div class="banner-content">
+                                    <span class="banner-category">News</span>
+                                    <h2 class="banner-title">Stay Informed</h2>
+                                    <p class="banner-excerpt">Get the latest news from Nigeria and around the world</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="banner-slide">
+                        <div class="banner-image">
+                            <img src="https://images.unsplash.com/photo-1524178232363-1fb2b075b655?w=800&q=80" alt="Verified News">
+                            <div class="banner-overlay">
+                                <div class="banner-content">
+                                    <span class="banner-category">Verified</span>
+                                    <h2 class="banner-title">Trusted Journalism</h2>
+                                    <p class="banner-excerpt">All news articles are verified for accuracy</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                
+                <!-- Slider Controls -->
+                <button class="slider-prev">
+                    <i class="fas fa-chevron-left"></i>
+                </button>
+                <button class="slider-next">
+                    <i class="fas fa-chevron-right"></i>
+                </button>
+                <div class="slider-dots"></div>
+            </div>
+
+            <!-- News Filter Tabs -->
+            <div class="feed-filters">
+                <div class="filter-tabs">
+                    <a href="?filter=latest" class="filter-tab {% if filter_type == 'latest' or not filter_type %}active{% endif %}">
+                        <i class="fas fa-clock"></i> Latest
+                    </a>
+                    <a href="?filter=trending" class="filter-tab {% if filter_type == 'trending' %}active{% endif %}">
+                        <i class="fas fa-fire"></i> Trending
+                    </a>
+                    <a href="?filter=popular" class="filter-tab {% if filter_type == 'popular' %}active{% endif %}">
+                        <i class="fas fa-star"></i> Popular
+                    </a>
+                    <a href="?filter=today" class="filter-tab {% if filter_type == 'today' %}active{% endif %}">
+                        <i class="fas fa-calendar-day"></i> Today
+                    </a>
+                    <a href="?filter=week" class="filter-tab {% if filter_type == 'week' %}active{% endif %}">
+                        <i class="fas fa-calendar-week"></i> This Week
+                    </a>
+                </div>
+                
+                <!-- Search Bar -->
+                <div class="search-bar">
+                    <form method="get" action="{% url 'online_news' %}">
+                        <input type="text" 
+                               name="q" 
+                               placeholder="Search news..." 
+                               value="{{ search_query }}"
+                               class="form-input search-input">
+                        <button type="submit" class="search-btn">
+                            <i class="fas fa-search"></i>
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Breaking News Ticker (if any) -->
+            {% if breaking_news %}
+            <div class="breaking-news-ticker">
+                <div class="ticker-label">
+                    <i class="fas fa-bolt"></i> BREAKING
+                </div>
+                <div class="ticker-content">
+                    <marquee behavior="scroll" direction="left" scrollamount="5">
+                        {% for news in breaking_news %}
+                        <a href="{% url 'post_detail' news.id %}">{{ news.title }}</a>
+                        {% if not forloop.last %} • {% endif %}
+                        {% endfor %}
+                    </marquee>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- News Posts -->
+            <div class="posts-container">
+                {% if page_obj %}
+                    {% for post in posts %}
+                    <article class="post-card news-card">
+                        <!-- News Header -->
+                        <div class="post-header">
+                            <div class="post-author">
+                                <div class="author-avatar">
+                                    {% if post.author.profile.profile_pic %}
+                                    <img src="{{ post.author.profile.profile_pic.url }}" alt="{{ post.author.username }}">
+                                    {% else %}
+                                    <div class="avatar-placeholder">
+                                        {% if post.is_auto_fetched %}
+                                        <i class="fas fa-newspaper"></i>
+                                        {% else %}
+                                        {{ post.author.username|first|upper }}
+                                        {% endif %}
+                                    </div>
+                                    {% endif %}
+                                </div>
+                                <div class="author-info">
+                                    <div class="author-name-wrapper">
+                                        <span class="author-name">
+                                            {% if post.is_auto_fetched %}
+                                            {{ post.external_source|default:"News Agency" }}
+                                            {% else %}
+                                            {{ post.author.get_full_name|default:post.author.username }}
+                                            {% endif %}
+                                        </span>
+                                        {% if post.is_verified %}
+                                        <span class="verified-badge" title="Verified News">
+                                            <i class="fas fa-check-circle"></i>
+                                        </span>
+                                        {% endif %}
+                                        {% if post.is_sponsored %}
+                                        <span class="sponsored-badge">Sponsored</span>
+                                        {% endif %}
+                                    </div>
+                                    <div class="post-meta">
+                                        <span class="post-time" title="{{ post.published_at }}">
+                                            <i class="far fa-clock"></i> 
+                                            <time datetime="{{ post.published_at|date:'c' }}">{{ post.published_at|timesince }} ago</time>
+                                        </span>
+                                        {% if post.category %}
+                                        <span class="post-category">
+                                            <i class="far fa-folder"></i> {{ post.category.name }}
+                                        </span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- News Content -->
+                        <div class="post-content">
+                            <a href="{% url 'post_detail' post.id %}" class="post-link">
+                                <h3 class="post-title">{{ post.title }}</h3>
+                                <p class="post-text">{{ post.content|truncatechars:300 }}</p>
+                            </a>
+                            
+                            {% if post.image %}
+                            <div class="post-image">
+                                <img src="{{ post.image.url }}" alt="{{ post.title }}">
+                            </div>
+                            {% elif post.image_url %}
+                            <div class="post-image">
+                                <img src="{{ post.image_url }}" alt="{{ post.title }}">
+                            </div>
+                            {% endif %}
+                            
+                            <!-- Source Attribution -->
+                            {% if post.external_source %}
+                            <div class="post-source">
+                                <i class="fas fa-link"></i> Source: 
+                                <a href="{{ post.external_url }}" target="_blank" rel="nofollow noopener">
+                                    {{ post.external_source }}
+                                </a>
+                            </div>
+                            {% endif %}
+
+                            <!-- Verification Status -->
+                            {% if post.verification_status != 'pending' %}
+                            <div class="verification-badge {% if post.verification_status == 'verified' %}verified{% elif post.verification_status == 'fake' %}fake{% endif %}">
+                                {% if post.verification_status == 'verified' %}
+                                <i class="fas fa-check-circle"></i> Verified News
+                                <span class="verification-score">{{ post.verification_percentage|floatformat:0 }}% accurate</span>
+                                {% elif post.verification_status == 'fake' %}
+                                <i class="fas fa-exclamation-triangle"></i> Disputed News
+                                {% endif %}
+                            </div>
+                            {% endif %}
+                        </div>
+                        
+                        <!-- News Stats -->
+                        <div class="post-stats">
+                            <span class="stat-item">
+                                <i class="fas fa-eye"></i> {{ post.views }}
+                            </span>
+                            <span class="stat-item">
+                                <i class="fas fa-heart"></i> {{ post.likes.count }}
+                            </span>
+                            <span class="stat-item">
+                                <i class="fas fa-comment"></i> {{ post.comments.count }}
+                            </span>
+                            <span class="stat-item">
+                                <i class="fas fa-share-alt"></i> {{ post.shares }}
+                            </span>
+                        </div>
+                        
+                        <!-- News Actions -->
+                        <div class="post-actions">
+                            <button class="post-action-btn like-btn {% if user.is_authenticated and user in post.likes.all %}liked{% endif %}" 
+                                    data-post-id="{{ post.id }}"
+                                    {% if not user.is_authenticated %}onclick="promptLogin()"{% endif %}>
+                                <i class="{% if user.is_authenticated and user in post.likes.all %}fas{% else %}far{% endif %} fa-heart"></i>
+                                <span class="like-count">{{ post.likes.count }}</span>
+                            </button>
+                            
+                            <a href="{% url 'post_detail' post.id %}#comments" class="post-action-btn">
+                                <i class="far fa-comment"></i>
+                                <span>{{ post.comments.count }}</span>
+                            </a>
+                            
+                            {% if user.is_authenticated %}
+                            <button class="post-action-btn bookmark-btn {% if user in post.bookmarks.all %}bookmarked{% endif %}"
+                                    data-post-id="{{ post.id }}">
+                                <i class="{% if user in post.bookmarks.all %}fas{% else %}far{% endif %} fa-bookmark"></i>
+                            </button>
+                            {% else %}
+                            <button class="post-action-btn" onclick="promptLogin()">
+                                <i class="far fa-bookmark"></i>
+                            </button>
+                            {% endif %}
+                            
+                            <button class="post-action-btn share-btn" 
+                                    data-title="{{ post.title }}"
+                                    data-url="{% url 'post_detail' post.id %}">
+                                <i class="far fa-share-square"></i>
+                            </button>
+                        </div>
+                    </article>
+                    {% endfor %}
+                    
+                    <!-- Pagination -->
+                    {% if page_obj.has_other_pages %}
+                    <div class="pagination">
+                        {% if page_obj.has_previous %}
+                        <a href="?page=1&filter={{ filter_type }}&category={{ current_category }}&q={{ search_query }}" class="pagination-link">
+                            <i class="fas fa-angle-double-left"></i>
+                        </a>
+                        <a href="?page={{ page_obj.previous_page_number }}&filter={{ filter_type }}&category={{ current_category }}&q={{ search_query }}" class="pagination-link">
+                            <i class="fas fa-angle-left"></i>
+                        </a>
+                        {% endif %}
+                        
+                        <span class="pagination-current">
+                            Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+                        </span>
+                        
+                        {% if page_obj.has_next %}
+                        <a href="?page={{ page_obj.next_page_number }}&filter={{ filter_type }}&category={{ current_category }}&q={{ search_query }}" class="pagination-link">
+                            <i class="fas fa-angle-right"></i>
+                        </a>
+                        <a href="?page={{ page_obj.paginator.num_pages }}&filter={{ filter_type }}&category={{ current_category }}&q={{ search_query }}" class="pagination-link">
+                            <i class="fas fa-angle-double-right"></i>
+                        </a>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                    
+                {% else %}
+                <!-- Empty State - No News -->
+                <div class="empty-state-container">
+                    <div class="empty-state-icon">
+                        <i class="fas fa-newspaper"></i>
+                    </div>
+                    <h3>No news articles found</h3>
+                    <p>Check back later for the latest updates</p>
+                    {% if user.is_staff %}
+                    <a href="{% url 'fetch_news' %}" class="btn btn-primary">
+                        <i class="fas fa-sync-alt"></i> Fetch News Now
+                    </a>
+                    {% endif %}
+                </div>
+                {% endif %}
+            </div>
+        </main>
+
+        <!-- ===== RIGHT SIDEBAR - ADS & PROMOTIONS ===== -->
+        <aside class="right-sidebar">
+            <!-- Sponsored/Advertisement Posts - MOVED FROM HOME PAGE -->
+            <div class="sidebar-card sponsored-card">
+                <div class="card-header">
+                    <h3><i class="fas fa-ad" style="color: var(--primary);"></i> Sponsored Content</h3>
+                </div>
+                <div class="sponsored-list">
+                    {% for ad in sponsored_posts %}
+                    <div class="sponsored-item">
+                        <div class="sponsored-badge-small">Ad</div>
+                        <a href="{% url 'post_detail' ad.id %}" class="sponsored-content">
+                            {% if ad.image %}
+                            <div class="sponsored-image">
+                                <img src="{{ ad.image.url }}" alt="{{ ad.title }}">
+                            </div>
+                            {% endif %}
+                            <div class="sponsored-info">
+                                <h4>{{ ad.title|truncatechars:40 }}</h4>
+                                <p>{{ ad.content|truncatechars:60 }}</p>
+                                <span class="sponsored-link">Learn more <i class="fas fa-arrow-right"></i></span>
+                            </div>
+                        </a>
+                    </div>
+                    {% empty %}
+                    <div class="empty-state small">
+                        <i class="fas fa-ad"></i>
+                        <p>No sponsored content</p>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Ad Submission Prompt -->
+            <div class="sidebar-card ad-prompt-card">
+                <div class="ad-prompt-content">
+                    <i class="fas fa-bullhorn"></i>
+                    <h4>Advertise with us</h4>
+                    <p>Reach thousands of engaged readers daily</p>
+                    {% if user.is_authenticated and user.profile.account_type == 'business' and user.profile.is_verified_business %}
+                    <a href="{% url 'ad_submission' %}" class="btn btn-primary btn-sm">
+                        Submit Ad
+                    </a>
+                    {% elif user.is_authenticated %}
+                    {% comment %} <a href="{% url 'business_registration' %}" class="btn btn-outline btn-sm"> {% endcomment %}
+                        Register Business
+                    </a>
+                    {% else %}
+                    <a href="{% url 'login' %}" class="btn btn-outline btn-sm">
+                        Login to Advertise
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- News Statistics -->
+            <div class="sidebar-card">
+                <div class="card-header">
+                    <h3><i class="fas fa-chart-bar" style="color: var(--primary);"></i> News Stats</h3>
+                </div>
+                <div class="stats-list">
+                    <div class="stat-item">
+                        <span class="stat-label">Total Users</span>
+                        <span class="stat-value">{{ total_users|default:"0" }}</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">News Articles</span>
+                        <span class="stat-value">{{ total_news|default:"0" }}</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Comments</span>
+                        <span class="stat-value">{{ total_comments|default:"0" }}</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Verified News</span>
+                        <span class="stat-value">{{ verified_count|default:"0" }}</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Newsletter Signup -->
+            <div class="sidebar-card newsletter-card">
+                <div class="newsletter-content">
+                    <i class="fas fa-envelope-open-text"></i>
+                    <h4>Newsletter</h4>
+                    <p>Get the top stories delivered to your inbox</p>
+                    {% comment %} <form class="newsletter-form" method="post" action="{% url 'newsletter_signup' %}"> {% endcomment %}
+                        {% csrf_token %}
+                        <input type="email" name="email" placeholder="Your email address" class="form-input" required>
+                        <button type="submit" class="btn btn-primary btn-block">Subscribe</button>
+                    </form>
+                </div>
+            </div>
+        </aside>
+    </div>
+</div>
+
+<script>
+    // Banner Slider Functionality
+    document.addEventListener('DOMContentLoaded', function() {
+        const slides = document.querySelectorAll('.banner-slide');
+        const prevBtn = document.querySelector('.slider-prev');
+        const nextBtn = document.querySelector('.slider-next');
+        const dotsContainer = document.querySelector('.slider-dots');
+        let currentSlide = 0;
+        
+        if (slides.length > 1) {
+            // Create dots
+            slides.forEach((_, index) => {
+                const dot = document.createElement('span');
+                dot.classList.add('dot');
+                if (index === 0) dot.classList.add('active');
+                dot.addEventListener('click', () => goToSlide(index));
+                dotsContainer.appendChild(dot);
+            });
+            
+            // Auto slide
+            let slideInterval = setInterval(nextSlide, 5000);
+            
+            // Next slide function
+            function nextSlide() {
+                goToSlide((currentSlide + 1) % slides.length);
+            }
+            
+            // Go to specific slide
+            function goToSlide(index) {
+                slides[currentSlide].classList.remove('active');
+                document.querySelectorAll('.dot')[currentSlide]?.classList.remove('active');
+                
+                currentSlide = index;
+                
+                slides[currentSlide].classList.add('active');
+                document.querySelectorAll('.dot')[currentSlide]?.classList.add('active');
+            }
+            
+            // Event listeners
+            if (prevBtn) {
+                prevBtn.addEventListener('click', function() {
+                    clearInterval(slideInterval);
+                    goToSlide((currentSlide - 1 + slides.length) % slides.length);
+                    slideInterval = setInterval(nextSlide, 5000);
+                });
+            }
+            
+            if (nextBtn) {
+                nextBtn.addEventListener('click', function() {
+                    clearInterval(slideInterval);
+                    nextSlide();
+                    slideInterval = setInterval(nextSlide, 5000);
+                });
+            }
+            
+            // Pause on hover
+            const slider = document.querySelector('.banner-slider-container');
+            if (slider) {
+                slider.addEventListener('mouseenter', () => clearInterval(slideInterval));
+                slider.addEventListener('mouseleave', () => {
+                    slideInterval = setInterval(nextSlide, 5000);
+                });
+            }
+        }
+    });
+    
+    // Prompt login for guests
+    function promptLogin() {
+        if (confirm('You need to be logged in to perform this action. Would you like to login now?')) {
+            window.location.href = "{% url 'login' %}?next={{ request.path }}";
+        }
+    }
+    
+    // Like button functionality
+    document.querySelectorAll('.like-btn').forEach(btn => {
+        btn.addEventListener('click', function(e) {
+            e.preventDefault();
+            
+            {% if not user.is_authenticated %}
+            promptLogin();
+            return;
+            {% endif %}
+            
+            const postId = this.dataset.postId;
+            const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value || '{{ csrf_token }}';
+            
+            fetch(`/post/${postId}/like/`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': csrfToken,
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.liked !== undefined) {
+                    const icon = this.querySelector('i');
+                    const countSpan = this.querySelector('.like-count');
+                    
+                    if (data.liked) {
+                        icon.classList.remove('far');
+                        icon.classList.add('fas');
+                        this.classList.add('liked');
+                    } else {
+                        icon.classList.remove('fas');
+                        icon.classList.add('far');
+                        this.classList.remove('liked');
+                    }
+                    
+                    if (countSpan) {
+                        countSpan.textContent = data.like_count;
+                    }
+                }
+            })
+            .catch(error => console.error('Error:', error));
+        });
+    });
+    
+    // Bookmark button functionality
+    document.querySelectorAll('.bookmark-btn').forEach(btn => {
+        btn.addEventListener('click', function(e) {
+            e.preventDefault();
+            
+            {% if not user.is_authenticated %}
+            promptLogin();
+            return;
+            {% endif %}
+            
+            const postId = this.dataset.postId;
+            const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value || '{{ csrf_token }}';
+            
+            fetch(`/post/${postId}/bookmark/`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': csrfToken,
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.bookmarked !== undefined) {
+                    const icon = this.querySelector('i');
+                    
+                    if (data.bookmarked) {
+                        icon.classList.remove('far');
+                        icon.classList.add('fas');
+                        this.classList.add('bookmarked');
+                    } else {
+                        icon.classList.remove('fas');
+                        icon.classList.add('far');
+                        this.classList.remove('bookmarked');
+                    }
+                }
+            })
+            .catch(error => console.error('Error:', error));
+        });
+    });
+    
+    // Share functionality
+    document.querySelectorAll('.share-btn').forEach(btn => {
+        btn.addEventListener('click', function(e) {
+            e.preventDefault();
+            const title = this.dataset.title;
+            const url = window.location.origin + this.dataset.url;
+            
+            if (navigator.share) {
+                navigator.share({
+                    title: title,
+                    url: url
+                }).catch(console.error);
+            } else {
+                // Fallback - copy to clipboard
+                navigator.clipboard.writeText(url).then(() => {
+                    alert('Link copied to clipboard!');
+                }).catch(console.error);
+            }
+        });
+    });
+    
+    // Auto-refresh news check (for logged in users)
+    {% if user.is_authenticated %}
+    let lastCheck = new Date().toISOString();
+    
+    function checkForNewNews() {
+        fetch(`/api/check-new-news/?last_check=${encodeURIComponent(lastCheck)}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.has_new) {
+                    const notification = document.createElement('div');
+                    notification.className = 'new-news-notification';
+                    notification.innerHTML = `
+                        <i class="fas fa-sync-alt"></i>
+                        ${data.count} new article${data.count > 1 ? 's' : ''} available
+                        <a href="javascript:window.location.reload()">Refresh</a>
+                    `;
+                    document.querySelector('.main-feed').prepend(notification);
+                }
+                lastCheck = data.last_check;
+            })
+            .catch(console.error);
+    }
+    
+    // Check every 2 minutes
+    setInterval(checkForNewNews, 120000);
+    {% endif %}
+</script>
+
+{% endblock %}
