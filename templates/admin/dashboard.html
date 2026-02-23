@@ -3,336 +3,66 @@
 
 {% block title %}Admin Dashboard - Ojukaye{% endblock %}
 
-{% block content %}
-<div class="admin-dashboard">
-    <!-- Header -->
-    <div class="admin-header">
-        <div class="admin-header-left">
-            <h1 class="admin-title">
-                <i class="fas fa-tachometer-alt" style="color: var(--primary);"></i>
-                Admin Dashboard
-            </h1>
-            <p class="admin-subtitle">Welcome back, {{ user.username }}! Here's what's happening today.</p>
-        </div>
-        <div class="admin-header-right">
-            <span class="admin-date">
-                <i class="far fa-calendar-alt"></i> {% now "F d, Y" %}
-            </span>
-        </div>
-    </div>
-    
-    <!-- Stats Cards -->
-    <div class="admin-stats-grid">
-        <div class="stat-card">
-            <div class="stat-icon" style="background: linear-gradient(145deg, #3b82f6, #2563eb);">
-                <i class="fas fa-file-alt"></i>
-            </div>
-            <div class="stat-content">
-                <span class="stat-label">Total Posts</span>
-                <span class="stat-number">{{ stats.total_posts|default:"0" }}</span>
-                <span class="stat-trend positive">
-                    <i class="fas fa-arrow-up"></i> +12% from last month
-                </span>
-            </div>
-        </div>
-        
-        <div class="stat-card">
-            <div class="stat-icon" style="background: linear-gradient(145deg, #10b981, #059669);">
-                <i class="fas fa-users"></i>
-            </div>
-            <div class="stat-content">
-                <span class="stat-label">Total Users</span>
-                <span class="stat-number">{{ stats.total_users|default:"0" }}</span>
-                <span class="stat-trend positive">
-                    <i class="fas fa-arrow-up"></i> +5% from last month
-                </span>
-            </div>
-        </div>
-        
-        <div class="stat-card">
-            <div class="stat-icon" style="background: linear-gradient(145deg, #f59e0b, #d97706);">
-                <i class="fas fa-clock"></i>
-            </div>
-            <div class="stat-content">
-                <span class="stat-label">Pending Verification</span>
-                <span class="stat-number">{{ stats.pending_verification|default:"0" }}</span>
-                <span class="stat-trend warning">
-                    <i class="fas fa-exclamation-triangle"></i> Needs attention
-                </span>
-            </div>
-        </div>
-        
-        <div class="stat-card">
-            <div class="stat-icon" style="background: linear-gradient(145deg, #ef4444, #dc2626);">
-                <i class="fas fa-exclamation-triangle"></i>
-            </div>
-            <div class="stat-content">
-                <span class="stat-label">Fake News</span>
-                <span class="stat-number">{{ stats.fake_news|default:"0" }}</span>
-                <span class="stat-trend negative">
-                    <i class="fas fa-arrow-down"></i> -2 from yesterday
-                </span>
-            </div>
-        </div>
-    </div>
-    
-    <!-- Quick Actions -->
-    <div class="admin-quick-actions">
-        <h2 class="admin-section-title">
-            <i class="fas fa-bolt"></i> Quick Actions
-        </h2>
-        <div class="action-buttons">
-            <a href="{% url 'admin_posts' %}" class="action-btn">
-                <i class="fas fa-file-alt"></i>
-                <span>Manage Posts</span>
-            </a>
-            <a href="{% url 'fetch_news' %}" class="action-btn">
-                <i class="fas fa-sync-alt"></i>
-                <span>Fetch News</span>
-            </a>
-            <a href="{% url 'admin:core_category_add' %}" class="action-btn">
-                <i class="fas fa-tags"></i>
-                <span>Add Category</span>
-            </a>
-            <a href="{% url 'admin_system_settings' %}" class="action-btn">
-                <i class="fas fa-cog"></i>
-                <span>System Settings</span>
-            </a>
-            <a href="{% url 'admin:index' %}" class="action-btn">
-                <i class="fas fa-database"></i>
-                <span>Django Admin</span>
-            </a>
-        </div>
-    </div>
-    
-    <!-- Two Column Layout -->
-    <div class="admin-grid-2">
-        <!-- Recent Posts -->
-        <div class="admin-card">
-            <div class="admin-card-header">
-                <h3><i class="fas fa-clock"></i> Recent Posts</h3>
-                <a href="{% url 'admin_posts' %}" class="view-all-link">View All <i class="fas fa-arrow-right"></i></a>
-            </div>
-            <div class="admin-card-body">
-                <div class="recent-posts-list">
-                    {% for post in stats.recent_posts|slice:":10" %}
-                    <div class="recent-post-item">
-                        <div class="post-info">
-                            <a href="{% url 'post_detail' post.id %}" class="post-title">{{ post.title|truncatechars:50 }}</a>
-                            <div class="post-meta">
-                                <span><i class="fas fa-user"></i> {{ post.author.username }}</span>
-                                <span><i class="far fa-clock"></i> {{ post.created_at|timesince }} ago</span>
-                            </div>
-                        </div>
-                        <div class="post-status">
-                            {% if post.verification_status == 'verified' %}
-                            <span class="badge success">Verified</span>
-                            {% elif post.verification_status == 'fake' %}
-                            <span class="badge danger">Fake</span>
-                            {% elif post.verification_status == 'pending' %}
-                            <span class="badge warning">Pending</span>
-                            {% else %}
-                            <span class="badge">Draft</span>
-                            {% endif %}
-                        </div>
-                    </div>
-                    {% empty %}
-                    <div class="empty-state small">
-                        <p>No recent posts</p>
-                    </div>
-                    {% endfor %}
-                </div>
-            </div>
-        </div>
-        
-        <!-- Top Categories -->
-        <div class="admin-card">
-            <div class="admin-card-header">
-                <h3><i class="fas fa-chart-pie"></i> Top Categories</h3>
-            </div>
-            <div class="admin-card-body">
-                <div class="categories-list">
-                    {% for category in stats.top_categories %}
-                    <div class="category-stat-item">
-                        <div class="category-info">
-                            <span class="category-name">
-                                {% if category.icon %}
-                                <i class="fas fa-{{ category.icon }}"></i>
-                                {% endif %}
-                                {{ category.name }}
-                            </span>
-                            <span class="category-count">{{ category.post_count }}</span>
-                        </div>
-                        <div class="category-progress">
-                            <div class="progress-bar" style="width: {{ category.percentage }}%"></div>
-                        </div>
-                    </div>
-                    {% empty %}
-                    <div class="empty-state small">
-                        <p>No categories yet</p>
-                    </div>
-                    {% endfor %}
-                </div>
-            </div>
-        </div>
-    </div>
-    
-    <!-- Recent Users -->
-    <div class="admin-card full-width">
-        <div class="admin-card-header">
-            <h3><i class="fas fa-users"></i> Recent Users</h3>
-        </div>
-        <div class="admin-card-body">
-            <div class="users-table">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>User</th>
-                            <th>Email</th>
-                            <th>Account Type</th>
-                            <th>Status</th>
-                            <th>Joined</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for user in stats.recent_users %}
-                        <tr>
-                            <td>
-                                <div class="user-cell">
-                                    <div class="user-avatar-mini">
-                                        {% if user.profile.profile_pic %}
-                                        <img src="{{ user.profile.profile_pic.url }}" alt="{{ user.username }}">
-                                        {% else %}
-                                        <div class="avatar-placeholder">{{ user.username|first|upper }}</div>
-                                        {% endif %}
-                                    </div>
-                                    <div class="user-info">
-                                        <span class="username">{{ user.get_full_name|default:user.username }}</span>
-                                        <span class="user-handle">@{{ user.username }}</span>
-                                    </div>
-                                </div>
-                            </td>
-                            <td>{{ user.email|default:"—" }}</td>
-                            <td>
-                                <span class="badge {% if user.profile.account_type == 'business' %}business{% else %}individual{% endif %}">
-                                    {{ user.profile.account_type|title }}
-                                </span>
-                            </td>
-                            <td>
-                                {% if user.is_active %}
-                                <span class="badge success">Active</span>
-                                {% else %}
-                                <span class="badge">Inactive</span>
-                                {% endif %}
-                            </td>
-                            <td>{{ user.date_joined|date:"M d, Y" }}</td>
-                            <td>
-                                <a href="{% url 'profile_view' username=user.username %}" class="table-action" target="_blank">
-                                    <i class="fas fa-eye"></i>
-                                </a>
-                                <a href="{% url 'admin:auth_user_change' user.id %}" class="table-action">
-                                    <i class="fas fa-edit"></i>
-                                </a>
-                            </td>
-                        </tr>
-                        {% empty %}
-                        <tr>
-                            <td colspan="6" class="empty-state">
-                                <p>No users yet</p>
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    </div>
-    
-    <!-- Recent Activities -->
-    <div class="admin-card full-width">
-        <div class="admin-card-header">
-            <h3><i class="fas fa-history"></i> Recent Activities</h3>
-        </div>
-        <div class="admin-card-body">
-            <div class="activities-timeline">
-                {% for activity in recent_activities %}
-                <div class="timeline-item">
-                    <div class="timeline-icon">
-                        {% if activity.activity_type == 'post_created' %}
-                        <i class="fas fa-file-alt" style="color: var(--primary);"></i>
-                        {% elif activity.activity_type == 'comment_created' %}
-                        <i class="fas fa-comment" style="color: #10b981;"></i>
-                        {% elif activity.activity_type == 'post_liked' %}
-                        <i class="fas fa-heart" style="color: #ef4444;"></i>
-                        {% elif activity.activity_type == 'user_registered' %}
-                        <i class="fas fa-user-plus" style="color: #8b5cf6;"></i>
-                        {% else %}
-                        <i class="fas fa-circle" style="color: var(--gray-500);"></i>
-                        {% endif %}
-                    </div>
-                    <div class="timeline-content">
-                        <p>
-                            <a href="{% url 'profile_view' username=activity.user.username %}">
-                                {{ activity.user.get_full_name|default:activity.user.username }}
-                            </a>
-                            {{ activity.get_activity_type_display|lower }}
-                            {% if activity.post %}
-                            on <a href="{% url 'post_detail' activity.post.id %}">{{ activity.post.title|truncatechars:50 }}</a>
-                            {% endif %}
-                        </p>
-                        <span class="timeline-time">{{ activity.created_at|timesince }} ago</span>
-                    </div>
-                </div>
-                {% empty %}
-                <div class="empty-state">
-                    <p>No recent activities</p>
-                </div>
-                {% endfor %}
-            </div>
-        </div>
-    </div>
-</div>
-
+{% block extra_css %}
 <style>
     .admin-dashboard {
-        max-width: 1440px;
+        max-width: 1400px;
         margin: 0 auto;
+        padding: 2rem;
     }
-    
+
     .admin-header {
         display: flex;
         align-items: center;
         justify-content: space-between;
         margin-bottom: 2rem;
+        flex-wrap: wrap;
+        gap: 1rem;
     }
-    
+
     .admin-title {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }
+
+    .admin-title i {
+        font-size: 2rem;
+        color: var(--primary);
+        background: var(--primary-soft);
+        padding: 1rem;
+        border-radius: var(--radius-lg);
+    }
+
+    .admin-title h1 {
         font-size: 2rem;
         font-weight: 700;
         color: var(--gray-900);
-        margin-bottom: 0.5rem;
+        margin-bottom: 0.25rem;
     }
-    
-    .admin-subtitle {
+
+    .admin-title p {
         color: var(--gray-600);
     }
-    
+
     .admin-date {
         padding: 0.5rem 1rem;
         background: var(--white);
         border-radius: var(--radius-full);
         border: 1px solid var(--gray-200);
         color: var(--gray-700);
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
     }
-    
-    .admin-stats-grid {
+
+    .stats-grid {
         display: grid;
-        grid-template-columns: repeat(4, 1fr);
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
         gap: 1.5rem;
         margin-bottom: 2rem;
     }
-    
+
     .stat-card {
         background: var(--white);
         border-radius: var(--radius-lg);
@@ -341,8 +71,28 @@
         display: flex;
         align-items: center;
         gap: 1rem;
+        transition: all 0.2s;
+        position: relative;
+        overflow: hidden;
     }
-    
+
+    .stat-card:hover {
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-md);
+    }
+
+    .stat-card.pending {
+        border-left: 4px solid #f59e0b;
+    }
+
+    .stat-card.verified {
+        border-left: 4px solid #10b981;
+    }
+
+    .stat-card.fake {
+        border-left: 4px solid #ef4444;
+    }
+
     .stat-icon {
         width: 60px;
         height: 60px;
@@ -352,19 +102,20 @@
         justify-content: center;
         font-size: 1.5rem;
         color: white;
+        background: linear-gradient(145deg, var(--primary), var(--primary-dark));
     }
-    
+
     .stat-content {
         flex: 1;
     }
-    
+
     .stat-label {
         display: block;
         font-size: 0.875rem;
         color: var(--gray-600);
         margin-bottom: 0.25rem;
     }
-    
+
     .stat-number {
         display: block;
         font-size: 2rem;
@@ -373,32 +124,35 @@
         line-height: 1;
         margin-bottom: 0.25rem;
     }
-    
+
     .stat-trend {
         font-size: 0.75rem;
+        display: flex;
+        align-items: center;
+        gap: 0.25rem;
     }
-    
+
     .stat-trend.positive {
         color: #10b981;
     }
-    
+
     .stat-trend.warning {
         color: #f59e0b;
     }
-    
+
     .stat-trend.negative {
         color: #ef4444;
     }
-    
-    .admin-quick-actions {
+
+    .quick-actions {
         background: var(--white);
         border-radius: var(--radius-lg);
         border: 1px solid var(--gray-200);
         padding: 1.5rem;
         margin-bottom: 2rem;
     }
-    
-    .admin-section-title {
+
+    .quick-actions h2 {
         font-size: 1.125rem;
         font-weight: 600;
         color: var(--gray-800);
@@ -407,61 +161,73 @@
         align-items: center;
         gap: 0.5rem;
     }
-    
+
     .action-buttons {
-        display: flex;
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
         gap: 1rem;
-        flex-wrap: wrap;
     }
-    
+
     .action-btn {
         display: flex;
         align-items: center;
         gap: 0.75rem;
-        padding: 0.75rem 1.5rem;
+        padding: 1rem;
         background: var(--gray-100);
-        border-radius: var(--radius-full);
+        border-radius: var(--radius-lg);
         color: var(--gray-700);
         text-decoration: none;
         font-weight: 600;
         transition: all 0.2s;
+        border: 1px solid var(--gray-200);
     }
-    
+
     .action-btn:hover {
         background: var(--primary);
         color: white;
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-md);
     }
-    
+
     .action-btn i {
-        font-size: 1rem;
+        font-size: 1.25rem;
     }
-    
+
+    .action-btn.warning:hover {
+        background: #f59e0b;
+    }
+
+    .action-btn.danger:hover {
+        background: #ef4444;
+    }
+
     .admin-grid-2 {
         display: grid;
         grid-template-columns: 1fr 1fr;
         gap: 1.5rem;
         margin-bottom: 1.5rem;
     }
-    
+
     .admin-card {
         background: var(--white);
         border-radius: var(--radius-lg);
         border: 1px solid var(--gray-200);
         overflow: hidden;
     }
-    
+
     .admin-card.full-width {
         margin-bottom: 1.5rem;
     }
-    
+
     .admin-card-header {
         padding: 1.25rem 1.5rem;
         border-bottom: 1px solid var(--gray-200);
         display: flex;
         align-items: center;
         justify-content: space-between;
+        background: var(--gray-50);
     }
-    
+
     .admin-card-header h3 {
         font-size: 1rem;
         font-weight: 600;
@@ -470,255 +236,711 @@
         align-items: center;
         gap: 0.5rem;
     }
-    
+
+    .admin-card-header h3 i {
+        color: var(--primary);
+    }
+
     .view-all-link {
         font-size: 0.875rem;
         color: var(--primary);
         text-decoration: none;
+        display: flex;
+        align-items: center;
+        gap: 0.25rem;
     }
-    
+
+    .view-all-link:hover {
+        text-decoration: underline;
+    }
+
     .admin-card-body {
         padding: 1.25rem 1.5rem;
     }
-    
-    .recent-posts-list {
+
+    /* News Submissions List */
+    .submissions-list {
         display: flex;
         flex-direction: column;
         gap: 1rem;
     }
-    
-    .recent-post-item {
+
+    .submission-item {
         display: flex;
         align-items: center;
         justify-content: space-between;
+        padding: 1rem;
+        background: var(--gray-50);
+        border-radius: var(--radius-lg);
+        border: 1px solid var(--gray-200);
+        transition: all 0.2s;
     }
-    
-    .post-info {
+
+    .submission-item:hover {
+        background: var(--white);
+        box-shadow: var(--shadow-sm);
+    }
+
+    .submission-info {
         flex: 1;
     }
-    
-    .post-title {
-        display: block;
+
+    .submission-title {
         font-weight: 600;
         color: var(--gray-900);
-        text-decoration: none;
         margin-bottom: 0.25rem;
+        display: block;
+        text-decoration: none;
     }
-    
-    .post-title:hover {
+
+    .submission-title:hover {
         color: var(--primary);
     }
-    
-    .post-meta {
-        font-size: 0.75rem;
-        color: var(--gray-600);
+
+    .submission-meta {
         display: flex;
         gap: 1rem;
+        font-size: 0.75rem;
+        color: var(--gray-600);
     }
-    
-    .badge {
-        padding: 0.25rem 0.625rem;
+
+    .submission-meta i {
+        margin-right: 0.25rem;
+    }
+
+    .submission-score {
+        padding: 0.25rem 0.75rem;
         border-radius: var(--radius-full);
         font-size: 0.75rem;
         font-weight: 600;
         background: var(--gray-200);
         color: var(--gray-700);
     }
-    
-    .badge.success {
+
+    .submission-score.high {
         background: #dcfce7;
         color: #166534;
     }
-    
-    .badge.warning {
+
+    .submission-score.medium {
         background: #fef3c7;
         color: #92400e;
     }
-    
-    .badge.danger {
+
+    .submission-score.low {
         background: #fee2e2;
         color: #991b1b;
     }
-    
-    .badge.business {
-        background: var(--primary-soft);
-        color: var(--primary-dark);
-    }
-    
-    .badge.individual {
-        background: var(--gray-200);
-        color: var(--gray-700);
-    }
-    
-    .category-stat-item {
-        margin-bottom: 1rem;
-    }
-    
-    .category-info {
+
+    .submission-actions {
         display: flex;
-        align-items: center;
-        justify-content: space-between;
-        margin-bottom: 0.5rem;
+        gap: 0.5rem;
     }
-    
-    .category-name i {
-        margin-right: 0.5rem;
-        color: var(--gray-600);
-    }
-    
-    .category-progress {
-        height: 6px;
-        background: var(--gray-200);
-        border-radius: var(--radius-full);
-        overflow: hidden;
-    }
-    
-    .progress-bar {
-        height: 100%;
-        background: var(--primary);
-        border-radius: var(--radius-full);
-    }
-    
-    .users-table {
-        overflow-x: auto;
-    }
-    
-    .users-table table {
-        width: 100%;
-        border-collapse: collapse;
-    }
-    
-    .users-table th {
-        text-align: left;
-        padding: 0.75rem 0;
-        font-size: 0.875rem;
-        font-weight: 600;
-        color: var(--gray-700);
-        border-bottom: 2px solid var(--gray-200);
-    }
-    
-    .users-table td {
-        padding: 1rem 0;
-        border-bottom: 1px solid var(--gray-200);
-        vertical-align: middle;
-    }
-    
-    .user-cell {
-        display: flex;
-        align-items: center;
-        gap: 0.75rem;
-    }
-    
-    .user-avatar-mini {
-        width: 40px;
-        height: 40px;
-        border-radius: 50%;
-        overflow: hidden;
-    }
-    
-    .user-avatar-mini img,
-    .user-avatar-mini .avatar-placeholder {
-        width: 100%;
-        height: 100%;
-    }
-    
-    .user-info {
-        display: flex;
-        flex-direction: column;
-    }
-    
-    .username {
-        font-weight: 600;
-        color: var(--gray-900);
-    }
-    
-    .user-handle {
-        font-size: 0.75rem;
-        color: var(--gray-600);
-    }
-    
-    .table-action {
-        padding: 0.5rem;
-        color: var(--gray-600);
-        border-radius: var(--radius-full);
-        margin: 0 0.25rem;
-    }
-    
-    .table-action:hover {
-        background: var(--gray-100);
-        color: var(--primary);
-    }
-    
-    .activities-timeline {
-        display: flex;
-        flex-direction: column;
-        gap: 1.25rem;
-    }
-    
-    .timeline-item {
-        display: flex;
-        gap: 1rem;
-    }
-    
-    .timeline-icon {
+
+    .btn-icon {
         width: 32px;
         height: 32px;
-        background: var(--gray-100);
-        border-radius: 50%;
+        border-radius: var(--radius-full);
+        background: var(--white);
+        border: 1px solid var(--gray-200);
         display: flex;
         align-items: center;
         justify-content: center;
+        color: var(--gray-600);
+        text-decoration: none;
+        transition: all 0.2s;
     }
-    
+
+    .btn-icon:hover {
+        background: var(--primary);
+        color: white;
+    }
+
+    .btn-icon.approve:hover {
+        background: #10b981;
+    }
+
+    .btn-icon.reject:hover {
+        background: #ef4444;
+    }
+
+    /* Activity Timeline */
+    .activities-timeline {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+    }
+
+    .timeline-item {
+        display: flex;
+        gap: 1rem;
+        padding: 0.75rem;
+        border-radius: var(--radius-md);
+        transition: background 0.2s;
+    }
+
+    .timeline-item:hover {
+        background: var(--gray-50);
+    }
+
+    .timeline-icon {
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        background: var(--gray-200);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+    }
+
+    .timeline-icon i {
+        font-size: 1rem;
+    }
+
     .timeline-content {
         flex: 1;
     }
-    
-    .timeline-content p {
-        margin-bottom: 0.25rem;
+
+    .timeline-text {
         color: var(--gray-800);
+        margin-bottom: 0.25rem;
     }
-    
-    .timeline-content a {
+
+    .timeline-text a {
         color: var(--primary);
         text-decoration: none;
         font-weight: 600;
     }
-    
+
     .timeline-time {
         font-size: 0.75rem;
         color: var(--gray-600);
     }
-    
-    @media (max-width: 1200px) {
-        .admin-stats-grid {
-            grid-template-columns: repeat(2, 1fr);
-        }
-        
-        .admin-grid-2 {
-            grid-template-columns: 1fr;
-        }
+
+    /* User List */
+    .user-list {
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
     }
-    
-    @media (max-width: 768px) {
-        .admin-header {
-            flex-direction: column;
-            align-items: flex-start;
-            gap: 1rem;
-        }
-        
-        .admin-stats-grid {
+
+    .user-item {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        padding: 0.5rem;
+        border-radius: var(--radius-md);
+        transition: background 0.2s;
+    }
+
+    .user-item:hover {
+        background: var(--gray-50);
+    }
+
+    .user-avatar {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        overflow: hidden;
+        background: linear-gradient(145deg, var(--primary), var(--primary-dark));
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-weight: 600;
+        font-size: 1rem;
+    }
+
+    .user-avatar img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    .user-info {
+        flex: 1;
+    }
+
+    .user-name {
+        font-weight: 600;
+        color: var(--gray-900);
+        margin-bottom: 0.125rem;
+    }
+
+    .user-email {
+        font-size: 0.75rem;
+        color: var(--gray-600);
+    }
+
+    .user-badge {
+        padding: 0.25rem 0.5rem;
+        border-radius: var(--radius-full);
+        font-size: 0.625rem;
+        font-weight: 600;
+        background: var(--gray-200);
+        color: var(--gray-700);
+    }
+
+    .user-badge.business {
+        background: var(--primary-soft);
+        color: var(--primary-dark);
+    }
+
+    .pagination {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        margin-top: 2rem;
+    }
+
+    .pagination-link {
+        padding: 0.5rem 1rem;
+        border: 1px solid var(--gray-200);
+        border-radius: var(--radius-md);
+        color: var(--gray-700);
+        text-decoration: none;
+        transition: all 0.2s;
+    }
+
+    .pagination-link:hover {
+        background: var(--primary);
+        color: white;
+    }
+
+    .pagination-current {
+        padding: 0.5rem 1rem;
+        font-weight: 600;
+        color: var(--gray-800);
+    }
+
+    @media (max-width: 992px) {
+        .admin-grid-2 {
             grid-template-columns: 1fr;
         }
         
         .action-buttons {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    @media (max-width: 768px) {
+        .admin-header {
             flex-direction: column;
+            align-items: flex-start;
         }
         
-        .action-btn {
-            width: 100%;
-            justify-content: center;
+        .stats-grid {
+            grid-template-columns: 1fr;
         }
     }
 </style>
+{% endblock %}
+
+{% block content %}
+<div class="admin-dashboard">
+    <!-- Header -->
+    <div class="admin-header">
+        <div class="admin-title">
+            <i class="fas fa-tachometer-alt"></i>
+            <div>
+                <h1>Admin Dashboard</h1>
+                <p>Welcome back, {{ user.get_full_name|default:user.username }}!</p>
+            </div>
+        </div>
+        <div class="admin-date">
+            <i class="far fa-calendar-alt"></i> {% now "F d, Y" %}
+        </div>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-icon" style="background: linear-gradient(145deg, #3b82f6, #2563eb);">
+                <i class="fas fa-file-alt"></i>
+            </div>
+            <div class="stat-content">
+                <span class="stat-label">Total Posts</span>
+                <span class="stat-number">{{ total_posts|default:"0" }}</span>
+                <span class="stat-trend positive">
+                    <i class="fas fa-arrow-up"></i> +{{ posts_today|default:"0" }} today
+                </span>
+            </div>
+        </div>
+
+        <div class="stat-card">
+            <div class="stat-icon" style="background: linear-gradient(145deg, #10b981, #059669);">
+                <i class="fas fa-users"></i>
+            </div>
+            <div class="stat-content">
+                <span class="stat-label">Total Users</span>
+                <span class="stat-number">{{ total_users|default:"0" }}</span>
+                <span class="stat-trend positive">
+                    <i class="fas fa-arrow-up"></i> +{{ users_today|default:"0" }} today
+                </span>
+            </div>
+        </div>
+
+        <div class="stat-card pending">
+            <div class="stat-icon" style="background: linear-gradient(145deg, #f59e0b, #d97706);">
+                <i class="fas fa-clock"></i>
+            </div>
+            <div class="stat-content">
+                <span class="stat-label">Pending News</span>
+                <span class="stat-number">{{ pending_news|default:"0" }}</span>
+                <span class="stat-trend warning">
+                    <i class="fas fa-exclamation-triangle"></i> Needs review
+                </span>
+            </div>
+        </div>
+
+        <div class="stat-card">
+            <div class="stat-icon" style="background: linear-gradient(145deg, #8b5cf6, #7c3aed);">
+                <i class="fas fa-sync-alt"></i>
+            </div>
+            <div class="stat-content">
+                <span class="stat-label">Auto-Fetched News</span>
+                <span class="stat-number">{{ auto_fetched|default:"0" }}</span>
+                <span class="stat-trend positive">
+                    <i class="fas fa-download"></i> +{{ auto_fetched_today|default:"0" }} today
+                </span>
+            </div>
+        </div>
+
+        <div class="stat-card verified">
+            <div class="stat-icon" style="background: linear-gradient(145deg, #10b981, #059669);">
+                <i class="fas fa-check-circle"></i>
+            </div>
+            <div class="stat-content">
+                <span class="stat-label">Verified Posts</span>
+                <span class="stat-number">{{ verified_posts|default:"0" }}</span>
+                <span class="stat-trend positive">
+                    <i class="fas fa-check"></i> {{ verified_percent|default:"0" }}%
+                </span>
+            </div>
+        </div>
+
+        <div class="stat-card fake">
+            <div class="stat-icon" style="background: linear-gradient(145deg, #ef4444, #dc2626);">
+                <i class="fas fa-exclamation-triangle"></i>
+            </div>
+            <div class="stat-content">
+                <span class="stat-label">Fake News</span>
+                <span class="stat-number">{{ fake_posts|default:"0" }}</span>
+                <span class="stat-trend negative">
+                    <i class="fas fa-arrow-down"></i> {{ fake_percent|default:"0" }}% of total
+                </span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="quick-actions">
+        <h2><i class="fas fa-bolt"></i> Quick Actions</h2>
+        <div class="action-buttons">
+            <a href="{% url 'admin_news_submissions' %}" class="action-btn">
+                <i class="fas fa-newspaper"></i>
+                <span>Review News Submissions</span>
+                {% if pending_news > 0 %}
+                <span class="badge">{{ pending_news }}</span>
+                {% endif %}
+            </a>
+            <a href="{% url 'admin_auto_fetched_news' %}" class="action-btn">
+                <i class="fas fa-sync-alt"></i>
+                <span>Auto-Fetched News</span>
+            </a>
+            <a href="{% url 'fetch_news' %}" class="action-btn">
+                <i class="fas fa-cloud-download-alt"></i>
+                <span>Fetch News Now</span>
+            </a>
+            <a href="{% url 'admin:core_post_changelist' %}" class="action-btn">
+                <i class="fas fa-file-alt"></i>
+                <span>Manage All Posts</span>
+            </a>
+            <a href="{% url 'admin:core_category_add' %}" class="action-btn">
+                <i class="fas fa-tags"></i>
+                <span>Add Category</span>
+            </a>
+            <a href="{% url 'admin_system_settings' %}" class="action-btn">
+                <i class="fas fa-cog"></i>
+                <span>System Settings</span>
+            </a>
+            <a href="{% url 'admin:core_userprofile_changelist' %}" class="action-btn">
+                <i class="fas fa-user-tie"></i>
+                <span>Manage Businesses</span>
+            </a>
+            <a href="{% url 'admin:index' %}" class="action-btn">
+                <i class="fas fa-database"></i>
+                <span>Django Admin</span>
+            </a>
+        </div>
+    </div>
+
+    <!-- Two Column Layout -->
+    <div class="admin-grid-2">
+        <!-- Pending News Submissions -->
+        <div class="admin-card">
+            <div class="admin-card-header">
+                <h3><i class="fas fa-clock"></i> Pending News Submissions</h3>
+                <a href="{% url 'admin_news_submissions' %}?filter=pending" class="view-all-link">
+                    View All <i class="fas fa-arrow-right"></i>
+                </a>
+            </div>
+            <div class="admin-card-body">
+                <div class="submissions-list">
+                    {% for post in pending_submissions %}
+                    <div class="submission-item">
+                        <div class="submission-info">
+                            <a href="{% url 'admin_news_detail' post.id %}" class="submission-title">
+                                {{ post.title|truncatechars:50 }}
+                            </a>
+                            <div class="submission-meta">
+                                <span><i class="fas fa-user"></i> {{ post.author.username }}</span>
+                                <span><i class="far fa-clock"></i> {{ post.created_at|timesince }} ago</span>
+                                {% if post.external_source %}
+                                <span><i class="fas fa-globe"></i> {{ post.external_source|truncatechars:15 }}</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="submission-actions">
+                            {% if post.verification_score %}
+                            <span class="submission-score 
+                                {% if post.verification_score >= 0.7 %}high
+                                {% elif post.verification_score >= 0.4 %}medium
+                                {% else %}low{% endif %}">
+                                {{ post.verification_score|floatformat:2 }}
+                            </span>
+                            {% endif %}
+                            <a href="{% url 'admin_news_detail' post.id %}" class="btn-icon" title="Review">
+                                <i class="fas fa-eye"></i>
+                            </a>
+                            <form method="POST" action="{% url 'admin_news_detail' post.id %}" style="display: inline;">
+                                {% csrf_token %}
+                                <input type="hidden" name="action" value="approve">
+                                <button type="submit" class="btn-icon approve" title="Approve" onclick="return confirm('Approve this news?')">
+                                    <i class="fas fa-check"></i>
+                                </button>
+                            </form>
+                            <form method="POST" action="{% url 'admin_news_detail' post.id %}" style="display: inline;">
+                                {% csrf_token %}
+                                <input type="hidden" name="action" value="reject">
+                                <button type="submit" class="btn-icon reject" title="Reject" onclick="return confirm('Reject this news?')">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <div class="empty-state" style="text-align: center; padding: 2rem;">
+                        <i class="fas fa-check-circle" style="font-size: 3rem; color: var(--gray-400); margin-bottom: 1rem;"></i>
+                        <p style="color: var(--gray-600);">No pending news submissions</p>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Activities -->
+        <div class="admin-card">
+            <div class="admin-card-header">
+                <h3><i class="fas fa-history"></i> Recent Activities</h3>
+                <a href="{% url 'activity_feed' %}" class="view-all-link">
+                    View All <i class="fas fa-arrow-right"></i>
+                </a>
+            </div>
+            <div class="admin-card-body">
+                <div class="activities-timeline">
+                    {% for activity in recent_activities %}
+                    <div class="timeline-item">
+                        <div class="timeline-icon">
+                            {% if activity.activity_type == 'post_created' %}
+                            <i class="fas fa-file-alt" style="color: var(--primary);"></i>
+                            {% elif activity.activity_type == 'comment_created' %}
+                            <i class="fas fa-comment" style="color: #10b981;"></i>
+                            {% elif activity.activity_type == 'post_liked' %}
+                            <i class="fas fa-heart" style="color: #ef4444;"></i>
+                            {% elif activity.activity_type == 'user_registered' %}
+                            <i class="fas fa-user-plus" style="color: #8b5cf6;"></i>
+                            {% elif activity.activity_type == 'news_submitted' %}
+                            <i class="fas fa-newspaper" style="color: #f59e0b;"></i>
+                            {% elif activity.activity_type == 'news_approved' %}
+                            <i class="fas fa-check-circle" style="color: #10b981;"></i>
+                            {% elif activity.activity_type == 'news_rejected' %}
+                            <i class="fas fa-times-circle" style="color: #ef4444;"></i>
+                            {% else %}
+                            <i class="fas fa-circle" style="color: var(--gray-500);"></i>
+                            {% endif %}
+                        </div>
+                        <div class="timeline-content">
+                            <div class="timeline-text">
+                                <a href="{% url 'profile_view' username=activity.user.username %}">
+                                    {{ activity.user.get_full_name|default:activity.user.username }}
+                                </a>
+                                {{ activity.get_activity_type_display|lower }}
+                                {% if activity.post %}
+                                on <a href="{% url 'post_detail' activity.post.id %}">{{ activity.post.title|truncatechars:30 }}</a>
+                                {% endif %}
+                                {% if activity.target_user %}
+                                <a href="{% url 'profile_view' username=activity.target_user.username %}">@{{ activity.target_user.username }}</a>
+                                {% endif %}
+                            </div>
+                            <div class="timeline-time">{{ activity.created_at|timesince }} ago</div>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <div class="empty-state" style="text-align: center; padding: 2rem;">
+                        <i class="fas fa-history" style="font-size: 3rem; color: var(--gray-400); margin-bottom: 1rem;"></i>
+                        <p style="color: var(--gray-600);">No recent activities</p>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Users -->
+    <div class="admin-card full-width">
+        <div class="admin-card-header">
+            <h3><i class="fas fa-users"></i> Recent Users</h3>
+            <a href="{% url 'admin:auth_user_changelist' %}" class="view-all-link">
+                Manage Users <i class="fas fa-arrow-right"></i>
+            </a>
+        </div>
+        <div class="admin-card-body">
+            <div class="user-list">
+                {% for user in recent_users %}
+                <div class="user-item">
+                    <div class="user-avatar">
+                        {% if user.profile.profile_pic %}
+                        <img src="{{ user.profile.profile_pic.url }}" alt="{{ user.username }}">
+                        {% else %}
+                        {{ user.username|first|upper }}
+                        {% endif %}
+                    </div>
+                    <div class="user-info">
+                        <div class="user-name">{{ user.get_full_name|default:user.username }}</div>
+                        <div class="user-email">{{ user.email|default:"No email" }}</div>
+                    </div>
+                    <span class="user-badge {% if user.profile.account_type == 'business' %}business{% endif %}">
+                        {{ user.profile.account_type|title }}
+                    </span>
+                    <span class="user-badge">
+                        {{ user.date_joined|date:"M d, Y" }}
+                    </span>
+                    <a href="{% url 'profile_view' username=user.username %}" class="btn-icon" target="_blank" title="View Profile">
+                        <i class="fas fa-eye"></i>
+                    </a>
+                </div>
+                {% empty %}
+                <div class="empty-state" style="text-align: center; padding: 2rem;">
+                    <i class="fas fa-users" style="font-size: 3rem; color: var(--gray-400); margin-bottom: 1rem;"></i>
+                    <p style="color: var(--gray-600);">No users yet</p>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- System Info -->
+    <div class="admin-card full-width">
+        <div class="admin-card-header">
+            <h3><i class="fas fa-info-circle"></i> System Information</h3>
+        </div>
+        <div class="admin-card-body">
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.5rem;">
+                <div>
+                    <h4 style="font-size: 0.875rem; color: var(--gray-700); margin-bottom: 0.75rem;">Content Stats</h4>
+                    <ul style="list-style: none; padding: 0;">
+                        <li style="display: flex; justify-content: space-between; padding: 0.5rem 0; border-bottom: 1px solid var(--gray-200);">
+                            <span>Total Categories</span>
+                            <strong>{{ total_categories|default:"0" }}</strong>
+                        </li>
+                        <li style="display: flex; justify-content: space-between; padding: 0.5rem 0; border-bottom: 1px solid var(--gray-200);">
+                            <span>Total Comments</span>
+                            <strong>{{ total_comments|default:"0" }}</strong>
+                        </li>
+                        <li style="display: flex; justify-content: space-between; padding: 0.5rem 0; border-bottom: 1px solid var(--gray-200);">
+                            <span>Total Groups</span>
+                            <strong>{{ total_groups|default:"0" }}</strong>
+                        </li>
+                        <li style="display: flex; justify-content: space-between; padding: 0.5rem 0; border-bottom: 1px solid var(--gray-200);">
+                            <span>Total Advertisements</span>
+                            <strong>{{ total_ads|default:"0" }}</strong>
+                        </li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 style="font-size: 0.875rem; color: var(--gray-700); margin-bottom: 0.75rem;">News Stats</h4>
+                    <ul style="list-style: none; padding: 0;">
+                        <li style="display: flex; justify-content: space-between; padding: 0.5rem 0; border-bottom: 1px solid var(--gray-200);">
+                            <span>Auto-Fetched News</span>
+                            <strong>{{ auto_fetched|default:"0" }}</strong>
+                        </li>
+                        <li style="display: flex; justify-content: space-between; padding: 0.5rem 0; border-bottom: 1px solid var(--gray-200);">
+                            <span>User Submitted News</span>
+                            <strong>{{ user_submitted|default:"0" }}</strong>
+                        </li>
+                        <li style="display: flex; justify-content: space-between; padding: 0.5rem 0; border-bottom: 1px solid var(--gray-200);">
+                            <span>With Media</span>
+                            <strong>{{ news_with_media|default:"0" }}</strong>
+                        </li>
+                        <li style="display: flex; justify-content: space-between; padding: 0.5rem 0; border-bottom: 1px solid var(--gray-200);">
+                            <span>News Sources</span>
+                            <strong>{{ news_sources|default:"0" }}</strong>
+                        </li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 style="font-size: 0.875rem; color: var(--gray-700); margin-bottom: 0.75rem;">AI Verification</h4>
+                    <ul style="list-style: none; padding: 0;">
+                        <li style="display: flex; justify-content: space-between; padding: 0.5rem 0; border-bottom: 1px solid var(--gray-200);">
+                            <span>Verified News</span>
+                            <strong>{{ verified_posts|default:"0" }}</strong>
+                        </li>
+                        <li style="display: flex; justify-content: space-between; padding: 0.5rem 0; border-bottom: 1px solid var(--gray-200);">
+                            <span>Fake News</span>
+                            <strong>{{ fake_posts|default:"0" }}</strong>
+                        </li>
+                        <li style="display: flex; justify-content: space-between; padding: 0.5rem 0; border-bottom: 1px solid var(--gray-200);">
+                            <span>Pending AI</span>
+                            <strong>{{ pending_ai|default:"0" }}</strong>
+                        </li>
+                        <li style="display: flex; justify-content: space-between; padding: 0.5rem 0; border-bottom: 1px solid var(--gray-200);">
+                            <span>Avg Score</span>
+                            <strong>{{ avg_verification_score|floatformat:2|default:"0" }}</strong>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Pagination for activities if needed -->
+    {% if activities.has_other_pages %}
+    <div class="pagination">
+        {% if activities.has_previous %}
+        <a href="?page=1" class="pagination-link">
+            <i class="fas fa-angle-double-left"></i>
+        </a>
+        <a href="?page={{ activities.previous_page_number }}" class="pagination-link">
+            <i class="fas fa-angle-left"></i>
+        </a>
+        {% endif %}
+
+        <span class="pagination-current">
+            Page {{ activities.number }} of {{ activities.paginator.num_pages }}
+        </span>
+
+        {% if activities.has_next %}
+        <a href="?page={{ activities.next_page_number }}" class="pagination-link">
+            <i class="fas fa-angle-right"></i>
+        </a>
+        <a href="?page={{ activities.paginator.num_pages }}" class="pagination-link">
+            <i class="fas fa-angle-double-right"></i>
+        </a>
+        {% endif %}
+    </div>
+    {% endif %}
+</div>
 {% endblock %}

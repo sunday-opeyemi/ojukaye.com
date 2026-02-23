@@ -1,0 +1,775 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Review News: {{ post.title|truncatechars:50 }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .review-container {
+        max-width: 1400px;
+        margin: 0 auto;
+        padding: 2rem;
+    }
+
+    .review-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 2rem;
+        flex-wrap: wrap;
+        gap: 1rem;
+    }
+
+    .review-title {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }
+
+    .review-title a {
+        color: var(--gray-600);
+        text-decoration: none;
+    }
+
+    .review-title a:hover {
+        color: var(--primary);
+    }
+
+    .review-title h1 {
+        font-size: 1.75rem;
+        font-weight: 700;
+        color: var(--gray-900);
+    }
+
+    .review-actions {
+        display: flex;
+        gap: 1rem;
+    }
+
+    .review-grid {
+        display: grid;
+        grid-template-columns: 1fr 360px;
+        gap: 1.5rem;
+    }
+
+    /* Main Content */
+    .review-main {
+        background: var(--white);
+        border-radius: var(--radius-lg);
+        border: 1px solid var(--gray-200);
+        overflow: hidden;
+    }
+
+    .review-section {
+        padding: 1.5rem;
+        border-bottom: 1px solid var(--gray-200);
+    }
+
+    .review-section:last-child {
+        border-bottom: none;
+    }
+
+    .section-title {
+        font-size: 1.125rem;
+        font-weight: 600;
+        color: var(--gray-800);
+        margin-bottom: 1rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .section-title i {
+        color: var(--primary);
+    }
+
+    .post-title-display {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: var(--gray-900);
+        margin-bottom: 1rem;
+        line-height: 1.3;
+    }
+
+    .post-meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 1.5rem;
+        margin-bottom: 1rem;
+        padding-bottom: 1rem;
+        border-bottom: 1px solid var(--gray-200);
+    }
+
+    .meta-item {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        color: var(--gray-600);
+    }
+
+    .meta-item i {
+        color: var(--primary);
+    }
+
+    .post-content {
+        line-height: 1.8;
+        color: var(--gray-700);
+        margin-bottom: 1.5rem;
+    }
+
+    .post-content p {
+        margin-bottom: 1rem;
+    }
+
+    .post-media {
+        margin: 1.5rem 0;
+        border-radius: var(--radius-lg);
+        overflow: hidden;
+        max-height: 400px;
+    }
+
+    .post-media img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    .source-info {
+        background: var(--gray-50);
+        border-radius: var(--radius-lg);
+        padding: 1rem;
+        margin-top: 1rem;
+    }
+
+    .source-item {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        margin-bottom: 0.5rem;
+    }
+
+    .source-item i {
+        width: 20px;
+        color: var(--gray-600);
+    }
+
+    /* Sidebar */
+    .review-sidebar {
+        display: flex;
+        flex-direction: column;
+        gap: 1.5rem;
+    }
+
+    .sidebar-card {
+        background: var(--white);
+        border-radius: var(--radius-lg);
+        border: 1px solid var(--gray-200);
+        overflow: hidden;
+    }
+
+    .card-header {
+        padding: 1.25rem;
+        background: var(--gray-50);
+        border-bottom: 1px solid var(--gray-200);
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .card-header h3 {
+        font-size: 1rem;
+        font-weight: 600;
+        color: var(--gray-800);
+        margin: 0;
+    }
+
+    .card-header i {
+        color: var(--primary);
+    }
+
+    .card-body {
+        padding: 1.25rem;
+    }
+
+    /* AI Score Card */
+    .ai-score-card {
+        background: linear-gradient(145deg, var(--gray-900), var(--gray-800));
+        color: white;
+    }
+
+    .ai-score {
+        text-align: center;
+        padding: 1rem;
+    }
+
+    .score-circle {
+        width: 120px;
+        height: 120px;
+        margin: 0 auto 1rem;
+        border-radius: 50%;
+        background: conic-gradient(var(--primary) 0deg, #4b5563 0deg);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        position: relative;
+    }
+
+    .score-circle::before {
+        content: '';
+        position: absolute;
+        width: 90px;
+        height: 90px;
+        background: var(--gray-800);
+        border-radius: 50%;
+    }
+
+    .score-value {
+        position: relative;
+        z-index: 2;
+        font-size: 2rem;
+        font-weight: 700;
+        color: white;
+    }
+
+    .score-label {
+        font-size: 0.875rem;
+        color: var(--gray-400);
+        margin-top: 0.5rem;
+    }
+
+    .verdict-badge {
+        display: inline-block;
+        padding: 0.5rem 1.5rem;
+        border-radius: var(--radius-full);
+        font-weight: 600;
+        font-size: 1rem;
+    }
+
+    .verdict-verified {
+        background: #10b981;
+        color: white;
+    }
+
+    .verdict-questionable {
+        background: #f59e0b;
+        color: white;
+    }
+
+    .verdict-fake {
+        background: #ef4444;
+        color: white;
+    }
+
+    .verdict-pending {
+        background: var(--gray-600);
+        color: white;
+    }
+
+    /* Check List */
+    .check-list {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+    }
+
+    .check-item {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+    }
+
+    .check-icon {
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+    }
+
+    .check-icon.success {
+        background: #dcfce7;
+        color: #166534;
+    }
+
+    .check-icon.warning {
+        background: #fef3c7;
+        color: #92400e;
+    }
+
+    .check-icon.danger {
+        background: #fee2e2;
+        color: #991b1b;
+    }
+
+    .check-icon i {
+        font-size: 0.875rem;
+    }
+
+    .check-content {
+        flex: 1;
+    }
+
+    .check-title {
+        font-weight: 600;
+        color: var(--gray-800);
+        margin-bottom: 0.125rem;
+    }
+
+    .check-desc {
+        font-size: 0.75rem;
+        color: var(--gray-600);
+    }
+
+    /* Action Buttons */
+    .action-buttons {
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+    }
+
+    .btn {
+        padding: 0.75rem 1rem;
+        border-radius: var(--radius-md);
+        font-weight: 600;
+        border: none;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        transition: all 0.2s;
+        text-decoration: none;
+    }
+
+    .btn-approve {
+        background: #10b981;
+        color: white;
+    }
+
+    .btn-approve:hover {
+        background: #059669;
+    }
+
+    .btn-reject {
+        background: #ef4444;
+        color: white;
+    }
+
+    .btn-reject:hover {
+        background: #b91c1c;
+    }
+
+    .btn-flag {
+        background: #8b5cf6;
+        color: white;
+    }
+
+    .btn-flag:hover {
+        background: #6d28d9;
+    }
+
+    .btn-outline {
+        background: transparent;
+        border: 1px solid var(--gray-300);
+        color: var(--gray-700);
+    }
+
+    .btn-outline:hover {
+        background: var(--gray-100);
+    }
+
+    .rejection-reason {
+        margin-top: 1rem;
+        padding: 1rem;
+        background: var(--gray-50);
+        border-radius: var(--radius-md);
+        border-left: 3px solid #ef4444;
+    }
+
+    .rejection-reason textarea {
+        width: 100%;
+        min-height: 100px;
+        padding: 0.75rem;
+        border: 1px solid var(--gray-300);
+        border-radius: var(--radius-md);
+        margin: 0.5rem 0;
+        font-family: inherit;
+    }
+
+    .similar-post {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        padding: 0.75rem;
+        background: var(--gray-50);
+        border-radius: var(--radius-md);
+        margin-bottom: 0.5rem;
+    }
+
+    .similar-post:last-child {
+        margin-bottom: 0;
+    }
+
+    .similar-post a {
+        flex: 1;
+        color: var(--gray-800);
+        text-decoration: none;
+        font-weight: 600;
+    }
+
+    .similar-post a:hover {
+        color: var(--primary);
+    }
+
+    .similarity-badge {
+        padding: 0.25rem 0.5rem;
+        background: var(--gray-200);
+        border-radius: var(--radius-full);
+        font-size: 0.75rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="review-container">
+    <!-- Header -->
+    <div class="review-header">
+        <div class="review-title">
+            <a href="{% url 'admin_news_submissions' %}">
+                <i class="fas fa-arrow-left"></i>
+            </a>
+            <h1>Review News Submission</h1>
+        </div>
+        <div class="review-actions">
+            <a href="{% url 'post_detail' post.id %}" target="_blank" class="btn btn-outline">
+                <i class="fas fa-external-link-alt"></i> View as User
+            </a>
+        </div>
+    </div>
+
+    <div class="review-grid">
+        <!-- Main Content -->
+        <div class="review-main">
+            <!-- Post Content Section -->
+            <div class="review-section">
+                <h2 class="section-title">
+                    <i class="fas fa-file-alt"></i> Article Content
+                </h2>
+                
+                <div class="post-title-display">{{ post.title }}</div>
+                
+                <div class="post-meta">
+                    <div class="meta-item">
+                        <i class="fas fa-user"></i> {{ post.author.get_full_name|default:post.author.username }}
+                    </div>
+                    <div class="meta-item">
+                        <i class="fas fa-calendar"></i> Submitted {{ post.created_at|date:"F j, Y, g:i a" }}
+                    </div>
+                    {% if post.category %}
+                    <div class="meta-item">
+                        <i class="fas fa-folder"></i> {{ post.category.name }}
+                    </div>
+                    {% endif %}
+                    {% if post.external_source %}
+                    <div class="meta-item">
+                        <i class="fas fa-globe"></i> {{ post.external_source }}
+                    </div>
+                    {% endif %}
+                </div>
+
+                {% if post.image %}
+                <div class="post-media">
+                    <img src="{{ post.image.url }}" alt="{{ post.title }}">
+                </div>
+                {% elif post.image_url %}
+                <div class="post-media">
+                    <img src="{{ post.image_url }}" alt="{{ post.title }}">
+                </div>
+                {% endif %}
+
+                <div class="post-content">
+                    {{ post.content|linebreaks }}
+                </div>
+
+                <!-- Source Information -->
+                <div class="source-info">
+                    <div class="source-item">
+                        <i class="fas fa-link"></i>
+                        <span>External URL: </span>
+                        {% if post.external_url %}
+                        <a href="{{ post.external_url }}" target="_blank">{{ post.external_url|truncatechars:50 }}</a>
+                        {% else %}
+                        <span class="text-muted">No external URL provided</span>
+                        {% endif %}
+                    </div>
+                    <div class="source-item">
+                        <i class="fas fa-newspaper"></i>
+                        <span>Source: </span>
+                        <strong>{{ post.external_source|default:"User submitted (no source)" }}</strong>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Media Section -->
+            {% if post.has_media %}
+            <div class="review-section">
+                <h2 class="section-title">
+                    <i class="fas fa-video"></i> Media Content
+                </h2>
+                <div class="media-info">
+                    {% if post.video_urls %}
+                    <h4>Video URLs:</h4>
+                    <ul>
+                        {% for video in post.video_urls %}
+                        <li><a href="{{ video }}" target="_blank">{{ video|truncatechars:50 }}</a></li>
+                        {% endfor %}
+                    </ul>
+                    {% endif %}
+                    
+                    {% if post.audio_urls %}
+                    <h4>Audio URLs:</h4>
+                    <ul>
+                        {% for audio in post.audio_urls %}
+                        <li><a href="{{ audio }}" target="_blank">{{ audio|truncatechars:50 }}</a></li>
+                        {% endfor %}
+                    </ul>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Sidebar -->
+        <div class="review-sidebar">
+            <!-- AI Score Card -->
+            <div class="sidebar-card ai-score-card">
+                <div class="card-body">
+                    <div class="ai-score">
+                        {% with score=post.verification_score|default:0.5 %}
+                        {% with percentage=score|floatformat:2 %}
+                        <div class="score-circle" style="background: conic-gradient(var(--primary) {{ score|add:"-0.1" }}turn, #4b5563 0deg);">
+                            <span class="score-value">{{ percentage }}</span>
+                        </div>
+                        {% endwith %}
+                        {% endwith %}
+                        <div class="score-label">AI Trust Score</div>
+                    </div>
+                    
+                    <div style="text-align: center; margin-top: 1rem;">
+                        <span class="verdict-badge verdict-{{ post.verification_status }}">
+                            {{ post.get_verification_status_display|upper }}
+                        </span>
+                    </div>
+
+                    {% if post.verification_details.warnings %}
+                    <div style="margin-top: 1rem;">
+                        <h4 style="color: white; opacity: 0.9; margin-bottom: 0.5rem;">Warnings:</h4>
+                        <ul style="color: #f59e0b; list-style: none; padding: 0;">
+                            {% for warning in post.verification_details.warnings %}
+                            <li style="margin-bottom: 0.25rem;">⚠ {{ warning }}</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                    {% endif %}
+
+                    <div style="margin-top: 1rem; font-size: 0.875rem; opacity: 0.7;">
+                        <i class="fas fa-clock"></i> Verified: {{ post.verification_details.verified_at|default:post.updated_at|timesince }} ago
+                    </div>
+                </div>
+            </div>
+
+            <!-- AI Checks Card -->
+            {% if post.verification_details.checks %}
+            <div class="sidebar-card">
+                <div class="card-header">
+                    <i class="fas fa-check-circle"></i>
+                    <h3>AI Verification Checks</h3>
+                </div>
+                <div class="card-body">
+                    <div class="check-list">
+                        {% for check_name, check_result in post.verification_details.checks.items %}
+                        <div class="check-item">
+                            <div class="check-icon {% if check_result.score >= 0.7 %}success{% elif check_result.score >= 0.4 %}warning{% else %}danger{% endif %}">
+                                {% if check_result.score >= 0.7 %}
+                                <i class="fas fa-check"></i>
+                                {% elif check_result.score >= 0.4 %}
+                                <i class="fas fa-exclamation"></i>
+                                {% else %}
+                                <i class="fas fa-times"></i>
+                                {% endif %}
+                            </div>
+                            <div class="check-content">
+                                <div class="check-title">{{ check_name|title }} Check</div>
+                                <div class="check-desc">Score: {{ check_result.score|floatformat:2 }}</div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Similar Posts Card -->
+            {% if post.verification_details.checks.duplicate.similar_posts %}
+            <div class="sidebar-card">
+                <div class="card-header">
+                    <i class="fas fa-copy"></i>
+                    <h3>Similar Posts Found</h3>
+                </div>
+                <div class="card-body">
+                    {% for similar in post.verification_details.checks.duplicate.similar_posts %}
+                    <div class="similar-post">
+                        <i class="fas fa-file-alt"></i>
+                        <a href="{% url 'admin_news_detail' similar.id %}">{{ similar.title|truncatechars:30 }}</a>
+                        <span class="similarity-badge">{{ similar.similarity|floatformat:1 }}%</span>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Action Card -->
+            <div class="sidebar-card">
+                <div class="card-header">
+                    <i class="fas fa-gavel"></i>
+                    <h3>Review Actions</h3>
+                </div>
+                <div class="card-body">
+                    <form method="POST" id="reviewForm">
+                        {% csrf_token %}
+                        
+                        <div class="action-buttons">
+                            <button type="button" class="btn btn-approve" onclick="submitAction('approve')">
+                                <i class="fas fa-check-circle"></i> Approve & Publish
+                            </button>
+                            
+                            <button type="button" class="btn btn-reject" onclick="showRejectForm()">
+                                <i class="fas fa-times-circle"></i> Reject
+                            </button>
+                            
+                            <button type="button" class="btn btn-flag" onclick="submitAction('flag')">
+                                <i class="fas fa-flag"></i> Flag for Review
+                            </button>
+                            
+                            <button type="button" class="btn btn-outline" onclick="runAIVerification()">
+                                <i class="fas fa-robot"></i> Run AI Again
+                            </button>
+                        </div>
+
+                        <!-- Rejection Reason (Hidden by default) -->
+                        <div id="rejectionForm" style="display: none;" class="rejection-reason">
+                            <label for="rejection_reason">Reason for rejection:</label>
+                            <textarea name="rejection_reason" id="rejection_reason" placeholder="Explain why this news is being rejected..."></textarea>
+                            <div class="action-buttons" style="margin-top: 0.5rem;">
+                                <button type="button" class="btn btn-reject" onclick="submitRejection()">
+                                    Confirm Rejection
+                                </button>
+                                <button type="button" class="btn btn-outline" onclick="hideRejectForm()">
+                                    Cancel
+                                </button>
+                            </div>
+                        </div>
+
+                        <input type="hidden" name="action" id="actionInput" value="">
+                        <input type="hidden" name="notes" id="notesInput" value="">
+                    </form>
+
+                    {% if post.reviewed_by %}
+                    <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--gray-200);">
+                        <small class="text-muted">
+                            <i class="fas fa-history"></i> Last reviewed by @{{ post.reviewed_by.username }} 
+                            {% if post.reviewed_at %}{{ post.reviewed_at|timesince }} ago{% endif %}
+                        </small>
+                        {% if post.review_notes %}
+                        <p style="margin-top: 0.5rem; font-size: 0.875rem; background: var(--gray-50); padding: 0.5rem; border-radius: var(--radius-md);">
+                            <strong>Notes:</strong> {{ post.review_notes }}
+                        </p>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Author Info Card -->
+            <div class="sidebar-card">
+                <div class="card-header">
+                    <i class="fas fa-user"></i>
+                    <h3>Author Information</h3>
+                </div>
+                <div class="card-body">
+                    <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem;">
+                        <div style="width: 48px; height: 48px; border-radius: 50%; overflow: hidden;">
+                            {% if post.author.profile.profile_pic %}
+                            <img src="{{ post.author.profile.profile_pic.url }}" style="width: 100%; height: 100%; object-fit: cover;">
+                            {% else %}
+                            <div style="width: 100%; height: 100%; background: linear-gradient(145deg, var(--primary), var(--primary-dark)); color: white; display: flex; align-items: center; justify-content: center; font-weight: 600;">
+                                {{ post.author.username|first|upper }}
+                            </div>
+                            {% endif %}
+                        </div>
+                        <div>
+                            <div style="font-weight: 600;">{{ post.author.get_full_name|default:post.author.username }}</div>
+                            <div style="font-size: 0.875rem; color: var(--gray-600);">@{{ post.author.username }}</div>
+                        </div>
+                    </div>
+
+                    <div style="margin-top: 1rem;">
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                            <span class="text-muted">Previous submissions:</span>
+                            <strong>{{ post.author.posts.filter|length }}</strong>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                            <span class="text-muted">Account created:</span>
+                            <strong>{{ post.author.date_joined|date:"M Y" }}</strong>
+                        </div>
+                        <div style="display: flex; justify-content: space-between;">
+                            <span class="text-muted">Account type:</span>
+                            <strong>{{ post.author.profile.account_type|title }}</strong>
+                        </div>
+                    </div>
+
+                    <a href="{% url 'profile_view' username=post.author.username %}" target="_blank" class="btn btn-outline" style="width: 100%; margin-top: 1rem;">
+                        <i class="fas fa-external-link-alt"></i> View Profile
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function submitAction(action) {
+        document.getElementById('actionInput').value = action;
+        document.getElementById('reviewForm').submit();
+    }
+
+    function showRejectForm() {
+        document.querySelector('.action-buttons').style.display = 'none';
+        document.getElementById('rejectionForm').style.display = 'block';
+    }
+
+    function hideRejectForm() {
+        document.getElementById('rejectionForm').style.display = 'none';
+        document.querySelector('.action-buttons').style.display = 'flex';
+    }
+
+    function submitRejection() {
+        const reason = document.getElementById('rejection_reason').value;
+        if (!reason.trim()) {
+            alert('Please provide a reason for rejection');
+            return;
+        }
+        document.getElementById('actionInput').value = 'reject';
+        document.getElementById('reviewForm').submit();
+    }
+
+    function runAIVerification() {
+        if (confirm('Run AI verification again on this news article?')) {
+            document.getElementById('actionInput').value = 'run_ai';
+            document.getElementById('reviewForm').submit();
+        }
+    }
+</script>
+{% endblock %}

@@ -1,4 +1,5 @@
-# core/models.py
+# core/models.py (CLEAN VERSION - NO DUPLICATES)
+
 from django.db import models
 from django.contrib.auth.models import User
 from django.utils import timezone
@@ -8,16 +9,20 @@ from django.urls import reverse
 from django.db.models import Count, Q
 from decimal import Decimal
 
+# ==================== CATEGORY MODEL (ONLY ONE) ====================
 class Category(models.Model):
+    """Category model for posts"""
     name = models.CharField(max_length=100)
     slug = models.SlugField(unique=True)
     description = models.TextField(blank=True)
-    parent = models.ForeignKey('self', on_delete=models.CASCADE, null=True, blank=True, related_name='subcategories')
-    icon = models.CharField(max_length=50, blank=True)
+    parent = models.ForeignKey('self', on_delete=models.CASCADE, null=True, blank=True, related_name='children')
+    icon = models.CharField(max_length=50, blank=True, help_text="Font Awesome icon class")
     color = models.CharField(max_length=20, default='#3b82f6')
     order = models.IntegerField(default=0)
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
     
-    # Add a cached post count field
+    # Cache for post count
     cached_post_count = models.PositiveIntegerField(default=0)
     
     class Meta:
@@ -29,20 +34,34 @@ class Category(models.Model):
     
     def get_post_count(self):
         """Get actual post count for this category"""
-        # If cached count is 0 or stale, update it
         if self.cached_post_count == 0:
-            count = self.post_set.filter(status='published', is_auto_fetched=True).count()
+            count = self.post_set.filter(status='published').count()
             self.cached_post_count = count
             self.save(update_fields=['cached_post_count'])
         return self.cached_post_count
     
     def update_post_count(self):
         """Update cached post count"""
-        self.cached_post_count = self.post_set.filter(status='published').count()
+        self.cached_post_count = self.posts.filter(status='published').count()
         self.save(update_fields=['cached_post_count'])
+    
+    def get_absolute_url(self):
+        return reverse('category_view', args=[self.slug])
 
+
+# ==================== SYSTEM SETTINGS MODEL ====================
 class SystemSettings(models.Model):
     """System-wide settings controlled by admin"""
+    
+    # News verification settings
+    auto_approve_threshold = models.FloatField(default=0.8, help_text="AI score threshold for auto-approval (0.0-1.0)")
+    require_manual_review_for_fake = models.BooleanField(default=True, help_text="Require manual review for posts marked as fake")
+    notify_admin_on_submission = models.BooleanField(default=True)
+    notify_user_on_approval = models.BooleanField(default=True)
+    
+    # Source reputation settings
+    trusted_sources = models.TextField(blank=True, help_text="Comma-separated list of trusted news sources")
+    blocked_sources = models.TextField(blank=True, help_text="Comma-separated list of blocked sources")
     
     # AI & Automation Settings
     auto_verify_news = models.BooleanField(
@@ -99,14 +118,6 @@ class SystemSettings(models.Model):
     max_news_per_fetch = models.IntegerField(
         default=50,
         validators=[MinValueValidator(1), MaxValueValidator(200)]
-    )
-    trusted_sources = models.TextField(
-        blank=True,
-        help_text='Comma-separated list of trusted sources (e.g., punchng.com, vanguardngr.com)'
-    )
-    blocked_sources = models.TextField(
-        blank=True,
-        help_text='Comma-separated list of blocked sources'
     )
     
     # Post & Content Settings
@@ -319,9 +330,7 @@ class SystemSettings(models.Model):
         verbose_name_plural = "System Settings"
     
     def save(self, *args, **kwargs):
-        # Ensure only one instance exists
         if not self.pk and SystemSettings.objects.exists():
-            # Update existing instance instead of creating new one
             existing = SystemSettings.objects.first()
             self.pk = existing.pk
         super().save(*args, **kwargs)
@@ -331,34 +340,30 @@ class SystemSettings(models.Model):
     
     @classmethod
     def get_settings(cls):
-        """Get or create settings singleton"""
         settings, created = cls.objects.get_or_create(pk=1)
         return settings
     
     def get_trusted_sources_list(self):
-        """Return trusted sources as list"""
         if self.trusted_sources:
             return [s.strip() for s in self.trusted_sources.split(',') if s.strip()]
         return []
     
     def get_blocked_sources_list(self):
-        """Return blocked sources as list"""
         if self.blocked_sources:
             return [s.strip() for s in self.blocked_sources.split(',') if s.strip()]
         return []
     
     def get_allowed_image_types_list(self):
-        """Return allowed image types as list"""
         return [t.strip().lower() for t in self.allowed_image_types.split(',') if t.strip()]
     
     def is_ai_verification_active(self):
-        """Check if AI verification is enabled"""
         return self.auto_verify_news
     
     def should_auto_post(self):
-        """Check if auto-posting is enabled"""
         return self.auto_verify_news and self.auto_post_verified_news
 
+
+# ==================== ADVERTISEMENT MODEL (ONLY ONE) ====================
 class Advertisement(models.Model):
     AD_TYPES = [
         ('banner', 'Banner Ad'),
@@ -377,10 +382,11 @@ class Advertisement(models.Model):
         ('expired', 'Expired'),
     ]
     
-    business = models.ForeignKey(User, on_delete=models.CASCADE, related_name='ads')
+    uuid = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
+    business = models.ForeignKey(User, on_delete=models.CASCADE, related_name='advertisements')
     ad_type = models.CharField(max_length=20, choices=AD_TYPES, default='banner')
     title = models.CharField(max_length=200)
-    content = models.TextField(blank=True)
+    description = models.TextField(blank=True)  # Using 'description' consistently
     image = models.ImageField(upload_to='ads/', blank=True, null=True)
     image_url = models.URLField(max_length=1000, blank=True)
     target_url = models.URLField(max_length=1000)
@@ -391,32 +397,49 @@ class Advertisement(models.Model):
     start_date = models.DateTimeField(default=timezone.now)
     end_date = models.DateTimeField()
     
+    # Pricing
+    cost_per_impression = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    cost_per_click = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    
     # Targeting
-    target_categories = models.ManyToManyField('Category', blank=True)
+    target_categories = models.ManyToManyField(Category, blank=True, related_name='advertisements')
     target_locations = models.CharField(max_length=500, blank=True)
     target_keywords = models.CharField(max_length=500, blank=True)
     
     # Status & Approval
     status = models.CharField(max_length=20, choices=AD_STATUS, default='pending')
     is_active = models.BooleanField(default=False)
-    approved_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='approved_ads')
+    approved_by = models.ForeignKey(
+        User, 
+        on_delete=models.SET_NULL, 
+        null=True, 
+        blank=True, 
+        related_name='approved_ads'
+    )
     approved_at = models.DateTimeField(null=True, blank=True)
     rejection_reason = models.TextField(blank=True)
     
     # Performance tracking
-    max_clicks = models.IntegerField(default=0)  # 0 = unlimited
-    max_impressions = models.IntegerField(default=0)  # 0 = unlimited
+    max_clicks = models.IntegerField(default=0)
+    max_impressions = models.IntegerField(default=0)
     
     # Metadata
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-    uuid = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
     
     class Meta:
         ordering = ['-created_at']
     
     def __str__(self):
         return f"{self.title} - {self.business.username}"
+    
+    @property
+    def clicks(self):
+        return self.analytics.aggregate(total=models.Sum('clicks'))['total'] or 0
+    
+    @property
+    def impressions(self):
+        return self.analytics.aggregate(total=models.Sum('impressions'))['total'] or 0
     
     @property
     def is_live(self):
@@ -435,6 +458,8 @@ class Advertisement(models.Model):
             return 0
         return (self.end_date - timezone.now()).days
 
+
+# ==================== POST MODEL ====================
 class Post(models.Model):
     POST_TYPES = [
         ('discussion', 'Discussion'),
@@ -459,11 +484,16 @@ class Post(models.Model):
         ('specific', 'Specific Followers - Select specific followers'),
     ]
     
-    privacy = models.CharField(
-        max_length=20, 
-        choices=PRIVACY_CHOICES, 
-        default='public'
-    )
+    # Basic Information
+    title = models.CharField(max_length=200)
+    content = models.TextField()
+    author = models.ForeignKey(User, on_delete=models.CASCADE, related_name='posts')
+    post_type = models.CharField(max_length=20, choices=POST_TYPES, default='discussion')
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='draft')
+    category = models.ForeignKey(Category, on_delete=models.SET_NULL, null=True, blank=True, related_name='posts')
+    
+    # Privacy Settings
+    privacy = models.CharField(max_length=20, choices=PRIVACY_CHOICES, default='public')
     allowed_viewers = models.ManyToManyField(
         User, 
         blank=True, 
@@ -471,119 +501,128 @@ class Post(models.Model):
         help_text='Specific followers who can view this post (for privacy="specific")'
     )
     
-    
-    
-    title = models.CharField(max_length=500)
-    content = models.TextField()
-    post_type = models.CharField(max_length=20, choices=POST_TYPES, default='discussion')
-    category = models.ForeignKey('Category', on_delete=models.SET_NULL, null=True, blank=True)
-    author = models.ForeignKey(User, on_delete=models.CASCADE, related_name='posts')
-    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='published')
-    
-    # For user-submitted news
+    # Source Information (for news posts)
     source_url = models.URLField(max_length=1000, blank=True, null=True)
     source_name = models.CharField(max_length=200, blank=True)
     
-    # For external news
+    # External News Information (for auto-fetched news)
     external_source = models.CharField(max_length=200, blank=True)
-    external_url =  models.URLField(max_length=1000, blank=True) 
+    external_url = models.URLField(max_length=1000, blank=True) 
     external_id = models.CharField(max_length=200, blank=True, null=True, unique=True)
-    is_auto_fetched = models.BooleanField(default=False)  # New field to identify auto-fetched news
+    is_auto_fetched = models.BooleanField(default=False)
+    original_published_at = models.DateTimeField(null=True, blank=True)
     
-    # New fields
-    is_sponsored = models.BooleanField(default=False)
-    is_banner = models.BooleanField(default=False)
-    profile_only = models.BooleanField(default=False)  # Only visible on profile
-    advertisement = models.ForeignKey(Advertisement, on_delete=models.SET_NULL, null=True, blank=True, related_name='posts')
-    
-    # Add banner-specific fields
-    banner_expires_at = models.DateTimeField(null=True, blank=True)
-    banner_priority = models.IntegerField(default=0)  # Higher number = higher priority
-    banner_clicks = models.PositiveIntegerField(default=0)
-    banner_impressions = models.PositiveIntegerField(default=0)
-    
-    # Add group relation
-    group = models.ForeignKey('Group', on_delete=models.SET_NULL, null=True, blank=True, related_name='group_posts')
-    
-    # Add profile post visibility
-    allow_comments = models.BooleanField(default=True)
-    allow_sharing = models.BooleanField(default=True)
-    
-    # Stats
-    views = models.PositiveIntegerField(default=0)
-    likes = models.ManyToManyField(User, related_name='liked_posts', blank=True)
-    shares = models.PositiveIntegerField(default=0)
-    bookmarks = models.ManyToManyField(User, related_name='bookmarked_posts', blank=True)
-    reposts = models.PositiveIntegerField(default=0)
-    
-    # Social media features
-    repost_count = models.PositiveIntegerField(default=0)
-    comments_count = models.PositiveIntegerField(default=0, db_column='comment_count')# Cache comment count
-    share_count = models.PositiveIntegerField(default=0)
-    
-    # For trending algorithm
-    engagement_score = models.FloatField(default=0.0)
-    last_engagement_update = models.DateTimeField(auto_now=True)
-
-    # For news verification
-    is_verified = models.BooleanField(default=False)  # Auto-verified by detector
-    is_approved = models.BooleanField(default=False)  # Manually approved by admin
-    verification_score = models.FloatField(default=0.0)
-    verification_status = models.CharField(
+    # News Submission & Approval Workflow
+    is_news_submission = models.BooleanField(default=False)
+    submission_status = models.CharField(
         max_length=20,
         choices=[
-            ('pending', 'Pending'),
-            ('verified', 'Verified'),
-            ('fake', 'Fake'),
-            ('checking', 'Checking'),
+            ('pending', 'Pending Review'),
+            ('approved', 'Approved'),
+            ('rejected', 'Rejected'),
+            ('flagged', 'Flagged for Review'),
         ],
         default='pending'
     )
+    reviewed_by = models.ForeignKey(
+        User, 
+        on_delete=models.SET_NULL, 
+        null=True, 
+        blank=True,
+        related_name='reviewed_news'
+    )
+    reviewed_at = models.DateTimeField(null=True, blank=True)
+    review_notes = models.TextField(blank=True)
+    rejection_reason = models.TextField(blank=True)
+    
+    # AI Verification Fields
+    verification_status = models.CharField(
+        max_length=20,
+        choices=[
+            ('unverified', 'Unverified'),
+            ('pending', 'Pending AI Verification'),
+            ('verified', 'Verified'),
+            ('fake', 'Fake News'),
+            ('questionable', 'Questionable'),
+        ],
+        default='unverified'
+    )
+    verification_score = models.FloatField(default=0.0)
     verification_details = models.JSONField(default=dict, blank=True)
+    verification_method = models.CharField(max_length=50, default='manual')
+    is_verified = models.BooleanField(default=False)
+    is_approved = models.BooleanField(default=False)
     
-    def update_engagement_score(self):
-        """Update engagement score for trending"""
-        # Update comments count
-        self.comments_count = self.comments.filter(is_active=True).count()
-        
-        # Calculate engagement score
-        like_weight = 1
-        comment_weight = 3  # Comments are more valuable than likes
-        repost_weight = 5   # Reposts are very valuable
-        view_weight = 0.01  # Views have less weight
-        
-        self.engagement_score = (
-            self.likes.count() * like_weight +
-            self.comments_count * comment_weight +
-            self.reposts * repost_weight +
-            self.views * view_weight
-        )
-        self.last_engagement_update = timezone.now()
-        
-        # Save updated fields
-        self.save(update_fields=['engagement_score', 'last_engagement_update', 'comments_count'])
+    # Source Reputation
+    source_reputation_score = models.FloatField(default=0.0)
+    source_trust_level = models.CharField(
+        max_length=20,
+        choices=[
+            ('unknown', 'Unknown'),
+            ('trusted', 'Trusted'),
+            ('questionable', 'Questionable'),
+            ('untrusted', 'Untrusted'),
+        ],
+        default='unknown'
+    )
     
-    @property
-    def comment_count(self):
-        """Property accessor for backward compatibility"""
-        return self.comments_count
-
-    # Timestamps
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-    published_at = models.DateTimeField(default=timezone.now)
-    
-    # Media
-    image_url = models.URLField(max_length=1000, blank=True, null=True)
+    # Media Content
     image = models.ImageField(upload_to='post_images/', blank=True, null=True)
+    image_url = models.URLField(max_length=1000, blank=True, null=True)
+    video_urls = models.JSONField(null=True, blank=True, default=list)
+    audio_urls = models.JSONField(null=True, blank=True, default=list)
+    has_media = models.BooleanField(default=False)
+    
+    # Special Content Types
+    is_sponsored = models.BooleanField(default=False)
+    is_banner = models.BooleanField(default=False)
+    profile_only = models.BooleanField(default=False)
+    advertisement = models.ForeignKey(
+        Advertisement, 
+        on_delete=models.SET_NULL, 
+        null=True, 
+        blank=True, 
+        related_name='posts'
+    )
+    
+    # Banner-specific fields
+    banner_expires_at = models.DateTimeField(null=True, blank=True)
+    banner_priority = models.IntegerField(default=0)
+    banner_clicks = models.PositiveIntegerField(default=0)
+    banner_impressions = models.PositiveIntegerField(default=0)
+    
+    # Group association
+    group = models.ForeignKey('Group', on_delete=models.SET_NULL, null=True, blank=True, related_name='group_posts')
+    
+    # Interaction Settings
+    allow_comments = models.BooleanField(default=True)
+    allow_sharing = models.BooleanField(default=True)
+    
+    # Statistics
+    views = models.PositiveIntegerField(default=0)
+    shares = models.PositiveIntegerField(default=0)
+    repost_count = models.PositiveIntegerField(default=0)
+    comments_count = models.PositiveIntegerField(default=0)
+    share_count = models.PositiveIntegerField(default=0)
+    
+    # Engagement & Trending
+    engagement_score = models.FloatField(default=0.0)
+    last_engagement_update = models.DateTimeField(auto_now=True)
+    is_featured = models.BooleanField(default=False)
+    is_trending = models.BooleanField(default=False)
     
     # SEO
     meta_description = models.TextField(blank=True)
     keywords = models.CharField(max_length=500, blank=True)
     
-    # For home page display
-    is_featured = models.BooleanField(default=False, help_text="Display on home page")
-    is_trending = models.BooleanField(default=False)
+    # Timestamps
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    published_at = models.DateTimeField(default=timezone.now)
+    
+    # Many-to-Many Relationships
+    likes = models.ManyToManyField(User, related_name='liked_posts', blank=True)
+    bookmarks = models.ManyToManyField(User, related_name='bookmarked_posts', blank=True)
     
     class Meta:
         ordering = ['-published_at']
@@ -595,6 +634,8 @@ class Post(models.Model):
             models.Index(fields=['is_auto_fetched']),
             models.Index(fields=['is_sponsored']),
             models.Index(fields=['profile_only']),
+            models.Index(fields=['verification_status']),
+            models.Index(fields=['submission_status']),
         ]
     
     def __str__(self):
@@ -609,34 +650,55 @@ class Post(models.Model):
     def bookmark_count(self):
         return self.bookmarks.count()
     
+    def update_engagement_score(self):
+        self.comments_count = self.comments.filter(is_active=True).count()
+        
+        like_weight = 1
+        comment_weight = 3
+        repost_weight = 5
+        view_weight = 0.01
+        
+        self.engagement_score = (
+            self.likes.count() * like_weight +
+            self.comments_count * comment_weight +
+            self.repost_count * repost_weight +
+            self.views * view_weight
+        )
+        self.last_engagement_update = timezone.now()
+        self.save(update_fields=['engagement_score', 'last_engagement_update', 'comments_count'])
+    
     def save(self, *args, **kwargs):
-        # Auto-detect if post is auto-fetched
-        if self.author and self.author.username == 'news_bot':
+        if self.author and hasattr(self.author, 'username') and self.author.username == 'news_bot':
             self.is_auto_fetched = True
             self.post_type = 'news'
         
-        # Also auto-detect by external fields
         if self.external_id or self.external_url or self.external_source:
             self.is_auto_fetched = True
             self.post_type = 'news'
         
-        # Auto-set profile_only for profile posts
         if self.post_type == 'profile_post':
             self.profile_only = True
-            self.category = None  # Profile posts don't have categories
+            self.category = None
             
-        # Auto-set is_sponsored for sponsored posts
         if self.post_type == 'sponsored' and self.advertisement:
             self.is_sponsored = True
-            
+        
+        if self.video_urls or self.audio_urls:
+            self.has_media = True
+        
+        if self.status in ['published', 'featured'] and not self.published_at:
+            self.published_at = timezone.now()
+        
         super().save(*args, **kwargs)
     
     def get_absolute_url(self):
-        from django.urls import reverse
         return reverse('post_detail', args=[str(self.id)])
 
+
+# ==================== COMMENT MODEL ====================
 class Comment(models.Model):
     post = models.ForeignKey(Post, on_delete=models.CASCADE, related_name='comments')
+    image = models.ImageField(upload_to='comment_images/', blank=True, null=True)
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     content = models.TextField()
     parent = models.ForeignKey('self', on_delete=models.CASCADE, null=True, blank=True, related_name='replies')
@@ -654,6 +716,8 @@ class Comment(models.Model):
     def like_count(self):
         return self.likes.count()
 
+
+# ==================== USER PROFILE MODEL ====================
 class UserProfile(models.Model):
     ACCOUNT_TYPES = [
         ('individual', 'Individual'),
@@ -670,23 +734,19 @@ class UserProfile(models.Model):
     website = models.URLField(max_length=1000, blank=True)
     twitter_handle = models.CharField(max_length=50, blank=True)
     
-    # Additional fields for profile
     phone = models.CharField(max_length=20, blank=True)
     date_of_birth = models.DateField(null=True, blank=True)
     occupation = models.CharField(max_length=100, blank=True)
     interests = models.TextField(blank=True, help_text="Comma separated list of interests")
     
-    # Social media links
     facebook_url = models.URLField(max_length=1000, blank=True)
     instagram_url = models.URLField(max_length=1000, blank=True)
     linkedin_url = models.URLField(max_length=1000, blank=True)
     
-    # Account type and business fields
     account_type = models.CharField(max_length=20, choices=ACCOUNT_TYPES, default='individual')
     is_verified_business = models.BooleanField(default=False)
     ad_credits = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     
-    # Business-specific fields
     business_name = models.CharField(max_length=200, blank=True)
     business_registration = models.CharField(max_length=100, blank=True)
     business_address = models.TextField(blank=True)
@@ -694,26 +754,27 @@ class UserProfile(models.Model):
     business_email = models.EmailField(blank=True)
     business_website = models.URLField(max_length=1000, blank=True)
     
-    # Business verification
     business_verified_at = models.DateTimeField(null=True, blank=True)
-    business_verified_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='verified_businesses')
+    business_verified_by = models.ForeignKey(
+        User, 
+        on_delete=models.SET_NULL, 
+        null=True, 
+        blank=True, 
+        related_name='verified_businesses'
+    )
     
-    # Ad preferences
     receive_promo_emails = models.BooleanField(default=True)
     ad_notifications = models.BooleanField(default=True)
     
-    # Group account fields
     is_group_account = models.BooleanField(default=False)
     group = models.ForeignKey('Group', on_delete=models.SET_NULL, null=True, blank=True, related_name='profile')
     
-    # Stats
     total_posts = models.PositiveIntegerField(default=0)
     total_comments = models.PositiveIntegerField(default=0)
     total_likes_received = models.PositiveIntegerField(default=0)
     followers_count = models.PositiveIntegerField(default=0)
     following_count = models.PositiveIntegerField(default=0)
     
-    # Settings
     email_notifications = models.BooleanField(default=True)
     show_online_status = models.BooleanField(default=True)
     privacy_level = models.CharField(
@@ -726,7 +787,6 @@ class UserProfile(models.Model):
         default='public'
     )
     
-    # Metadata
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     last_seen = models.DateTimeField(default=timezone.now)
@@ -744,7 +804,7 @@ class UserProfile(models.Model):
         self.total_posts = self.user.posts.count()
         self.total_comments = self.user.comment_set.count()
         self.total_likes_received = self.user.posts.aggregate(
-            total_likes=models.Sum('likes__count')
+            total_likes=models.Sum('likes')
         )['total_likes'] or 0
         self.save()
     
@@ -754,15 +814,9 @@ class UserProfile(models.Model):
         return []
     
     def can_submit_ads(self):
-        """Check if user can submit ads"""
-        if self.account_type != 'business':
-            return False
-        if not self.is_verified_business:
-            return False
-        return True
+        return self.account_type == 'business' and self.is_verified_business
     
     def get_remaining_ad_credits(self):
-        """Get remaining ad credits"""
         active_ads = Advertisement.objects.filter(
             business=self.user,
             status__in=['active', 'approved'],
@@ -771,17 +825,11 @@ class UserProfile(models.Model):
         total_budget = sum(ad.budget for ad in active_ads)
         return self.ad_credits - total_budget
 
+
+# ==================== FOLLOW MODEL ====================
 class Follow(models.Model):
-    follower = models.ForeignKey(
-        User, 
-        on_delete=models.CASCADE, 
-        related_name='following'
-    )
-    following = models.ForeignKey(
-        User, 
-        on_delete=models.CASCADE, 
-        related_name='followers'
-    )
+    follower = models.ForeignKey(User, on_delete=models.CASCADE, related_name='following')
+    following = models.ForeignKey(User, on_delete=models.CASCADE, related_name='followers')
     created_at = models.DateTimeField(auto_now_add=True)
     
     class Meta:
@@ -791,6 +839,8 @@ class Follow(models.Model):
     def __str__(self):
         return f"{self.follower.username} follows {self.following.username}"
 
+
+# ==================== USER ACTIVITY MODEL ====================
 class UserActivity(models.Model):
     ACTIVITY_TYPES = [
         ('post_created', 'Post Created'),
@@ -811,10 +861,16 @@ class UserActivity(models.Model):
     ]
     
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='activities')
-    activity_type = models.CharField(max_length=30, choices=ACTIVITY_TYPES)  # Increased from 50 to appropriate length
-    post = models.ForeignKey('Post', on_delete=models.CASCADE, null=True, blank=True)
-    comment = models.ForeignKey('Comment', on_delete=models.CASCADE, null=True, blank=True)
-    target_user = models.ForeignKey(User, on_delete=models.CASCADE, null=True, blank=True, related_name='target_activities')
+    activity_type = models.CharField(max_length=30, choices=ACTIVITY_TYPES)
+    post = models.ForeignKey(Post, on_delete=models.CASCADE, null=True, blank=True)
+    comment = models.ForeignKey(Comment, on_delete=models.CASCADE, null=True, blank=True)
+    target_user = models.ForeignKey(
+        User, 
+        on_delete=models.CASCADE, 
+        null=True, 
+        blank=True, 
+        related_name='target_activities'
+    )
     details = models.JSONField(default=dict, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     
@@ -825,6 +881,8 @@ class UserActivity(models.Model):
     def __str__(self):
         return f"{self.user.username} - {self.get_activity_type_display()}"
 
+
+# ==================== NOTIFICATION MODEL ====================
 class Notification(models.Model):
     NOTIFICATION_TYPES = [
         ('like', 'Like'),
@@ -842,7 +900,7 @@ class Notification(models.Model):
     
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='notifications')
     from_user = models.ForeignKey(User, on_delete=models.CASCADE, null=True, blank=True, related_name='sent_notifications')
-    notification_type = models.CharField(max_length=30, choices=NOTIFICATION_TYPES)  # Increased from 20 to 30
+    notification_type = models.CharField(max_length=30, choices=NOTIFICATION_TYPES)
     message = models.CharField(max_length=500)
     post = models.ForeignKey(Post, on_delete=models.CASCADE, null=True, blank=True)
     comment = models.ForeignKey(Comment, on_delete=models.CASCADE, null=True, blank=True)
@@ -855,6 +913,8 @@ class Notification(models.Model):
     def __str__(self):
         return f"{self.notification_type} notification for {self.user.username}"
 
+
+# ==================== REPOST MODEL ====================
 class Repost(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='reposts')
     original_post = models.ForeignKey(Post, on_delete=models.CASCADE, related_name='repost_instances')
@@ -869,6 +929,8 @@ class Repost(models.Model):
     def __str__(self):
         return f"{self.user.username} reposted {self.original_post.title}"
 
+
+# ==================== GROUP MODELS ====================
 class Group(models.Model):
     GROUP_TYPES = [
         ('public', 'Public - Anyone can join'),
@@ -881,24 +943,19 @@ class Group(models.Model):
     description = models.TextField(blank=True)
     group_type = models.CharField(max_length=20, choices=GROUP_TYPES, default='public')
     
-    # Ownership & Moderation
     created_by = models.ForeignKey(User, on_delete=models.CASCADE, related_name='created_groups')
     admins = models.ManyToManyField(User, related_name='administered_groups', blank=True)
     moderators = models.ManyToManyField(User, related_name='moderated_groups', blank=True)
     
-    # Settings
     allow_member_posts = models.BooleanField(default=True)
     require_post_approval = models.BooleanField(default=False)
     
-    # Media
     cover_image = models.ImageField(upload_to='groups/covers/', blank=True, null=True)
     icon = models.ImageField(upload_to='groups/icons/', blank=True, null=True)
     
-    # Stats
     member_count = models.PositiveIntegerField(default=0)
     post_count = models.PositiveIntegerField(default=0)
     
-    # Metadata
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     is_active = models.BooleanField(default=True)
@@ -914,6 +971,15 @@ class Group(models.Model):
         if not self.slug:
             self.slug = slugify(self.name)
         super().save(*args, **kwargs)
+    
+    def update_member_count(self):
+        self.member_count = self.members.count()
+        self.save(update_fields=['member_count'])
+    
+    def update_post_count(self):
+        self.post_count = self.group_posts.count()
+        self.save(update_fields=['post_count'])
+
 
 class GroupMember(models.Model):
     ROLE_CHOICES = [
@@ -922,11 +988,19 @@ class GroupMember(models.Model):
         ('admin', 'Admin'),
     ]
     
-    group = models.ForeignKey(Group, on_delete=models.CASCADE, related_name='memberships')
+    group = models.ForeignKey(Group, on_delete=models.CASCADE, related_name='members')
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='group_memberships')
     role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='member')
     joined_at = models.DateTimeField(auto_now_add=True)
     is_banned = models.BooleanField(default=False)
+    banned_at = models.DateTimeField(null=True, blank=True)
+    banned_by = models.ForeignKey(
+        User, 
+        on_delete=models.SET_NULL, 
+        null=True, 
+        blank=True, 
+        related_name='banned_members'
+    )
     
     class Meta:
         unique_together = ['group', 'user']
@@ -934,8 +1008,8 @@ class GroupMember(models.Model):
     def __str__(self):
         return f"{self.user.username} in {self.group.name}"
 
+
 class GroupPost(models.Model):
-    """Posts within groups (separate from main feed)"""
     group = models.ForeignKey(Group, on_delete=models.CASCADE, related_name='posts')
     post = models.ForeignKey(Post, on_delete=models.CASCADE, related_name='group_posts')
     posted_by = models.ForeignKey(User, on_delete=models.CASCADE)
@@ -949,25 +1023,24 @@ class GroupPost(models.Model):
     def __str__(self):
         return f"{self.post.title} in {self.group.name}"
 
+
+# ==================== AD ANALYTICS MODEL ====================
 class AdAnalytics(models.Model):
     advertisement = models.ForeignKey(Advertisement, on_delete=models.CASCADE, related_name='analytics')
     date = models.DateField(default=timezone.now)
     
-    # Metrics
     impressions = models.PositiveIntegerField(default=0)
     clicks = models.PositiveIntegerField(default=0)
     cost = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     
-    # Performance metrics
-    ctr = models.FloatField(default=0)  # Click-through rate
-    cpc = models.DecimalField(max_digits=8, decimal_places=2, default=0)  # Cost per click
+    ctr = models.FloatField(default=0)
+    cpc = models.DecimalField(max_digits=8, decimal_places=2, default=0)
     
     class Meta:
         unique_together = ['advertisement', 'date']
         verbose_name_plural = "Ad Analytics"
     
     def update_metrics(self):
-        """Update derived metrics"""
         if self.impressions > 0:
             self.ctr = (self.clicks / self.impressions) * 100
         if self.clicks > 0:

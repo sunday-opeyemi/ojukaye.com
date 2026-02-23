@@ -1,0 +1,650 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Auto-Fetched News - Admin{% endblock %}
+
+{% block extra_css %}
+<style>
+    .admin-container {
+        max-width: 1400px;
+        margin: 0 auto;
+        padding: 2rem;
+    }
+
+    .admin-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 2rem;
+        flex-wrap: wrap;
+        gap: 1rem;
+    }
+
+    .admin-title {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }
+
+    .admin-title i {
+        font-size: 2rem;
+        color: var(--primary);
+        background: var(--primary-soft);
+        padding: 1rem;
+        border-radius: var(--radius-lg);
+    }
+
+    .admin-title h1 {
+        font-size: 2rem;
+        font-weight: 700;
+        color: var(--gray-900);
+        margin-bottom: 0.25rem;
+    }
+
+    .admin-title p {
+        color: var(--gray-600);
+    }
+
+    .btn {
+        padding: 0.625rem 1.25rem;
+        border-radius: var(--radius-md);
+        font-weight: 600;
+        font-size: 0.875rem;
+        border: none;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        transition: all 0.2s;
+        text-decoration: none;
+    }
+
+    .btn-primary {
+        background: var(--primary);
+        color: white;
+    }
+
+    .btn-primary:hover {
+        background: var(--primary-dark);
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-md);
+    }
+
+    .btn-outline {
+        background: transparent;
+        border: 1px solid var(--gray-300);
+        color: var(--gray-700);
+    }
+
+    .btn-outline:hover {
+        background: var(--gray-100);
+        border-color: var(--primary);
+        color: var(--primary);
+    }
+
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1rem;
+        margin-bottom: 2rem;
+    }
+
+    .stat-card {
+        background: var(--white);
+        border-radius: var(--radius-lg);
+        padding: 1.25rem;
+        border: 1px solid var(--gray-200);
+        text-align: center;
+        transition: all 0.2s;
+    }
+
+    .stat-card:hover {
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-md);
+    }
+
+    .stat-value {
+        display: block;
+        font-size: 2rem;
+        font-weight: 700;
+        color: var(--gray-900);
+        line-height: 1;
+        margin-bottom: 0.5rem;
+    }
+
+    .stat-label {
+        font-size: 0.875rem;
+        color: var(--gray-600);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+
+    .filter-bar {
+        background: var(--white);
+        border-radius: var(--radius-lg);
+        border: 1px solid var(--gray-200);
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 1rem;
+    }
+
+    .filter-tabs {
+        display: flex;
+        gap: 0.25rem;
+        background: var(--gray-100);
+        padding: 0.25rem;
+        border-radius: var(--radius-full);
+        flex-wrap: wrap;
+    }
+
+    .filter-tab {
+        padding: 0.5rem 1rem;
+        border-radius: var(--radius-full);
+        font-size: 0.875rem;
+        font-weight: 600;
+        color: var(--gray-600);
+        text-decoration: none;
+        transition: all 0.2s;
+        white-space: nowrap;
+    }
+
+    .filter-tab:hover {
+        background: var(--gray-200);
+        color: var(--gray-800);
+    }
+
+    .filter-tab.active {
+        background: var(--primary);
+        color: white;
+    }
+
+    .form-input {
+        padding: 0.5rem 1rem;
+        border: 1px solid var(--gray-300);
+        border-radius: var(--radius-md);
+        font-size: 0.875rem;
+        min-width: 200px;
+    }
+
+    .form-input:focus {
+        outline: none;
+        border-color: var(--primary);
+        box-shadow: 0 0 0 3px var(--primary-soft);
+    }
+
+    .search-box {
+        display: flex;
+        gap: 0.5rem;
+    }
+
+    .search-box input {
+        padding: 0.5rem 1rem;
+        border: 1px solid var(--gray-300);
+        border-radius: var(--radius-md);
+        font-size: 0.875rem;
+        min-width: 250px;
+    }
+
+    .search-box button {
+        padding: 0.5rem 1rem;
+        background: var(--primary);
+        color: white;
+        border: none;
+        border-radius: var(--radius-md);
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+
+    .search-box button:hover {
+        background: var(--primary-dark);
+    }
+
+    .table-container {
+        background: var(--white);
+        border-radius: var(--radius-lg);
+        border: 1px solid var(--gray-200);
+        overflow-x: auto;
+        margin-bottom: 2rem;
+    }
+
+    table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    th {
+        text-align: left;
+        padding: 1rem;
+        background: var(--gray-50);
+        font-weight: 600;
+        color: var(--gray-700);
+        border-bottom: 1px solid var(--gray-200);
+        white-space: nowrap;
+    }
+
+    td {
+        padding: 1rem;
+        border-bottom: 1px solid var(--gray-100);
+        vertical-align: middle;
+    }
+
+    tr:hover {
+        background: var(--gray-50);
+    }
+
+    .post-title {
+        max-width: 300px;
+    }
+
+    .post-title a {
+        color: var(--gray-900);
+        text-decoration: none;
+        font-weight: 600;
+    }
+
+    .post-title a:hover {
+        color: var(--primary);
+    }
+
+    .verification-score {
+        display: inline-block;
+        padding: 0.25rem 0.75rem;
+        border-radius: var(--radius-full);
+        font-size: 0.75rem;
+        font-weight: 600;
+        background: var(--gray-200);
+        color: var(--gray-700);
+    }
+
+    .score-high {
+        background: #dcfce7;
+        color: #166534;
+    }
+
+    .score-medium {
+        background: #fef3c7;
+        color: #92400e;
+    }
+
+    .score-low {
+        background: #fee2e2;
+        color: #991b1b;
+    }
+
+    .status-badge {
+        display: inline-block;
+        padding: 0.25rem 0.75rem;
+        border-radius: var(--radius-full);
+        font-size: 0.75rem;
+        font-weight: 600;
+        background: var(--gray-200);
+        color: var(--gray-700);
+    }
+
+    .status-verified {
+        background: #dcfce7;
+        color: #166534;
+    }
+
+    .status-fake {
+        background: #fee2e2;
+        color: #991b1b;
+    }
+
+    .status-pending {
+        background: #fef3c7;
+        color: #92400e;
+    }
+
+    .badge {
+        display: inline-block;
+        padding: 0.25rem 0.75rem;
+        border-radius: var(--radius-full);
+        font-size: 0.75rem;
+        font-weight: 600;
+        background: var(--gray-200);
+        color: var(--gray-700);
+    }
+
+    .badge.success {
+        background: #dcfce7;
+        color: #166534;
+    }
+
+    .action-buttons {
+        display: flex;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+    }
+
+    .btn-icon {
+        width: 36px;
+        height: 36px;
+        border-radius: var(--radius-full);
+        background: var(--white);
+        border: 1px solid var(--gray-200);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--gray-600);
+        cursor: pointer;
+        transition: all 0.2s;
+        text-decoration: none;
+    }
+
+    .btn-icon:hover {
+        background: var(--primary);
+        color: white;
+        border-color: var(--primary);
+    }
+
+    .btn-icon.approve:hover {
+        background: #10b981;
+        border-color: #10b981;
+    }
+
+    .btn-icon.reject:hover {
+        background: #ef4444;
+        border-color: #ef4444;
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 3rem;
+    }
+
+    .empty-state i {
+        font-size: 3rem;
+        color: var(--gray-400);
+        margin-bottom: 1rem;
+    }
+
+    .empty-state h3 {
+        font-size: 1.25rem;
+        font-weight: 600;
+        color: var(--gray-800);
+        margin-bottom: 0.5rem;
+    }
+
+    .empty-state p {
+        color: var(--gray-600);
+        margin-bottom: 1.5rem;
+    }
+
+    .pagination {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+    }
+
+    .pagination-link {
+        padding: 0.5rem 1rem;
+        border: 1px solid var(--gray-200);
+        border-radius: var(--radius-md);
+        color: var(--gray-700);
+        text-decoration: none;
+        transition: all 0.2s;
+    }
+
+    .pagination-link:hover {
+        background: var(--primary);
+        color: white;
+        border-color: var(--primary);
+    }
+
+    .pagination-current {
+        padding: 0.5rem 1rem;
+        font-weight: 600;
+        color: var(--gray-800);
+    }
+
+    @media (max-width: 768px) {
+        .admin-container {
+            padding: 1rem;
+        }
+        
+        .filter-bar {
+            flex-direction: column;
+            align-items: stretch;
+        }
+        
+        .filter-tabs {
+            overflow-x: auto;
+            padding-bottom: 0.5rem;
+        }
+        
+        .search-box {
+            flex-direction: column;
+        }
+        
+        .search-box input {
+            width: 100%;
+        }
+        
+        .stats-grid {
+            grid-template-columns: repeat(2, 1fr);
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="admin-container">
+    <!-- Header -->
+    <div class="admin-header">
+        <div class="admin-title">
+            <i class="fas fa-sync-alt"></i>
+            <div>
+                <h1>Auto-Fetched News</h1>
+                <p>Manage news fetched from external RSS sources</p>
+            </div>
+        </div>
+        <div style="display: flex; gap: 0.75rem;">
+            <a href="{% url 'fetch_news' %}" class="btn btn-primary">
+                <i class="fas fa-sync-alt"></i> Fetch Now
+            </a>
+            <a href="{% url 'admin_news_submissions' %}" class="btn btn-outline">
+                <i class="fas fa-arrow-left"></i> Back to Submissions
+            </a>
+        </div>
+    </div>
+
+    <!-- Statistics -->
+    <div class="stats-grid">
+        <div class="stat-card">
+            <span class="stat-value">{{ stats.total|default:"0" }}</span>
+            <span class="stat-label">Total Fetched</span>
+        </div>
+        <div class="stat-card">
+            <span class="stat-value">{{ stats.verified|default:"0" }}</span>
+            <span class="stat-label">Verified</span>
+        </div>
+        <div class="stat-card">
+            <span class="stat-value">{{ stats.fake|default:"0" }}</span>
+            <span class="stat-label">Marked Fake</span>
+        </div>
+        <div class="stat-card">
+            <span class="stat-value">{{ stats.pending|default:"0" }}</span>
+            <span class="stat-label">Pending AI</span>
+        </div>
+        <div class="stat-card">
+            <span class="stat-value">{{ stats.with_media|default:"0" }}</span>
+            <span class="stat-label">Has Media</span>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="filter-bar">
+        <div class="filter-tabs">
+            <a href="?filter=all" class="filter-tab {% if filter_type == 'all' or not filter_type %}active{% endif %}">All</a>
+            <a href="?filter=verified" class="filter-tab {% if filter_type == 'verified' %}active{% endif %}">Verified</a>
+            <a href="?filter=fake" class="filter-tab {% if filter_type == 'fake' %}active{% endif %}">Fake</a>
+            <a href="?filter=pending" class="filter-tab {% if filter_type == 'pending' %}active{% endif %}">Pending AI</a>
+            <a href="?filter=with_media" class="filter-tab {% if filter_type == 'with_media' %}active{% endif %}">With Media</a>
+        </div>
+
+        <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+            <select class="form-input" id="sourceFilter" onchange="applySourceFilter()">
+                <option value="">All Sources</option>
+                {% for source in all_sources %}
+                <option value="{{ source }}" {% if source_filter == source %}selected{% endif %}>{{ source }}</option>
+                {% endfor %}
+            </select>
+
+            <form class="search-box" method="GET">
+                <input type="hidden" name="filter" value="{{ filter_type }}">
+                <input type="text" name="q" placeholder="Search news..." value="{{ search_query|default:'' }}">
+                <button type="submit"><i class="fas fa-search"></i></button>
+            </form>
+        </div>
+    </div>
+
+    <!-- News Table -->
+    <div class="table-container">
+        <table>
+            <thead>
+                <tr>
+                    <th>Title</th>
+                    <th>Source</th>
+                    <th>Category</th>
+                    <th>AI Score</th>
+                    <th>Status</th>
+                    <th>Fetched</th>
+                    <th>Media</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in news %}
+                <tr>
+                    <td>
+                        <div class="post-title">
+                            <a href="{% url 'post_detail' item.id %}" target="_blank">{{ item.title|truncatechars:60 }}</a>
+                        </div>
+                    </td>
+                    <td>{{ item.external_source|truncatechars:20|default:"—" }}</td>
+                    <td>{{ item.category.name|default:"—" }}</td>
+                    <td>
+                        {% if item.verification_score %}
+                        <span class="verification-score 
+                            {% if item.verification_score >= 0.8 %}score-high
+                            {% elif item.verification_score >= 0.6 %}score-medium
+                            {% else %}score-low{% endif %}">
+                            {{ item.verification_score|floatformat:2 }}
+                        </span>
+                        {% else %}
+                        —
+                        {% endif %}
+                    </td>
+                    <td>
+                        <span class="status-badge status-{{ item.verification_status }}">
+                            {{ item.get_verification_status_display|default:"Unverified" }}
+                        </span>
+                    </td>
+                    <td>{{ item.created_at|timesince }} ago</td>
+                    <td>
+                        {% if item.has_media %}
+                        <span class="badge success">Yes</span>
+                        {% else %}
+                        <span class="badge">No</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <div class="action-buttons">
+                            <a href="{% url 'post_detail' item.id %}" class="btn-icon" target="_blank" title="View">
+                                <i class="fas fa-eye"></i>
+                            </a>
+                            {% if item.verification_status != 'verified' %}
+                            <form method="POST" action="{% url 'admin_news_detail' item.id %}" style="display: inline;">
+                                {% csrf_token %}
+                                <input type="hidden" name="action" value="approve">
+                                <button type="submit" class="btn-icon approve" title="Mark as Verified" onclick="return confirm('Mark this news as verified?')">
+                                    <i class="fas fa-check-circle"></i>
+                                </button>
+                            </form>
+                            {% endif %}
+                            {% if item.verification_status != 'fake' %}
+                            <form method="POST" action="{% url 'admin_news_detail' item.id %}" style="display: inline;">
+                                {% csrf_token %}
+                                <input type="hidden" name="action" value="reject">
+                                <input type="hidden" name="rejection_reason" value="Flagged as fake news">
+                                <button type="submit" class="btn-icon reject" title="Mark as Fake" onclick="return confirm('Mark this news as fake?')">
+                                    <i class="fas fa-exclamation-triangle"></i>
+                                </button>
+                            </form>
+                            {% endif %}
+                        </div>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="8" style="text-align: center; padding: 3rem;">
+                        <div class="empty-state">
+                            <i class="fas fa-newspaper"></i>
+                            <h3>No news found</h3>
+                            <p>There are no auto-fetched news articles matching your criteria.</p>
+                            <a href="{% url 'fetch_news' %}" class="btn btn-primary">
+                                <i class="fas fa-sync-alt"></i> Fetch News Now
+                            </a>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Pagination -->
+    {% if page_obj.has_other_pages %}
+    <div class="pagination">
+        {% if page_obj.has_previous %}
+        <a href="?page=1&filter={{ filter_type }}&q={{ search_query|urlencode }}&source={{ source_filter|urlencode }}" class="pagination-link">
+            <i class="fas fa-angle-double-left"></i>
+        </a>
+        <a href="?page={{ page_obj.previous_page_number }}&filter={{ filter_type }}&q={{ search_query|urlencode }}&source={{ source_filter|urlencode }}" class="pagination-link">
+            <i class="fas fa-angle-left"></i>
+        </a>
+        {% endif %}
+
+        <span class="pagination-current">
+            Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+        </span>
+
+        {% if page_obj.has_next %}
+        <a href="?page={{ page_obj.next_page_number }}&filter={{ filter_type }}&q={{ search_query|urlencode }}&source={{ source_filter|urlencode }}" class="pagination-link">
+            <i class="fas fa-angle-right"></i>
+        </a>
+        <a href="?page={{ page_obj.paginator.num_pages }}&filter={{ filter_type }}&q={{ search_query|urlencode }}&source={{ source_filter|urlencode }}" class="pagination-link">
+            <i class="fas fa-angle-double-right"></i>
+        </a>
+        {% endif %}
+    </div>
+    {% endif %}
+</div>
+
+<script>
+    function applySourceFilter() {
+        const source = document.getElementById('sourceFilter').value;
+        const url = new URL(window.location);
+        url.searchParams.set('source', source);
+        url.searchParams.set('page', '1'); // Reset to first page
+        window.location = url.toString();
+    }
+
+    // Auto-submit search after typing (with debounce)
+    let searchTimeout;
+    document.querySelector('.search-box input')?.addEventListener('keyup', function(e) {
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(() => {
+            if (this.value.length >= 2 || this.value.length === 0) {
+                this.form.submit();
+            }
+        }, 500);
+    });
+</script>
+{% endblock %}

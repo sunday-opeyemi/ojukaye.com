@@ -1,456 +1,123 @@
-# core/news_fetcher.py
+# core/news_fetcher.py (Enhanced Version)
+
 import requests
 import feedparser
 import json
+import re
+import hashlib
+import logging
+import random
+import time
+import socket
 from datetime import datetime, timedelta
+from urllib.parse import urlparse, urljoin
+from typing import Dict, List, Tuple, Optional, Any
+from concurrent.futures import ThreadPoolExecutor, as_completed
+
+import urllib3
+from bs4 import BeautifulSoup
 from django.utils import timezone
 from django.conf import settings
+from readability import Document
+import trafilatura
+from newspaper import Article
+import yt_dlp
+import cv2
+import numpy as np
+
 from .models import Post, Category, User
-import logging
-import re
-from bs4 import BeautifulSoup
-import random
-from time import sleep
-from urllib.parse import urlparse, urljoin
-import hashlib
+
+# Disable SSL warnings
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 logger = logging.getLogger(__name__)
 
-class NewsFetcher:
-    def __init__(self):
-        self.session = requests.Session()
-        self.session.headers.update({
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
-            'Accept-Language': 'en-US,en;q=0.5',
-            'Accept-Encoding': 'gzip, deflate, br',
-            'DNT': '1',
-            'Connection': 'keep-alive',
-            'Upgrade-Insecure-Requests': '1',
-        })
-        self.articles = []
-        
-    def fetch_all_news(self):
-        """Fetch news using multiple methods with full content scraping"""
-        logger.info("Starting hybrid news fetch...")
-        
-        # Define all fetching methods with weights
-        methods = [
-            (self.fetch_google_news_scrape, 3),
-            (self.fetch_african_news, 3),
-            (self.fetch_rss_feeds, 2),
-            (self.fetch_newsapi_general, 2),
-            (self.fetch_web_scrape_detailed, 2),
-            (self.fetch_reddit_news, 1),
-        ]
-        
-        # Execute methods
-        for method, weight in methods:
-            try:
-                logger.info(f"Executing: {method.__name__}")
-                sleep(random.uniform(1, 2))  # Delay to avoid rate limiting
-                method()
-                logger.info(f"Completed: {method.__name__}")
-            except Exception as e:
-                logger.error(f"Error in {method.__name__}: {e}")
-                continue
-        
-        # Remove duplicates
-        unique_articles = self.remove_duplicates(self.articles)
-        logger.info(f"Found {len(unique_articles)} unique articles out of {len(self.articles)} total")
-        
-        # Save to database with full content
-        saved_count = self.save_articles_with_full_content(unique_articles)
-        
-        logger.info(f"Total articles found: {len(unique_articles)}")
-        logger.info(f"Articles saved: {saved_count}")
-        
-        return saved_count
-
-    def fetch_newsapi_general(self):
-        """Fetch news from NewsAPI.org using your API key"""
-        api_key = getattr(settings, 'NEWS_API_KEY', '')
-        
-        if not api_key:
-            logger.warning("NewsAPI key not found. Skipping NewsAPI fetch.")
-            return
-        
-        try:
-            # Multiple queries to get more news
-            queries = [
-                {'country': 'ng', 'pageSize': 100},  # Nigeria headlines
-                {'country': 'us', 'category': 'general', 'pageSize': 50},  # International
-                {'country': 'gb', 'category': 'general', 'pageSize': 50},  # UK
-                {'category': 'technology', 'country': 'ng', 'pageSize': 50},
-                {'category': 'business', 'country': 'ng', 'pageSize': 50},
-                {'category': 'sports', 'country': 'ng', 'pageSize': 50},
-                {'category': 'entertainment', 'country': 'ng', 'pageSize': 50},
-                {'category': 'health', 'country': 'ng', 'pageSize': 50},
-                {'category': 'science', 'country': 'ng', 'pageSize': 50},
-                {'q': 'Nigeria', 'pageSize': 100},  # Specific Nigeria search
-                {'q': 'Lagos', 'pageSize': 50},
-                {'q': 'Abuja', 'pageSize': 50},
-                {'q': 'Africa', 'pageSize': 100},
-            ]
-            
-            for params in queries:
-                try:
-                    url = "https://newsapi.org/v2/top-headlines"
-                    if 'q' in params:
-                        url = "https://newsapi.org/v2/everything"  # Use everything endpoint for search
-                    
-                    params['apiKey'] = api_key
-                    params['language'] = 'en'
-                    
-                    response = requests.get(url, params=params, timeout=15)
-                    if response.status_code == 200:
-                        data = response.json()
-                        articles = data.get('articles', [])
-                        
-                        for article in articles[:20]:  # Limit per query
-                            self._process_newsapi_article(article)
-                        
-                        logger.info(f"Fetched {len(articles)} articles from NewsAPI with params: {params}")
-                    else:
-                        logger.warning(f"NewsAPI returned {response.status_code}: {response.text}")
-                    
-                    sleep(0.5)  # Rate limiting
-                    
-                except Exception as e:
-                    logger.error(f"Error in NewsAPI query {params}: {e}")
-                    continue
-                    
-        except Exception as e:
-            logger.error(f"Error in NewsAPI fetch: {e}")
-        
-        # Also fetch technology news
-        try:
-            params = {
-                'category': 'technology',
-                'country': 'ng',
-                'apiKey': api_key,
-                'pageSize': 20
-            }
-            response = requests.get(url, params=params, timeout=15)
-            if response.status_code == 200:
-                data = response.json()
-                articles = data.get('articles', [])
-                
-                for article in articles[:10]:
-                    # Similar processing as above
-                    self._process_newsapi_article(article, 'Technology')
-                    
-        except Exception as e:
-            logger.error(f"Error in NewsAPI tech fetch: {e}")
-        
-        # Fetch business news
-        try:
-            params = {
-                'category': 'business',
-                'country': 'ng',
-                'apiKey': api_key,
-                'pageSize': 20
-            }
-            response = requests.get(url, params=params, timeout=15)
-            if response.status_code == 200:
-                data = response.json()
-                articles = data.get('articles', [])
-                
-                for article in articles[:10]:
-                    self._process_newsapi_article(article, 'Business')
-                    
-        except Exception as e:
-            logger.error(f"Error in NewsAPI business fetch: {e}")
-            
-        # Fetch sports news
-        try:
-            params = {
-                'category': 'sports',
-                'country': 'ng',
-                'apiKey': api_key,
-                'pageSize': 20
-            }
-            response = requests.get(url, params=params, timeout=15)
-            if response.status_code == 200:
-                data = response.json()
-                articles = data.get('articles', [])
-                
-                for article in articles[:10]:
-                    self._process_newsapi_article(article, 'Sports')
-                    
-        except Exception as e:
-            logger.error(f"Error in NewsAPI sports fetch: {e}")
+class ContentExtractor:
+    """Advanced content extraction with multiple fallback methods"""
     
-    def _process_newsapi_article(self, article, default_category='News'):
-        """Helper method to process NewsAPI articles"""
+    @staticmethod
+    def extract_with_trafilatura(url: str) -> Tuple[Optional[str], Dict]:
+        """Extract content using trafilatura (best for text extraction)"""
         try:
-            title = article.get('title', '').strip()
-            url = article.get('url', '')
-            
-            if not title or not url or '[Removed]' in title:
-                return
-            
-            external_id = hashlib.md5(url.encode()).hexdigest()
-            
-            if Post.objects.filter(external_id=external_id).exists():
-                return
-            
-            content = article.get('content', '') or article.get('description', '')
-            
-            # Try to extract full content
-            if not content or len(content) < 200:
-                full_content = self.extract_full_content(url)
-                if full_content:
-                    content = full_content
-            
-            if content:
-                content = self.clean_html(content)
-            
-            source_name = article.get('source', {}).get('name', 'NewsAPI')
-            image_url = article.get('urlToImage', '')
-            
-            if not image_url:
-                image_url = self.scrape_page_image(url)
-            
-            published_at = self.parse_date(article.get('publishedAt', ''))
-            
-            self.articles.append({
-                'title': title,
-                'content': content or title[:500],
-                'url': url,
-                'source': f"NewsAPI: {source_name}",
-                'image_url': image_url,
-                'published_at': published_at,
-                'category': default_category,
-                'external_id': external_id,
-                'method': 'newsapi',
-                'is_banner': self.is_trending_title(title),
-                'full_content_scraped': bool(content and len(content) > 500),
-            })
-            
+            downloaded = trafilatura.fetch_url(url)
+            if downloaded:
+                text = trafilatura.extract(
+                    downloaded,
+                    include_comments=False,
+                    include_tables=True,
+                    no_fallback=False,
+                    output_format='txt'
+                )
+                return text, {'method': 'trafilatura', 'success': bool(text)}
         except Exception as e:
-            logger.error(f"Error processing NewsAPI article in helper: {e}")
+            logger.error(f"Trafilatura extraction failed: {e}")
+        return None, {'method': 'trafilatura', 'success': False}
     
-    def fetch_reddit_news(self):
-        """Fetch news from Reddit"""
+    @staticmethod
+    def extract_with_newspaper(url: str) -> Tuple[Optional[str], Dict, Optional[str], List, List]:
+        """Extract using newspaper3k (good for metadata and basic content)"""
         try:
-            # Nigeria subreddits
-            subreddits = ['Nigeria', 'Africa', 'worldnews', 'technology', 'business']
+            article = Article(url)
+            article.download()
+            article.parse()
+            article.nlp()
             
-            for subreddit in subreddits:
-                try:
-                    url = f"https://www.reddit.com/r/{subreddit}/hot.json?limit=15"
-                    headers = {
-                        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-                    }
-                    
-                    response = requests.get(url, headers=headers, timeout=10)
-                    if response.status_code == 200:
-                        data = response.json()
-                        posts = data.get('data', {}).get('children', [])
-                        
-                        for post in posts:
-                            try:
-                                post_data = post.get('data', {})
-                                title = post_data.get('title', '').strip()
-                                url = post_data.get('url', '')
-                                
-                                if not title or not url:
-                                    continue
-                                
-                                # Filter for Nigeria/Africa if in international subreddits
-                                if subreddit in ['worldnews', 'technology', 'business']:
-                                    title_lower = title.lower()
-                                    if not any(k in title_lower for k in ['nigeria', 'africa', 'nigerian', 'lagos', 'abuja']):
-                                        continue
-                                
-                                external_id = hashlib.md5(url.encode()).hexdigest()
-                                
-                                if Post.objects.filter(external_id=external_id).exists():
-                                    continue
-                                
-                                # Get content
-                                content = post_data.get('selftext', '') or title
-                                
-                                # Try to extract full content for external links
-                                if not post_data.get('is_self', False):
-                                    full_content = self.extract_full_content(url)
-                                    if full_content:
-                                        content = full_content
-                                
-                                # Clean content
-                                if content:
-                                    content = self.clean_html(content)
-                                
-                                # Get image
-                                image_url = ''
-                                if not post_data.get('is_self', False):
-                                    if url.lower().endswith(('.jpg', '.jpeg', '.png', '.gif', '.webp')):
-                                        image_url = url
-                                    else:
-                                        image_url = self.scrape_page_image(url)
-                                
-                                if not image_url and 'thumbnail' in post_data:
-                                    thumb = post_data.get('thumbnail', '')
-                                    if thumb and thumb not in ['self', 'default', 'nsfw']:
-                                        image_url = thumb
-                                
-                                # Detect category
-                                category = self.detect_category_from_content(title, content)
-                                if subreddit == 'technology':
-                                    category = 'Technology'
-                                elif subreddit == 'business':
-                                    category = 'Business'
-                                
-                                self.articles.append({
-                                    'title': title,
-                                    'content': content[:5000],
-                                    'url': url,
-                                    'source': f"Reddit r/{subreddit}",
-                                    'image_url': image_url,
-                                    'published_at': timezone.now(),
-                                    'category': category or 'News',
-                                    'external_id': external_id,
-                                    'method': 'reddit',
-                                    'is_banner': self.is_trending_title(title),
-                                    'full_content_scraped': bool(content and len(content) > 500),
-                                })
-                                
-                            except Exception as e:
-                                logger.error(f"Error processing Reddit post: {e}")
-                                continue
-                                
-                    sleep(1)  # Be nice to Reddit
-                    
-                except Exception as e:
-                    logger.error(f"Error fetching from r/{subreddit}: {e}")
-                    continue
-                    
+            content = article.text
+            image_url = article.top_image
+            
+            # Extract videos from meta tags
+            videos = []
+            if article.movies:
+                for movie in article.movies:
+                    videos.append({
+                        'url': movie,
+                        'type': 'video',
+                        'source': 'newspaper3k'
+                    })
+            
+            # Extract audio if available
+            audios = []
+            if article.audio:
+                audios.append({
+                    'url': article.audio,
+                    'type': 'audio',
+                    'source': 'newspaper3k'
+                })
+            
+            return content, {'method': 'newspaper3k', 'success': bool(content)}, image_url, videos, audios
         except Exception as e:
-            logger.error(f"Error in Reddit fetch: {e}")
-
-    def fetch_african_news(self):
-        """Fetch African news with full content scraping"""
-        african_sources = [
-            ('Premium Times', 'https://www.premiumtimesng.com/feed/', 'Nigeria', 'Politics'),
-            ('Vanguard', 'https://www.vanguardngr.com/feed/', 'Nigeria', 'News'),
-            ('Punch', 'https://punchng.com/feed/', 'Nigeria', 'News'),
-            ('Daily Trust', 'https://dailytrust.com/feed/', 'Nigeria', 'News'),
-            ('Leadership', 'https://leadership.ng/feed/', 'Nigeria', 'News'),
-            ('Independent NG', 'https://independent.ng/feed/', 'Nigeria', 'News'),
-            ('Nairametrics', 'https://nairametrics.com/feed/', 'Nigeria', 'Economy'),
-            ('Business Day', 'https://businessday.ng/feed/', 'Nigeria', 'Business'),
-            ('TechCabal', 'https://techcabal.com/feed/', 'Africa', 'Technology'),
-            ('Africa News', 'https://www.africanews.com/feed/rss', 'Africa', 'News'),
-            ('Sahara Reporters', 'https://saharareporters.com/feeds/latest/feed', 'Nigeria', 'News'),
-            ('The Guardian NG', 'https://guardian.ng/feed/', 'Nigeria', 'News'),
-            ('Tribune', 'https://tribuneonlineng.com/feed/', 'Nigeria', 'News'),
-            ('ThisDay', 'https://www.thisdaylive.com/index.php/feed/', 'Nigeria', 'News'),
-            ('The Cable', 'https://www.thecable.ng/feed', 'Nigeria', 'News'),
-        ]
-        
-        for source_name, feed_url, country, default_category in african_sources:
-            try:
-                logger.info(f"Fetching from {source_name}...")
-                feed = feedparser.parse(feed_url)
-                
-                for entry in feed.entries[:15]:  # Get 15 from each source
-                    try:
-                        title = entry.get('title', '').strip()
-                        if not title:
-                            continue
-                        
-                        url = entry.get('link', '')
-                        if not url:
-                            continue
-                        
-                        # Generate external_id from URL hash
-                        external_id = hashlib.md5(url.encode()).hexdigest()
-                        
-                        # Check if already exists
-                        if Post.objects.filter(external_id=external_id).exists():
-                            continue
-                        
-                        # Extract content
-                        content = self.extract_full_content(url)
-                        
-                        # If content extraction failed, use summary
-                        if not content and 'summary' in entry:
-                            content = entry.summary
-                        elif not content and 'description' in entry:
-                            content = entry.description
-                        
-                        # Clean HTML from content
-                        if content:
-                            content = self.clean_html(content)
-                        
-                        # Extract image
-                        image_url = self.extract_image(entry, url, content)
-                        
-                        # Detect category
-                        category = self.detect_category_from_content(title, content or '')
-                        
-                        # Get published date
-                        published_at = self.parse_date(entry.get('published', ''))
-                        
-                        # Mark as trending if relevant
-                        is_trending = self.is_trending_title(title)
-                        
-                        self.articles.append({
-                            'title': title,
-                            'content': content or title[:500],
-                            'url': url,
-                            'source': source_name,
-                            'image_url': image_url,
-                            'published_at': published_at,
-                            'category': category or default_category,
-                            'external_id': external_id,
-                            'method': 'rss_africa',
-                            'is_banner': is_trending,
-                            'full_content_scraped': bool(content and len(content) > 500),
-                        })
-                        
-                        sleep(0.5)  # Small delay between articles
-                        
-                    except Exception as e:
-                        logger.error(f"Error processing article from {source_name}: {e}")
-                        continue
-                        
-            except Exception as e:
-                logger.error(f"Error fetching {source_name}: {e}")
-                continue
-
-    def extract_full_content(self, url):
-        """Extract full article content from URL"""
+            logger.error(f"Newspaper3k extraction failed: {e}")
+        return None, {'method': 'newspaper3k', 'success': False}, None, [], []
+    
+    @staticmethod
+    def extract_with_readability(url: str, html: str) -> Tuple[Optional[str], Dict]:
+        """Extract using readability-lxml (good for article text)"""
         try:
-            response = self.session.get(url, timeout=15, allow_redirects=True)
-            if response.status_code != 200:
-                return None
-            
-            soup = BeautifulSoup(response.content, 'html.parser')
+            doc = Document(html)
+            content = doc.summary()
+            # Convert HTML to text
+            soup = BeautifulSoup(content, 'html.parser')
+            text = soup.get_text(separator='\n', strip=True)
+            return text, {'method': 'readability', 'success': bool(text)}
+        except Exception as e:
+            logger.error(f"Readability extraction failed: {e}")
+        return None, {'method': 'readability', 'success': False}
+    
+    @staticmethod
+    def extract_with_bs4_fallback(html: str) -> Tuple[Optional[str], Dict]:
+        """Fallback extraction using BeautifulSoup"""
+        try:
+            soup = BeautifulSoup(html, 'html.parser')
             
             # Remove unwanted elements
-            for element in soup.find_all(['script', 'style', 'nav', 'footer', 'aside', 'form', 'header', 'iframe']):
+            for element in soup.find_all(['script', 'style', 'nav', 'footer', 'header', 'aside']):
                 element.decompose()
             
-            # Try to find article content using common selectors
+            # Try common article containers
             content_selectors = [
-                'article', 
-                '.article-content', 
-                '.post-content', 
-                '.entry-content',
-                '.story-content', 
-                '.content-area', 
-                '#content', 
-                '.main-content',
-                '[itemprop="articleBody"]', 
-                '.article-body', 
-                '.article-text',
-                '.post-body',
-                '.entry',
-                '.story',
-                '.news-detail',
-                '.detail-content'
+                'article', '.article-content', '.post-content', '.entry-content',
+                '.story-content', '#content', '.main-content', '[itemprop="articleBody"]',
+                '.article-body', '.post-body', '.entry', '.story'
             ]
             
             article_content = None
@@ -459,47 +126,1123 @@ class NewsFetcher:
                 if article_content:
                     break
             
-            # If no specific selector found, try to get the main content
-            if not article_content:
-                # Get all paragraphs and headers
-                main_content = soup.find('main') or soup.find('div', {'role': 'main'})
-                if main_content:
-                    article_content = main_content
-                else:
-                    # Get all paragraphs from body
-                    paragraphs = soup.find_all('p')
-                    if len(paragraphs) > 3:
-                        # Join meaningful paragraphs
-                        article_text = []
-                        for p in paragraphs[:20]:  # First 20 paragraphs
-                            text = p.get_text(strip=True)
-                            if len(text) > 50:  # Only meaningful paragraphs
-                                article_text.append(text)
-                        
-                        if article_text:
-                            return '\n\n'.join(article_text)
-            
             if article_content:
-                # Extract text
-                text = article_content.get_text(separator='\n', strip=True)
-                
-                # Clean up text
-                lines = [line.strip() for line in text.split('\n') if line.strip()]
-                lines = [line for line in lines if len(line) > 40]  # Remove short lines
-                
-                # Join lines and limit to reasonable length
-                full_text = '\n\n'.join(lines[:75])  # First 75 paragraphs
-                
-                if len(full_text) > 800:  # Ensure we have substantial content
-                    return full_text[:15000]  # Limit to 15k chars
+                # Get paragraphs
+                paragraphs = article_content.find_all('p')
+                if len(paragraphs) > 2:
+                    text = '\n\n'.join([p.get_text(strip=True) for p in paragraphs if len(p.get_text(strip=True)) > 40])
+                    return text, {'method': 'bs4_fallback', 'success': True}
             
-            return None
+            # Fallback: get all paragraphs with substantial text
+            paragraphs = soup.find_all('p')
+            valid_paragraphs = []
+            for p in paragraphs:
+                text = p.get_text(strip=True)
+                if len(text) > 100:  # Only take substantial paragraphs
+                    valid_paragraphs.append(text)
+            
+            if len(valid_paragraphs) > 3:
+                return '\n\n'.join(valid_paragraphs[:30]), {'method': 'bs4_fallback', 'success': True}
             
         except Exception as e:
-            logger.error(f"Error extracting content from {url}: {e}")
-            return None
+            logger.error(f"BS4 fallback extraction failed: {e}")
+        
+        return None, {'method': 'bs4_fallback', 'success': False}
 
-    def clean_html(self, text):
+
+class MediaExtractor:
+    """Advanced media extraction from web pages"""
+    
+    @staticmethod
+    def extract_videos_from_html(soup: BeautifulSoup, base_url: str) -> List[Dict]:
+        """Extract all video content from HTML"""
+        videos = []
+        
+        # 1. Video tags
+        for video in soup.find_all('video'):
+            video_data = MediaExtractor._extract_video_tag(video, base_url)
+            if video_data:
+                videos.append(video_data)
+        
+        # 2. Iframe embeds (YouTube, Vimeo, etc.)
+        for iframe in soup.find_all('iframe'):
+            video_data = MediaExtractor._extract_iframe_video(iframe)
+            if video_data:
+                videos.append(video_data)
+        
+        # 3. Object/Embed tags
+        for obj in soup.find_all(['object', 'embed']):
+            video_data = MediaExtractor._extract_object_video(obj, base_url)
+            if video_data:
+                videos.append(video_data)
+        
+        # 4. Links to video files
+        for a in soup.find_all('a', href=True):
+            video_data = MediaExtractor._extract_video_link(a, base_url)
+            if video_data:
+                videos.append(video_data)
+        
+        # 5. Open Graph video
+        og_video = soup.find('meta', property='og:video')
+        if og_video and og_video.get('content'):
+            videos.append({
+                'url': og_video['content'],
+                'type': 'og_video',
+                'source': 'opengraph'
+            })
+        
+        # 6. Twitter player
+        twitter_player = soup.find('meta', attrs={'name': 'twitter:player'})
+        if twitter_player and twitter_player.get('content'):
+            videos.append({
+                'url': twitter_player['content'],
+                'type': 'twitter_player',
+                'source': 'twitter_card'
+            })
+        
+        # 7. JSON-LD data
+        json_ld = soup.find('script', type='application/ld+json')
+        if json_ld:
+            try:
+                data = json.loads(json_ld.string)
+                video_data = MediaExtractor._extract_video_from_jsonld(data)
+                if video_data:
+                    videos.extend(video_data)
+            except:
+                pass
+        
+        return videos
+    
+    @staticmethod
+    def _extract_video_tag(video, base_url):
+        """Extract from video tag"""
+        src = video.get('src')
+        if not src:
+            source = video.find('source')
+            if source:
+                src = source.get('src')
+        
+        if src:
+            src = ContentExtractor.make_absolute_url(src, base_url)
+            return {
+                'url': src,
+                'type': 'html5_video',
+                'poster': video.get('poster', ''),
+                'source': 'video_tag'
+            }
+        return None
+    
+    @staticmethod
+    def _extract_iframe_video(iframe):
+        """Extract from iframe (YouTube, Vimeo, etc.)"""
+        src = iframe.get('src', '')
+        
+        # YouTube
+        youtube_patterns = [
+            r'youtube\.com/embed/([a-zA-Z0-9_-]+)',
+            r'youtube\.com/watch\?v=([a-zA-Z0-9_-]+)',
+            r'youtu\.be/([a-zA-Z0-9_-]+)'
+        ]
+        for pattern in youtube_patterns:
+            match = re.search(pattern, src)
+            if match:
+                video_id = match.group(1)
+                return {
+                    'url': f'https://www.youtube.com/embed/{video_id}',
+                    'type': 'youtube',
+                    'id': video_id,
+                    'source': 'iframe'
+                }
+        
+        # Vimeo
+        vimeo_match = re.search(r'vimeo\.com/(?:video/)?(\d+)', src)
+        if vimeo_match:
+            video_id = vimeo_match.group(1)
+            return {
+                'url': f'https://player.vimeo.com/video/{video_id}',
+                'type': 'vimeo',
+                'id': video_id,
+                'source': 'iframe'
+            }
+        
+        # Dailymotion
+        dailymotion_match = re.search(r'dailymotion\.com/embed/video/([a-zA-Z0-9]+)', src)
+        if dailymotion_match:
+            video_id = dailymotion_match.group(1)
+            return {
+                'url': f'https://www.dailymotion.com/embed/video/{video_id}',
+                'type': 'dailymotion',
+                'id': video_id,
+                'source': 'iframe'
+            }
+        
+        return None
+    
+    @staticmethod
+    def _extract_object_video(obj, base_url):
+        """Extract from object/embed tags"""
+        data = obj.get('data', '') or obj.get('src', '')
+        if data:
+            data = ContentExtractor.make_absolute_url(data, base_url)
+            if data.lower().endswith(('.mp4', '.webm', '.ogg', '.mov')):
+                return {
+                    'url': data,
+                    'type': 'direct_video',
+                    'source': 'object_tag'
+                }
+        return None
+    
+    @staticmethod
+    def _extract_video_link(a, base_url):
+        """Extract from anchor tags pointing to video files"""
+        href = a.get('href', '')
+        href_lower = href.lower()
+        
+        video_extensions = ['.mp4', '.webm', '.ogg', '.mov', '.avi', '.mkv']
+        for ext in video_extensions:
+            if href_lower.endswith(ext):
+                href = ContentExtractor.make_absolute_url(href, base_url)
+                return {
+                    'url': href,
+                    'type': 'direct_video',
+                    'source': 'link',
+                    'title': a.get_text(strip=True)
+                }
+        
+        # YouTube links
+        if 'youtube.com/watch' in href_lower or 'youtu.be/' in href_lower:
+            href = ContentExtractor.make_absolute_url(href, base_url)
+            return {
+                'url': href,
+                'type': 'youtube_link',
+                'source': 'link'
+            }
+        
+        return None
+    
+    @staticmethod
+    def _extract_video_from_jsonld(data):
+        """Extract video from JSON-LD"""
+        videos = []
+        if isinstance(data, dict):
+            if data.get('@type') == 'VideoObject':
+                videos.append({
+                    'url': data.get('contentUrl') or data.get('embedUrl'),
+                    'type': 'video_object',
+                    'source': 'jsonld',
+                    'title': data.get('name'),
+                    'description': data.get('description'),
+                    'thumbnail': data.get('thumbnailUrl')
+                })
+            elif data.get('video'):
+                video_data = data['video']
+                if isinstance(video_data, dict):
+                    videos.append({
+                        'url': video_data.get('contentUrl') or video_data.get('embedUrl'),
+                        'type': 'video_object',
+                        'source': 'jsonld'
+                    })
+        return videos
+    
+    @staticmethod
+    def extract_audios_from_html(soup: BeautifulSoup, base_url: str) -> List[Dict]:
+        """Extract audio content"""
+        audios = []
+        
+        # Audio tags
+        for audio in soup.find_all('audio'):
+            src = audio.get('src')
+            if not src:
+                source = audio.find('source')
+                if source:
+                    src = source.get('src')
+            
+            if src:
+                src = ContentExtractor.make_absolute_url(src, base_url)
+                audios.append({
+                    'url': src,
+                    'type': 'html5_audio',
+                    'source': 'audio_tag'
+                })
+        
+        # Podcast/audio links
+        for a in soup.find_all('a', href=True):
+            href = a['href'].lower()
+            audio_extensions = ['.mp3', '.m4a', '.ogg', '.wav', '.aac', '.opus']
+            for ext in audio_extensions:
+                if href.endswith(ext):
+                    href = ContentExtractor.make_absolute_url(a['href'], base_url)
+                    audios.append({
+                        'url': href,
+                        'type': 'audio_file',
+                        'source': 'link',
+                        'title': a.get_text(strip=True)
+                    })
+                    break
+        
+        # Spotify embeds
+        spotify_patterns = [
+            r'open\.spotify\.com/embed/(track|episode|album)/([a-zA-Z0-9]+)',
+            r'open\.spotify\.com/(track|episode|album)/([a-zA-Z0-9]+)'
+        ]
+        for pattern in spotify_patterns:
+            matches = re.findall(pattern, str(soup))
+            for match in matches:
+                if isinstance(match, tuple):
+                    item_type, item_id = match
+                else:
+                    continue
+                    
+                audios.append({
+                    'url': f'https://open.spotify.com/embed/{item_type}/{item_id}',
+                    'type': 'spotify',
+                    'id': item_id,
+                    'source': 'embed'
+                })
+        
+        # SoundCloud embeds
+        soundcloud_pattern = r'soundcloud\.com/(?:player/?\?url=)?([^\s"\'<>]+)'
+        matches = re.findall(soundcloud_pattern, str(soup))
+        for match in matches:
+            audios.append({
+                'url': f'https://w.soundcloud.com/player/?url=https://soundcloud.com/{match}',
+                'type': 'soundcloud',
+                'source': 'embed'
+            })
+        
+        return audios
+
+
+class ImageExtractor:
+    """Advanced image extraction"""
+    
+    @staticmethod
+    def extract_best_image(soup: BeautifulSoup, base_url: str, min_width: int = 600) -> Optional[str]:
+        """Extract the best image from the page"""
+        
+        # Priority order for image sources
+        
+        # 1. Open Graph image
+        og_image = soup.find('meta', property='og:image')
+        if og_image and og_image.get('content'):
+            return ContentExtractor.make_absolute_url(og_image['content'], base_url)
+        
+        # 2. Twitter image
+        twitter_image = soup.find('meta', attrs={'name': 'twitter:image'})
+        if twitter_image and twitter_image.get('content'):
+            return ContentExtractor.make_absolute_url(twitter_image['content'], base_url)
+        
+        # 3. Article:image
+        article_image = soup.find('meta', attrs={'property': 'article:image'})
+        if article_image and article_image.get('content'):
+            return ContentExtractor.make_absolute_url(article_image['content'], base_url)
+        
+        # 4. Schema.org image
+        schema_image = soup.find('meta', attrs={'itemprop': 'image'})
+        if schema_image and schema_image.get('content'):
+            return ContentExtractor.make_absolute_url(schema_image['content'], base_url)
+        
+        # 5. Find largest content image
+        images = []
+        for img in soup.find_all('img'):
+            src = img.get('src') or img.get('data-src') or img.get('data-original')
+            if not src:
+                continue
+            
+            # Skip small images
+            width = img.get('width')
+            height = img.get('height')
+            
+            # Try to parse dimensions
+            try:
+                if width and int(width) < min_width:
+                    continue
+                if height and int(height) < 400:
+                    continue
+            except:
+                pass
+            
+            # Skip icons, logos, avatars
+            classes = ' '.join(img.get('class', [])).lower()
+            if any(word in classes for word in ['icon', 'logo', 'avatar', 'thumb', 'spinner', 'loading']):
+                continue
+            
+            src = ContentExtractor.make_absolute_url(src, base_url)
+            images.append({
+                'src': src,
+                'width': width,
+                'height': height,
+                'alt': img.get('alt', '')
+            })
+        
+        if images:
+            # Try to find the largest image by dimensions
+            valid_images = [img for img in images if img['width']]
+            if valid_images:
+                return max(valid_images, key=lambda x: int(x['width'] or 0))['src']
+            return images[0]['src']
+        
+        return None
+
+
+class NewsFetcher:
+    """Enhanced news fetcher with multiple extraction methods"""
+    
+    def __init__(self):
+        self.session = self._create_session()
+        self.articles = []
+        self.internet_available = self._check_internet()
+        self.content_extractor = ContentExtractor()
+        self.media_extractor = MediaExtractor()
+        self.image_extractor = ImageExtractor()
+        
+    def _create_session(self):
+        """Create requests session with rotating user agents"""
+        session = requests.Session()
+        
+        user_agents = [
+            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Safari/605.1.15',
+            'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/121.0'
+        ]
+        
+        session.headers.update({
+            'User-Agent': random.choice(user_agents),
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+            'Accept-Language': 'en-US,en;q=0.9',
+            'Accept-Encoding': 'gzip, deflate, br',
+            'DNT': '1',
+            'Connection': 'keep-alive',
+            'Upgrade-Insecure-Requests': '1',
+        })
+        
+        # Configure retry strategy
+        retry_strategy = urllib3.Retry(
+            total=3,
+            backoff_factor=1,
+            status_forcelist=[429, 500, 502, 503, 504],
+        )
+        adapter = requests.adapters.HTTPAdapter(max_retries=retry_strategy)
+        session.mount("http://", adapter)
+        session.mount("https://", adapter)
+        
+        return session
+    
+    def _check_internet(self, host="8.8.8.8", port=53, timeout=3):
+        """Check internet connectivity"""
+        try:
+            socket.setdefaulttimeout(timeout)
+            socket.socket(socket.AF_INET, socket.SOCK_STREAM).connect((host, port))
+            return True
+        except Exception:
+            return False
+    
+def fetch_url_with_retry(self, url: str, max_retries: int = 2) -> Optional[str]:
+    for attempt in range(max_retries):
+        try:
+            # Rotate user agent
+            if attempt > 0:
+                user_agents = [
+                    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                    'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Safari/605.1.15',
+                    'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                    'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1'
+                ]
+                self.session.headers.update({
+                    'User-Agent': random.choice(user_agents)
+                })
+            
+            # Add referer for sites that check it
+            if attempt == 1:
+                self.session.headers.update({
+                    'Referer': 'https://www.google.com/'
+                })
+            
+            response = self.session.get(
+                url, 
+                timeout=10,
+                allow_redirects=True,
+                verify=False
+            )
+            
+            if response.status_code == 200:
+                return response.text
+            elif response.status_code == 403:
+                logger.warning(f"403 Forbidden for {url} on attempt {attempt + 1}")
+                if attempt < max_retries - 1:
+                    time.sleep(2)
+                else:
+                    return None
+            elif response.status_code in [429, 503]:
+                # Rate limited, wait longer
+                wait_time = 2 ** (attempt + 1)
+                logger.warning(f"Rate limited for {url}, waiting {wait_time}s")
+                time.sleep(wait_time)
+            else:
+                time.sleep(1)
+                
+        except Exception as e:
+            logger.error(f"Error fetching {url}: {e}")
+            time.sleep(1)
+    
+    return None
+    
+    def extract_full_content_with_media(self, url: str) -> Tuple[Optional[str], List[Dict], List[Dict], Optional[str]]:
+        """Extract full content and media using multiple methods"""
+        
+        # Fetch HTML
+        html = self.fetch_url_with_retry(url)
+        if not html:
+            return None, [], [], None
+        
+        soup = BeautifulSoup(html, 'html.parser')
+        base_url = url
+        
+        # Extract using multiple methods
+        extraction_methods = [
+            ('trafilatura', lambda: ContentExtractor.extract_with_trafilatura(url)),
+            ('newspaper3k', lambda: ContentExtractor.extract_with_newspaper(url)),
+            ('readability', lambda: ContentExtractor.extract_with_readability(url, html)),
+            ('bs4', lambda: ContentExtractor.extract_with_bs4_fallback(html))
+        ]
+        
+        content = None
+        content_method = None
+        
+        for method_name, method_func in extraction_methods:
+            try:
+                if method_name == 'newspaper3k':
+                    result, meta, img, videos, audios = method_func()
+                    if result and len(result) > 200:
+                        content = result
+                        content_method = method_name
+                        # Use these videos/audios if found
+                        if videos or audios:
+                            return content, videos, audios, img
+                else:
+                    result, meta = method_func()
+                    if result and len(result) > 200:
+                        content = result
+                        content_method = method_name
+                        break
+            except Exception as e:
+                logger.error(f"Method {method_name} failed: {e}")
+                continue
+        
+        # If still no content, try basic paragraph extraction
+        if not content:
+            paragraphs = soup.find_all('p')
+            valid_paragraphs = []
+            for p in paragraphs:
+                text = p.get_text(strip=True)
+                if len(text) > 100:
+                    valid_paragraphs.append(text)
+            
+            if len(valid_paragraphs) > 3:
+                content = '\n\n'.join(valid_paragraphs[:30])
+                content_method = 'basic_paragraphs'
+        
+        # Extract media
+        videos = MediaExtractor.extract_videos_from_html(soup, base_url)
+        audios = MediaExtractor.extract_audios_from_html(soup, base_url)
+        image = ImageExtractor.extract_best_image(soup, base_url)
+        
+        return content, videos, audios, image
+    
+    @staticmethod
+    def make_absolute_url(url: str, base_url: str) -> str:
+        """Convert relative URL to absolute"""
+        if not url:
+            return url
+        
+        # Remove whitespace
+        url = url.strip()
+        
+        if url.startswith('//'):
+            return 'https:' + url
+        elif url.startswith('/'):
+            from urllib.parse import urlparse
+            parsed = urlparse(base_url)
+            return f"{parsed.scheme}://{parsed.netloc}{url}"
+        elif url.startswith('./'):
+            from urllib.parse import urlparse, urljoin
+            return urljoin(base_url, url[2:])
+        elif not url.startswith(('http://', 'https://')):
+            from urllib.parse import urljoin
+            return urljoin(base_url, url)
+        return url
+
+    # Update your fetch_url_with_retry method
+    def fetch_url_with_retry(self, url: str, max_retries: int = 3) -> Optional[str]:
+        """Fetch URL with retry logic and rotating user agents"""
+        user_agents = [
+            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:121.0) Gecko/20100101 Firefox/121.0',
+            'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Safari/605.1.15',
+            'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        ]
+        
+        for attempt in range(max_retries):
+            try:
+                # Rotate user agent on each attempt
+                self.session.headers.update({
+                    'User-Agent': random.choice(user_agents)
+                })
+                
+                # Add referer for sites that check it
+                if attempt > 0:
+                    self.session.headers.update({
+                        'Referer': 'https://www.google.com/',
+                        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+                    })
+                
+                response = self.session.get(
+                    url, 
+                    timeout=15,
+                    allow_redirects=True,
+                    verify=False
+                )
+                
+                if response.status_code == 200:
+                    return response.text
+                elif response.status_code == 403:
+                    logger.warning(f"403 Forbidden for {url} on attempt {attempt + 1}")
+                    if attempt < max_retries - 1:
+                        wait_time = 2 ** attempt
+                        time.sleep(wait_time)
+                    else:
+                        return None
+                elif response.status_code in [429, 503]:
+                    # Rate limited, wait longer
+                    wait_time = (2 ** (attempt + 1)) + random.randint(1, 3)
+                    logger.warning(f"Rate limited for {url}, waiting {wait_time}s")
+                    time.sleep(wait_time)
+                else:
+                    if attempt < max_retries - 1:
+                        time.sleep(2 ** attempt)
+                        
+            except requests.exceptions.Timeout:
+                logger.warning(f"Timeout on attempt {attempt + 1} for {url}")
+                if attempt < max_retries - 1:
+                    time.sleep(2 ** attempt)
+            except requests.exceptions.ConnectionError:
+                logger.warning(f"Connection error on attempt {attempt + 1} for {url}")
+                if attempt < max_retries - 1:
+                    time.sleep(2 ** attempt)
+            except Exception as e:
+                logger.error(f"Error fetching {url}: {e}")
+                if attempt < max_retries - 1:
+                    time.sleep(2)
+        
+        return None
+
+    # Add this helper function for parsing HTML with multiple parsers
+    def parse_html_safely(html: str) -> Optional[BeautifulSoup]:
+        """Parse HTML with multiple parser fallbacks"""
+        parsers = ['html.parser', 'lxml', 'html5lib']
+        
+        for parser in parsers:
+            try:
+                soup = BeautifulSoup(html, parser)
+                # Quick check if parsing worked
+                if soup.find() is not None:
+                    return soup
+            except Exception as e:
+                logger.warning(f"Parser {parser} failed: {e}")
+                continue
+        
+        # Ultimate fallback
+        try:
+            return BeautifulSoup(html, 'html.parser')
+        except:
+            return None
+    
+    def fetch_newsapi_detailed(self):
+        """Enhanced NewsAPI fetching with better content extraction"""
+        api_key = getattr(settings, 'NEWS_API_KEY', '')
+        if not api_key:
+            logger.warning("No NewsAPI key found")
+            return
+        
+        # Expanded queries for more articles
+        queries = [
+            # Nigeria-specific queries
+            {'q': 'Nigeria', 'pageSize': 100, 'language': 'en', 'sortBy': 'publishedAt'},
+            {'q': 'Lagos', 'pageSize': 100, 'language': 'en', 'sortBy': 'publishedAt'},
+            {'q': 'Abuja', 'pageSize': 100, 'language': 'en', 'sortBy': 'publishedAt'},
+            {'q': '"Nigerian government"', 'pageSize': 100},
+            {'q': '"Nigerian economy" OR naira', 'pageSize': 100},
+            {'q': '"Super Eagles" OR "Nigerian football"', 'pageSize': 100},
+            {'q': 'Nollywood OR "Nigerian movies"', 'pageSize': 100},
+            {'q': 'Tinubu OR APC OR PDP', 'pageSize': 100},
+            {'q': '"Nigerian music" OR Afrobeats', 'pageSize': 100},
+            {'q': '"Nigerian technology" OR "Nigerian startup"', 'pageSize': 100},
+            
+            # African news
+            {'q': 'Africa', 'pageSize': 100},
+            {'q': 'Ghana', 'pageSize': 50},
+            {'q': 'Kenya', 'pageSize': 50},
+            {'q': 'South Africa', 'pageSize': 50},
+            
+            # International news with Africa angle
+            {'q': '"African Union" OR AU', 'pageSize': 50},
+            {'q': '"Africa trade" OR "AfCFTA"', 'pageSize': 50},
+        ]
+        
+        # Date range for last 7 days
+        from_date = (timezone.now() - timedelta(days=7)).strftime('%Y-%m-%d')
+        
+        with ThreadPoolExecutor(max_workers=5) as executor:
+            futures = []
+            for params in queries:
+                future = executor.submit(self._fetch_newsapi_single, params, from_date)
+                futures.append(future)
+                time.sleep(0.2)  # Rate limiting
+            
+            for future in as_completed(futures):
+                try:
+                    articles = future.result(timeout=30)
+                    for article in articles:
+                        self.articles.append(article)
+                except Exception as e:
+                    logger.error(f"Error processing NewsAPI future: {e}")
+    
+    def _fetch_newsapi_single(self, params: Dict, from_date: str) -> List[Dict]:
+        """Fetch single NewsAPI query"""
+        articles = []
+        api_key = getattr(settings, 'NEWS_API_KEY', '')
+        
+        try:
+            url = "https://newsapi.org/v2/everything"
+            params['apiKey'] = api_key
+            params['from'] = from_date
+            
+            response = self.session.get(url, params=params, timeout=15)
+            
+            if response.status_code == 200:
+                data = response.json()
+                for item in data.get('articles', []):
+                    try:
+                        article_data = self._process_newsapi_article(item)
+                        if article_data:
+                            articles.append(article_data)
+                    except Exception as e:
+                        logger.error(f"Error processing article: {e}")
+                        
+        except Exception as e:
+            logger.error(f"Error in NewsAPI query {params}: {e}")
+        
+        return articles
+    
+    def _process_newsapi_article(self, article: Dict) -> Optional[Dict]:
+        """Process a single NewsAPI article"""
+        try:
+            title = article.get('title', '').strip()
+            url = article.get('url', '')
+            
+            if not title or not url or '[Removed]' in title:
+                return None
+            
+            external_id = hashlib.md5(url.encode()).hexdigest()
+            
+            # Check if already exists in DB
+            if Post.objects.filter(external_id=external_id).exists():
+                return None
+            
+            # Extract full content and media
+            content, videos, audios, image = self.extract_full_content_with_media(url)
+            
+            # Get source name
+            source_obj = article.get('source', {})
+            source = source_obj.get('name', 'News Source') if source_obj else 'News Source'
+            source = source.replace('NewsAPI:', '').replace('NewsAPI', '').strip()
+            
+            # Detect category
+            category = self.detect_category_from_content(title, content or '')
+            
+            # Parse date
+            published_at = self.parse_date(article.get('publishedAt', ''))
+            
+            return {
+                'title': title,
+                'content': content or title[:500],
+                'url': url,
+                'source': source,
+                'image_url': image or article.get('urlToImage', ''),
+                'published_at': published_at,
+                'category': category,
+                'external_id': external_id,
+                'method': 'newsapi',
+                'videos': videos,
+                'audios': audios,
+                'has_media': bool(videos or audios)
+            }
+            
+        except Exception as e:
+            logger.error(f"Error processing NewsAPI article: {e}")
+            return None
+    
+    def fetch_rss_feeds_detailed(self):
+        """Enhanced RSS feed fetching with better content extraction"""
+        rss_feeds = [
+            # Nigerian sources
+            ('Premium Times Nigeria', 'https://www.premiumtimesng.com/feed', 'Nigeria'),
+            ('Vanguard Nigeria', 'https://www.vanguardngr.com/feed', 'Nigeria'),
+            ('Punch Nigeria', 'https://punchng.com/feed', 'Nigeria'),
+            ('The Guardian Nigeria', 'https://guardian.ng/feed', 'Nigeria'),
+            ('Daily Trust', 'https://dailytrust.com/feed', 'Nigeria'),
+            ('Leadership Nigeria', 'https://leadership.ng/feed', 'Nigeria'),
+            ('Nairametrics', 'https://nairametrics.com/feed', 'Nigeria'),
+            ('TechCabal', 'https://techcabal.com/feed', 'Nigeria'),
+            ('BusinessDay', 'https://businessday.ng/feed', 'Nigeria'),
+            ('The Cable', 'https://www.thecable.ng/feed', 'Nigeria'),
+            ('Sahara Reporters', 'https://saharareporters.com/feeds/latest/feed', 'Nigeria'),
+            ('ThisDay', 'https://www.thisdaylive.com/index.php/feed', 'Nigeria'),
+            ('Tribune', 'https://tribuneonlineng.com/feed', 'Nigeria'),
+            ('Independent Nigeria', 'https://independent.ng/feed', 'Nigeria'),
+            
+            # African sources
+            ('BBC Africa', 'http://feeds.bbci.co.uk/news/world/africa/rss.xml', 'Africa'),
+            ('Al Jazeera Africa', 'https://www.aljazeera.com/xml/rss/all.xml', 'Africa'),
+            ('Reuters Africa', 'http://feeds.reuters.com/reuters/AFRICAfricaNews', 'Africa'),
+            ('France24 Africa', 'https://www.france24.com/en/africa/rss', 'Africa'),
+            ('The East African', 'https://www.theeastafrican.co.ke/rss.xml', 'East Africa'),
+            ('Daily Nation Kenya', 'https://nation.africa/kenya/rss.xml', 'Kenya'),
+            ('MyJoyOnline Ghana', 'https://www.myjoyonline.com/feed', 'Ghana'),
+            
+            # International news with Africa sections
+            ('CNN Africa', 'http://rss.cnn.com/rss/edition_africa.rss', 'Africa'),
+            ('The Guardian Africa', 'https://www.theguardian.com/world/africa/rss', 'Africa'),
+            ('NYT Africa', 'https://rss.nytimes.com/services/xml/rss/nyt/Africa.xml', 'Africa'),
+        ]
+        
+        with ThreadPoolExecutor(max_workers=3) as executor:
+            futures = []
+            for name, url, region in rss_feeds:
+                future = executor.submit(self._fetch_rss_single, name, url, region)
+                futures.append(future)
+                time.sleep(0.5)
+            
+            for future in as_completed(futures):
+                try:
+                    articles = future.result(timeout=60)
+                    for article in articles:
+                        self.articles.append(article)
+                except Exception as e:
+                    logger.error(f"Error processing RSS future: {e}")
+    
+    def _fetch_rss_single(self, name: str, feed_url: str, region: str) -> List[Dict]:
+        """Fetch single RSS feed"""
+        articles = []
+        
+        try:
+            feed = feedparser.parse(feed_url)
+            
+            for entry in feed.entries[:20]:  # Get 20 from each source
+                try:
+                    title = entry.get('title', '').strip()
+                    if not title:
+                        continue
+                    
+                    url = entry.get('link', '')
+                    if not url:
+                        continue
+                    
+                    external_id = hashlib.md5(url.encode()).hexdigest()
+                    
+                    if Post.objects.filter(external_id=external_id).exists():
+                        continue
+                    
+                    # Extract full content and media
+                    content, videos, audios, image = self.extract_full_content_with_media(url)
+                    
+                    # If content extraction failed, use summary
+                    if not content:
+                        content = entry.get('summary', '') or entry.get('description', '')
+                        content = self.clean_html(content)
+                    
+                    # Extract image from RSS if not found
+                    if not image:
+                        image = self._extract_image_from_rss(entry, url)
+                    
+                    # Detect category
+                    category = self.detect_category_from_content(title, content or '')
+                    
+                    # Parse date
+                    published_at = self.parse_date(entry.get('published', ''))
+                    
+                    articles.append({
+                        'title': title,
+                        'content': content or title[:500],
+                        'url': url,
+                        'source': name,
+                        'image_url': image,
+                        'published_at': published_at,
+                        'category': category,
+                        'external_id': external_id,
+                        'method': 'rss',
+                        'videos': videos,
+                        'audios': audios,
+                        'has_media': bool(videos or audios)
+                    })
+                    
+                except Exception as e:
+                    logger.error(f"Error processing RSS entry from {name}: {e}")
+                    continue
+                    
+        except Exception as e:
+            logger.error(f"Error fetching RSS feed {name}: {e}")
+        
+        return articles
+    
+    def _extract_image_from_rss(self, entry, base_url):
+        """Extract image from RSS entry"""
+        # Check media:content
+        if hasattr(entry, 'media_content'):
+            for media in entry.media_content:
+                if media.get('medium') == 'image' and media.get('url'):
+                    return self.make_absolute_url(media['url'], base_url)
+        
+        # Check enclosures
+        if hasattr(entry, 'enclosures'):
+            for enc in entry.enclosures:
+                if enc.get('type', '').startswith('image/'):
+                    return self.make_absolute_url(enc.get('href', ''), base_url)
+        
+        # Check media:thumbnail
+        if hasattr(entry, 'media_thumbnail'):
+            for thumb in entry.media_thumbnail:
+                if thumb.get('url'):
+                    return self.make_absolute_url(thumb['url'], base_url)
+        
+        return None
+    
+    def fetch_web_scrape_detailed(self):
+        """Direct website scraping with multiple sources"""
+        websites = [
+            {
+                'name': 'Premium Times',
+                'url': 'https://www.premiumtimesng.com',
+                'article_selectors': ['article', '.post', '.article', '.entry'],
+                'title_selectors': ['h1.entry-title', 'h2 a', 'h3 a'],
+                'link_selectors': ['h2 a', 'h3 a', '.entry-title a'],
+                'categories': ['news', 'headlines', 'politics', 'business', 'sports']
+            },
+            {
+                'name': 'Vanguard',
+                'url': 'https://www.vanguardngr.com',
+                'article_selectors': ['article', '.post', '.rtp-latest-news-list li'],
+                'title_selectors': ['h3 a', '.entry-title a'],
+                'link_selectors': ['h3 a', '.entry-title a'],
+                'categories': ['news', 'politics', 'business', 'sports']
+            },
+            {
+                'name': 'Punch',
+                'url': 'https://punchng.com',
+                'article_selectors': ['article', '.post'],
+                'title_selectors': ['h2 a', 'h3 a'],
+                'link_selectors': ['h2 a', 'h3 a'],
+                'categories': ['topics/news', 'topics/politics', 'topics/business']
+            },
+            {
+                'name': 'Daily Trust',
+                'url': 'https://dailytrust.com',
+                'article_selectors': ['article', '.post'],
+                'title_selectors': ['h3 a', 'h2 a'],
+                'link_selectors': ['h3 a', 'h2 a'],
+                'categories': ['category/news', 'category/politics', 'category/business']
+            },
+            {
+                'name': 'The Guardian',
+                'url': 'https://guardian.ng',
+                'article_selectors': ['article', '.post'],
+                'title_selectors': ['h2 a', 'h3 a'],
+                'link_selectors': ['h2 a', 'h3 a'],
+                'categories': ['category/news', 'category/politics', 'category/business']
+            }
+        ]
+        
+        for site in websites:
+            try:
+                articles = self._scrape_website(site)
+                for article in articles:
+                    self.articles.append(article)
+            except Exception as e:
+                logger.error(f"Error scraping {site['name']}: {e}")
+    
+    def _scrape_website(self, site: Dict) -> List[Dict]:
+        """Scrape a single website"""
+        articles = []
+        
+        for category in site.get('categories', ['']):
+            try:
+                # Try category page first
+                if category:
+                    url = f"{site['url']}/{category}"
+                else:
+                    url = site['url']
+                
+                html = self.fetch_url_with_retry(url)
+                if not html:
+                    continue
+                
+                soup = BeautifulSoup(html, 'html.parser')
+                
+                # Find articles using selectors
+                article_elements = []
+                for selector in site['article_selectors']:
+                    article_elements = soup.select(selector)
+                    if article_elements:
+                        break
+                
+                for article_elem in article_elements[:10]:  # Limit per category
+                    try:
+                        # Extract title
+                        title = None
+                        for selector in site['title_selectors']:
+                            title_elem = article_elem.select_one(selector)
+                            if title_elem:
+                                title = title_elem.get_text(strip=True)
+                                break
+                        
+                        if not title:
+                            continue
+                        
+                        # Extract link
+                        link = None
+                        for selector in site['link_selectors']:
+                            link_elem = article_elem.select_one(selector)
+                            if link_elem:
+                                link = link_elem.get('href', '')
+                                break
+                        
+                        if not link:
+                            continue
+                        
+                        # Make absolute URL
+                        link = self.make_absolute_url(link, site['url'])
+                        
+                        external_id = hashlib.md5(link.encode()).hexdigest()
+                        
+                        if Post.objects.filter(external_id=external_id).exists():
+                            continue
+                        
+                        # Extract full content and media
+                        content, videos, audios, image = self.extract_full_content_with_media(link)
+                        
+                        # Detect category
+                        category_detected = self.detect_category_from_content(title, content or '')
+                        
+                        articles.append({
+                            'title': title,
+                            'content': content or title[:500],
+                            'url': link,
+                            'source': site['name'],
+                            'image_url': image,
+                            'published_at': timezone.now(),
+                            'category': category_detected,
+                            'external_id': external_id,
+                            'method': 'web_scrape',
+                            'videos': videos,
+                            'audios': audios,
+                            'has_media': bool(videos or audios)
+                        })
+                        
+                    except Exception as e:
+                        logger.error(f"Error scraping article from {site['name']}: {e}")
+                        continue
+                        
+                time.sleep(random.uniform(2, 5))  # Be polite
+                
+            except Exception as e:
+                logger.error(f"Error scraping {site['name']} category {category}: {e}")
+                continue
+        
+        return articles
+    
+    def detect_category_from_content(self, title: str, content: str) -> str:
+        """Improved category detection"""
+        text = (title + ' ' + content).lower()
+        
+        # Weighted keyword matching
+        categories = {
+            'Politics': [
+                ('president', 3), ('senate', 3), ('governor', 3), ('election', 3),
+                ('politic', 2), ('minister', 3), ('assembly', 2), ('vote', 2),
+                ('campaign', 2), ('party', 2), ('government', 2), ('parliament', 3),
+                ('tinubu', 5), ('buhari', 5), ('obia', 5), ('atiku', 5),
+                ('apc', 5), ('pdp', 5), ('labour', 2), ('legislature', 3),
+                ('democracy', 2), ('constitution', 3), ('bill', 2), ('lawmaker', 3)
+            ],
+            'Economy': [
+                ('naira', 5), ('dollar', 4), ('economy', 4), ('inflation', 4),
+                ('budget', 4), ('finance', 3), ('market', 3), ('stock', 4),
+                ('investment', 3), ('business', 2), ('bank', 3), ('cbn', 5),
+                ('exchange', 3), ('tax', 3), ('revenue', 3), ('trade', 3),
+                ('import', 3), ('export', 3), ('gdp', 5), ('economic', 3)
+            ],
+            'Sports': [
+                ('sport', 3), ('football', 4), ('basketball', 4), ('athlete', 3),
+                ('match', 3), ('league', 3), ('championship', 3), ('goal', 4),
+                ('player', 3), ('super eagles', 5), ('super falcons', 5),
+                ('world cup', 4), ('tournament', 3), ('stadium', 3),
+                ('coach', 3), ('team', 2), ('win', 2), ('victory', 2)
+            ],
+            'Technology': [
+                ('tech', 4), ('digital', 3), ('app', 4), ('software', 4),
+                ('internet', 3), ('phone', 3), ('computer', 3), ('startup', 4),
+                ('ai', 5), ('artificial intelligence', 5), ('data', 3),
+                ('cyber', 4), ('5g', 4), ('mobile', 3), ('innovation', 3),
+                ('gadget', 3), ('device', 3), ('technology', 4)
+            ],
+            'Entertainment': [
+                ('music', 4), ('movie', 4), ('actor', 4), ('actress', 4),
+                ('celebrity', 4), ('nollywood', 5), ('film', 4), ('show', 3),
+                ('award', 3), ('davido', 5), ('burna boy', 5), ('wizkid', 5),
+                ('tiwa savage', 5), ('entertainment', 3), ('concert', 3)
+            ],
+            'Health': [
+                ('health', 3), ('hospital', 3), ('doctor', 3), ('medical', 3),
+                ('disease', 3), ('vaccine', 4), ('treatment', 3), ('patient', 3),
+                ('covid', 5), ('malaria', 4), ('fever', 3), ('medicine', 3),
+                ('clinic', 3), ('healthcare', 3), ('wellness', 2)
+            ],
+            'Education': [
+                ('school', 3), ('university', 4), ('student', 3), ('teacher', 3),
+                ('education', 3), ('exam', 3), ('learning', 2), ('college', 3),
+                ('polytechnic', 3), ('waec', 5), ('neco', 5), ('jamb', 5),
+                ('academic', 2), ('scholarship', 3)
+            ],
+            'Crime': [
+                ('crime', 4), ('robber', 4), ('kill', 4), ('murder', 4),
+                ('police', 3), ('arrest', 3), ('court', 3), ('judge', 3),
+                ('law', 2), ('theft', 3), ('fraud', 3), ('kidnap', 5),
+                ('bandit', 5), ('terrorist', 5), ('attack', 3)
+            ],
+            'Business': [
+                ('business', 3), ('company', 3), ('entrepreneur', 3),
+                ('ceo', 3), ('enterprise', 2), ('corporate', 2),
+                ('industry', 2), ('manufacturing', 2), ('market', 2)
+            ]
+        }
+        
+        # Calculate weighted scores
+        scores = {}
+        for category, keywords in categories.items():
+            score = 0
+            for keyword, weight in keywords:
+                if keyword in text:
+                    score += weight
+            if score > 0:
+                scores[category] = score
+        
+        if scores:
+            return max(scores, key=scores.get)
+        
+        return 'News'
+    
+    def clean_html(self, text: str) -> str:
         """Clean HTML from text"""
         if not text:
             return text
@@ -508,166 +1251,25 @@ class NewsFetcher:
         clean = re.sub(r'<[^>]+>', '', text)
         # Remove multiple spaces and newlines
         clean = re.sub(r'\s+', ' ', clean).strip()
-        # Remove special characters but keep basic punctuation
-        clean = re.sub(r'[^\w\s.,!?-]', '', clean)
+        # Remove excessive special characters
+        clean = re.sub(r'[^\w\s.,!?\'"-]', '', clean)
         
         return clean
-
-    def extract_image(self, entry, url, content):
-        """Extract image from various sources"""
-        image_url = ''
-        
-        # 1. Check RSS media content
-        if hasattr(entry, 'media_content'):
-            for media in entry.media_content:
-                if media.get('medium') == 'image' and media.get('url'):
-                    image_url = media.get('url')
-                    break
-        
-        # 2. Check enclosures
-        if not image_url and hasattr(entry, 'enclosures'):
-            for enc in entry.enclosures:
-                if enc.get('type', '').startswith('image/'):
-                    image_url = enc.get('href', '')
-                    break
-        
-        # 3. Check content for images
-        if not image_url and content:
-            # Look for image URLs in content
-            img_pattern = r'https?://[^\s]+\.(?:jpg|jpeg|png|gif|webp)'
-            matches = re.findall(img_pattern, content)
-            if matches:
-                image_url = matches[0]
-        
-        # 4. Scrape page for images
-        if not image_url:
-            image_url = self.scrape_page_image(url)
-        
-        # 5. Use default based on category
-        if not image_url:
-            # Generate a placeholder based on category
-            category = self.detect_category_from_content(entry.get('title', ''), content or '')
-            image_url = self.get_category_placeholder(category)
-        
-        return image_url
-
-    def scrape_page_image(self, url):
-        """Scrape image from webpage"""
-        try:
-            response = self.session.get(url, timeout=10, allow_redirects=True)
-            if response.status_code != 200:
-                return ''
-            
-            soup = BeautifulSoup(response.content, 'html.parser')
-            
-            # Try Open Graph image first
-            og_image = soup.find('meta', property='og:image')
-            if og_image and og_image.get('content'):
-                return og_image['content']
-            
-            # Try Twitter image
-            twitter_image = soup.find('meta', attrs={'name': 'twitter:image'})
-            if twitter_image and twitter_image.get('content'):
-                return twitter_image['content']
-            
-            # Try to find large content images
-            images = soup.find_all('img')
-            for img in images:
-                src = img.get('src') or img.get('data-src') or img.get('data-original')
-                if not src:
-                    continue
-                
-                # Check if it's likely a content image
-                classes = ' '.join(img.get('class', [])).lower()
-                alt = (img.get('alt') or '').lower()
-                width = img.get('width')
-                height = img.get('height')
-                
-                # Skip small images and icons
-                if any(word in classes for word in ['icon', 'logo', 'avatar', 'thumb', 'spinner']):
-                    continue
-                if any(word in alt for word in ['icon', 'logo', 'avatar']):
-                    continue
-                if width and int(width or 0) < 200:
-                    continue
-                if height and int(height or 0) < 200:
-                    continue
-                
-                # Make URL absolute
-                if src.startswith('//'):
-                    src = 'https:' + src
-                elif src.startswith('/'):
-                    parsed_url = urlparse(url)
-                    src = f"{parsed_url.scheme}://{parsed_url.netloc}{src}"
-                elif not src.startswith('http'):
-                    src = urljoin(url, src)
-                
-                return src
-            
-            return ''
-            
-        except Exception as e:
-            logger.error(f"Error scraping image from {url}: {e}")
-            return ''
-
-    def get_category_placeholder(self, category):
-        """Get placeholder image based on category"""
-        placeholders = {
-            'Politics': 'https://images.unsplash.com/photo-1551135049-8a33b2fb2f7f?w=800&q=80',
-            'Economy': 'https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?w=800&q=80',
-            'Sports': 'https://images.unsplash.com/photo-1461896836934-ffe607ba8211?w=800&q=80',
-            'Technology': 'https://images.unsplash.com/photo-1518709268805-4e9042af2176?w=800&q=80',
-            'Entertainment': 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=800&q=80',
-            'Business': 'https://images.unsplash.com/photo-1665686306577-32e6bfa1d1d1?w=800&q=80',
-            'Health': 'https://images.unsplash.com/photo-1576091160399-112ba8d25d1f?w=800&q=80',
-            'Education': 'https://images.unsplash.com/photo-1523050854058-8df90110c9f1?w=800&q=80',
-            'Crime': 'https://images.unsplash.com/photo-1589571894960-20bbe2828d0a?w=800&q=80',
-            'News': 'https://images.unsplash.com/photo-1588681664899-f142ff2dc9b1?w=800&q=80',
-        }
-        return placeholders.get(category, placeholders['News'])
-
-    def detect_category_from_content(self, title, content):
-        """Detect category from title and content"""
-        text = (title + ' ' + content).lower()
-        
-        categories = {
-            'Politics': ['president', 'senate', 'governor', 'election', 'politic', 'minister', 'assembly', 'vote', 'campaign', 'party', 'government', 'parliament', 'tinubu', 'buhari', 'obia', 'atiku', 'apc', 'pdp', 'labour'],
-            'Economy': ['naira', 'dollar', 'economy', 'inflation', 'budget', 'finance', 'market', 'stock', 'investment', 'business', 'bank', 'cbn', 'exchange', 'tax', 'revenue', 'trade', 'import', 'export'],
-            'Sports': ['sport', 'football', 'basketball', 'athlete', 'match', 'league', 'championship', 'goal', 'player', 'super eagles', 'nfl', 'nba', 'super falcons', 'world cup'],
-            'Technology': ['tech', 'digital', 'app', 'software', 'internet', 'phone', 'computer', 'startup', 'ai', 'artificial intelligence', 'data', 'cyber', '5g', 'mobile', 'innovation'],
-            'Entertainment': ['music', 'movie', 'actor', 'actress', 'celebrity', 'nollywood', 'film', 'show', 'award', 'bobrisky', 'davido', 'burna boy', 'wizkid', 'tiwa savage'],
-            'Health': ['health', 'hospital', 'doctor', 'medical', 'disease', 'vaccine', 'treatment', 'patient', 'covid', 'malaria', 'fever', 'medicine', 'clinic'],
-            'Education': ['school', 'university', 'student', 'teacher', 'education', 'exam', 'learning', 'college', 'polytechnic', 'waec', 'neco', 'jamb'],
-            'Crime': ['crime', 'robber', 'kill', 'murder', 'police', 'arrest', 'court', 'judge', 'law', 'theft', 'fraud', 'kidnap', 'bandit', 'terrorist'],
-            'Business': ['business', 'company', 'entrepreneur', 'ceo', 'startup', 'enterprise', 'corporate', 'industry', 'manufacturing'],
-            'World': ['world', 'international', 'global', 'foreign', 'united nations', 'usa', 'uk', 'china', 'russia', 'europe'],
-        }
-        
-        for category, keywords in categories.items():
-            if any(keyword in text for keyword in keywords):
-                return category
-        
-        return 'News'
-
-    def is_trending_title(self, title):
-        """Check if title indicates trending/breaking news"""
-        if not title:
-            return False
-        
-        title_lower = title.lower()
-        trending_keywords = [
-            'breaking', 'exclusive', 'latest', 'just in',
-            'urgent', 'alert', 'crisis', 'emergency',
-            'shocking', 'unbelievable', 'amazing',
-            'happening now', 'live', 'developing',
-            'updated', 'update', 'confirmed', 'report'
-        ]
-        return any(keyword in title_lower for keyword in trending_keywords)
-
-    def parse_date(self, date_str):
+    
+    def parse_date(self, date_str: str):
         """Parse various date formats"""
         if not date_str:
             return timezone.now()
+        
+        try:
+            # Try dateutil if available
+            from dateutil import parser
+            parsed = parser.parse(date_str)
+            if parsed.tzinfo is None:
+                return timezone.make_aware(parsed)
+            return parsed
+        except:
+            pass
         
         try:
             # Try common formats
@@ -687,293 +1289,12 @@ class NewsFetcher:
                     return parsed
                 except:
                     continue
-            
-            # Try parsing with dateutil if available
-            try:
-                from dateutil import parser
-                return parser.parse(date_str)
-            except:
-                pass
-            
-        except Exception as e:
-            logger.error(f"Error parsing date {date_str}: {e}")
+        except:
+            pass
         
         return timezone.now()
-
-    def fetch_google_news_scrape(self):
-        """Scrape Google News for Nigeria news"""
-        try:
-            search_terms = [
-                'Nigeria+news',
-                'Nigeria+politics',
-                'Nigeria+economy',
-                'Nigeria+technology',
-                'Lagos+news',
-                'Abuja+news',
-                'Nigeria+sports',
-                'Nigeria+entertainment',
-                'Nigeria+business',
-                'Nigeria+crime',
-                'Africa+news',
-            ]
-            
-            for term in search_terms:
-                try:
-                    url = f"https://news.google.com/rss/search?q={term}&hl=en-NG&gl=NG&ceid=NG:en"
-                    feed = feedparser.parse(url)
-                    
-                    for entry in feed.entries[:12]:  # Limit per term
-                        try:
-                            title = entry.get('title', '').strip()
-                            if not title:
-                                continue
-                            
-                            # Remove source from title (Google News format)
-                            if ' - ' in title:
-                                title_parts = title.split(' - ')
-                                title = ' - '.join(title_parts[:-1]) if len(title_parts) > 1 else title_parts[0]
-                            
-                            url = entry.get('link', '')
-                            if not url:
-                                continue
-                            
-                            # Generate external_id
-                            external_id = hashlib.md5(url.encode()).hexdigest()
-                            
-                            if Post.objects.filter(external_id=external_id).exists():
-                                continue
-                            
-                            # Extract content
-                            content = self.extract_full_content(url)
-                            
-                            # If no content, use summary
-                            if not content and 'summary' in entry:
-                                content = entry.summary
-                            
-                            # Clean content
-                            if content:
-                                content = self.clean_html(content)
-                            
-                            # Extract image
-                            image_url = self.extract_image(entry, url, content)
-                            
-                            # Detect category
-                            category = self.detect_category_from_content(title, content or '')
-                            
-                            # Get published date
-                            published_at = self.parse_date(entry.get('published', ''))
-                            
-                            # Mark as trending
-                            is_trending = self.is_trending_title(title)
-                            
-                            self.articles.append({
-                                'title': title,
-                                'content': content or title[:500],
-                                'url': url,
-                                'source': 'Google News',
-                                'image_url': image_url,
-                                'published_at': published_at,
-                                'category': category,
-                                'external_id': external_id,
-                                'method': 'google',
-                                'is_banner': is_trending,
-                                'full_content_scraped': bool(content and len(content) > 500),
-                            })
-                            
-                            sleep(0.5)  # Delay between articles
-                            
-                        except Exception as e:
-                            logger.error(f"Error processing Google News article: {e}")
-                            continue
-                            
-                except Exception as e:
-                    logger.error(f"Error with search term {term}: {e}")
-                    continue
-                    
-        except Exception as e:
-            logger.error(f"Error in Google News scrape: {e}")
-
-    def fetch_rss_feeds(self):
-        """Fetch from international RSS feeds"""
-        rss_feeds = [
-            ('BBC Africa', 'http://feeds.bbci.co.uk/news/world/africa/rss.xml', 'Africa'),
-            ('Reuters Africa', 'http://feeds.reuters.com/reuters/AFRICAfricaNews', 'Africa'),
-            ('CNN Africa', 'http://rss.cnn.com/rss/edition_africa.rss', 'International'),
-            ('Al Jazeera', 'https://www.aljazeera.com/xml/rss/all.xml', 'International'),
-            ('France24 Africa', 'https://www.france24.com/en/africa/rss', 'Africa'),
-        ]
-        
-        for source_name, feed_url, default_category in rss_feeds:
-            try:
-                feed = feedparser.parse(feed_url)
-                
-                for entry in feed.entries[:15]:
-                    try:
-                        title = entry.get('title', '').strip()
-                        
-                        # Filter for Nigeria/Africa relevance
-                        title_lower = title.lower()
-                        if source_name in ['CNN Africa', 'Al Jazeera']:
-                            if not any(keyword in title_lower for keyword in ['nigeria', 'africa', 'nigerian', 'lagos', 'abuja']):
-                                continue
-                        
-                        url = entry.get('link', '')
-                        if not url:
-                            continue
-                        
-                        # Generate external_id
-                        external_id = hashlib.md5(url.encode()).hexdigest()
-                        
-                        if Post.objects.filter(external_id=external_id).exists():
-                            continue
-                        
-                        # Extract content
-                        content = self.extract_full_content(url)
-                        
-                        # If no content, use summary
-                        if not content and 'summary' in entry:
-                            content = entry.summary
-                        
-                        # Clean content
-                        if content:
-                            content = self.clean_html(content)
-                        
-                        # Extract image
-                        image_url = self.extract_image(entry, url, content)
-                        
-                        # Detect category
-                        category = self.detect_category_from_content(title, content or '')
-                        
-                        # Get published date
-                        published_at = self.parse_date(entry.get('published', ''))
-                        
-                        self.articles.append({
-                            'title': title,
-                            'content': content or title[:500],
-                            'url': url,
-                            'source': source_name,
-                            'image_url': image_url,
-                            'published_at': published_at,
-                            'category': category or default_category,
-                            'external_id': external_id,
-                            'method': 'rss_international',
-                            'full_content_scraped': bool(content and len(content) > 500),
-                        })
-                        
-                        sleep(0.5)  # Delay between articles
-                        
-                    except Exception as e:
-                        logger.error(f"Error processing {source_name} article: {e}")
-                        continue
-                        
-            except Exception as e:
-                logger.error(f"Error fetching {source_name}: {e}")
-                continue
-
-    def fetch_web_scrape_detailed(self):
-        """Direct website scraping for detailed content"""
-        newspapers = [
-            {
-                'name': 'Premium Times',
-                'url': 'https://www.premiumtimesng.com/news/headlines',
-                'base_url': 'https://www.premiumtimesng.com',
-                'article_selector': 'article',
-                'title_selector': 'h2 a',
-                'link_selector': 'h2 a',
-            },
-            {
-                'name': 'Vanguard',
-                'url': 'https://www.vanguardngr.com/category/news',
-                'base_url': 'https://www.vanguardngr.com',
-                'article_selector': '.rtp-latest-news-list li',
-                'title_selector': 'h3 a',
-                'link_selector': 'h3 a',
-            },
-            {
-                'name': 'Punch',
-                'url': 'https://punchng.com/topics/news',
-                'base_url': 'https://punchng.com',
-                'article_selector': 'article',
-                'title_selector': 'h2 a',
-                'link_selector': 'h2 a',
-            },
-            {
-                'name': 'Daily Trust',
-                'url': 'https://dailytrust.com/category/news/',
-                'base_url': 'https://dailytrust.com',
-                'article_selector': 'article',
-                'title_selector': 'h3 a',
-                'link_selector': 'h3 a',
-            },
-        ]
-        
-        for paper in newspapers:
-            try:
-                logger.info(f"Scraping {paper['name']}...")
-                response = self.session.get(paper['url'], timeout=20)
-                if response.status_code != 200:
-                    continue
-                
-                soup = BeautifulSoup(response.content, 'html.parser')
-                articles = soup.select(paper['article_selector'])[:8]
-                
-                for article in articles:
-                    try:
-                        title_elem = article.select_one(paper['title_selector'])
-                        if not title_elem:
-                            continue
-                        
-                        title = title_elem.text.strip()
-                        link = title_elem.get('href', '')
-                        
-                        if not title or not link:
-                            continue
-                        
-                        # Make URL absolute
-                        if link.startswith('/'):
-                            link = paper['base_url'] + link
-                        elif not link.startswith('http'):
-                            link = urljoin(paper['url'], link)
-                        
-                        # Generate external_id
-                        external_id = hashlib.md5(link.encode()).hexdigest()
-                        
-                        if Post.objects.filter(external_id=external_id).exists():
-                            continue
-                        
-                        # Extract full content
-                        content = self.extract_full_content(link)
-                        
-                        # Extract image
-                        image_url = self.scrape_page_image(link)
-                        
-                        # Detect category
-                        category = self.detect_category_from_content(title, content or '')
-                        
-                        self.articles.append({
-                            'title': title,
-                            'content': content or title[:500],
-                            'url': link,
-                            'source': paper['name'],
-                            'image_url': image_url,
-                            'published_at': timezone.now(),
-                            'category': category or 'News',
-                            'external_id': external_id,
-                            'method': 'web_scrape',
-                            'full_content_scraped': bool(content and len(content) > 500),
-                        })
-                        
-                        sleep(1)  # Longer delay for web scraping
-                        
-                    except Exception as e:
-                        logger.error(f"Error parsing {paper['name']} article: {e}")
-                        continue
-                        
-            except Exception as e:
-                logger.error(f"Error scraping {paper['name']}: {e}")
-                continue
-
-    def remove_duplicates(self, articles):
+    
+    def remove_duplicates(self, articles: List[Dict]) -> List[Dict]:
         """Remove duplicate articles"""
         unique_articles = []
         seen_urls = set()
@@ -984,39 +1305,37 @@ class NewsFetcher:
             title = article.get('title', '').lower().strip()
             external_id = article.get('external_id', '')
             
-            # Skip if no URL or title
             if not url or not title:
                 continue
             
-            # Check by external_id first
-            if external_id:
-                if external_id in seen_urls:
-                    continue
-                seen_urls.add(external_id)
-            # Then check by URL
-            elif url in seen_urls:
+            # Check by external_id
+            if external_id and external_id in seen_urls:
                 continue
-            else:
-                seen_urls.add(url)
+            if external_id:
+                seen_urls.add(external_id)
+            
+            # Check by URL
+            if url in seen_urls:
+                continue
+            seen_urls.add(url)
             
             # Check title similarity
-            is_similar = False
+            is_duplicate = False
             for seen_title in seen_titles:
-                similarity = self.calculate_similarity(title, seen_title)
-                if similarity > 0.6:  # 60% similarity threshold
-                    is_similar = True
+                if self._title_similarity(title, seen_title) > 0.7:
+                    is_duplicate = True
                     break
             
-            if not is_similar:
+            if not is_duplicate:
                 seen_titles.add(title)
                 unique_articles.append(article)
         
         return unique_articles
-
-    def calculate_similarity(self, text1, text2):
-        """Calculate text similarity"""
-        words1 = set(text1.split())
-        words2 = set(text2.split())
+    
+    def _title_similarity(self, title1: str, title2: str) -> float:
+        """Calculate title similarity"""
+        words1 = set(title1.split())
+        words2 = set(title2.split())
         
         if not words1 or not words2:
             return 0
@@ -1025,10 +1344,10 @@ class NewsFetcher:
         union = len(words1.union(words2))
         
         return intersection / union if union > 0 else 0
-
-    def save_articles_with_full_content(self, articles):
-        """Save articles with full content to database"""
-        logger.info(f"Saving {len(articles)} articles...")
+    
+    def save_articles(self, articles: List[Dict]) -> int:
+        """Save articles to database"""
+        saved_count = 0
         
         # Get or create system user
         try:
@@ -1043,10 +1362,9 @@ class NewsFetcher:
                 is_active=False
             )
         
-        saved_count = 0
-        
-        for i, article in enumerate(articles, 1):
+        for article in articles:
             try:
+                # Basic validation
                 title = article.get('title', '').strip()
                 url = article.get('url', '')
                 external_id = article.get('external_id', '')
@@ -1054,21 +1372,20 @@ class NewsFetcher:
                 if not title or not url:
                     continue
                 
-                # Truncate title if too long
+                # Truncate title if needed
                 if len(title) > 200:
                     title = title[:197] + '...'
                 
-                # Check if already exists by external_id or URL
+                # Check if already exists
                 if external_id and Post.objects.filter(external_id=external_id).exists():
                     continue
                 
-                # Check by URL
                 if Post.objects.filter(external_url=url).exists():
                     continue
                 
                 # Get or create category
                 category_name = article.get('category', 'News')
-                category, created = Category.objects.get_or_create(
+                category, _ = Category.objects.get_or_create(
                     name=category_name,
                     defaults={
                         'slug': category_name.lower().replace(' ', '-'),
@@ -1078,59 +1395,80 @@ class NewsFetcher:
                 
                 # Prepare content
                 content = article.get('content', title)
+                if content:
+                    content = self.clean_html(content)
+                    content = content[:15000]  # Limit length
                 
-                # If content is too short, try to fetch more
-                if len(content) < 800 and not article.get('full_content_scraped', False):
-                    more_content = self.extract_full_content(url)
-                    if more_content and len(more_content) > len(content):
-                        content = more_content
+                # Get media
+                videos = article.get('videos', [])
+                audios = article.get('audios', [])
                 
-                # Clean and truncate content
-                content = self.clean_html(content)
-                content = content[:15000]  # Limit to 15,000 chars
-                
-                # If content is still too short, use title with some filler
-                if len(content) < 200:
-                    content = f"{title}\n\nRead more at: {url}"
-                
-                # Get source
-                source = article.get('source', 'Unknown')[:100]
-                
-                # Get image URL
-                image_url = article.get('image_url', '')[:1000]
-                
-                # Parse date
-                published_at = article.get('published_at', timezone.now())
-                
-                # Create the post
+                # Create post
                 post = Post.objects.create(
                     title=title,
                     content=content,
                     post_type='news',
                     category=category,
                     author=system_user,
-                    external_source=source,
-                    external_url=url,
+                    external_source=article.get('source', 'Unknown')[:100],
+                    external_url=url[:500],
                     external_id=external_id,
-                    image_url=image_url,
-                    published_at=published_at,
+                    image_url=article.get('image_url', '')[:1000],
+                    published_at=article.get('published_at', timezone.now()),
                     status='published',
                     is_auto_fetched=True,
                     is_approved=True,
-                    verification_status='verified',
+                    verification_status='pending',  # Will be verified later
                     meta_description=content[:160] if content else title[:160],
-                    views=random.randint(10, 100),  # Random starting views
+                    views=random.randint(10, 100),
+                    video_urls=videos if videos else None,
+                    audio_urls=audios if audios else None,
+                    has_media=bool(videos or audios),
                 )
                 
                 saved_count += 1
-                logger.info(f"✓ Saved ({saved_count}): {title[:50]}...")
+                logger.info(f"Saved: {title[:50]}...")
                 
                 # Update category count
                 category.update_post_count()
                 
             except Exception as e:
-                logger.error(f"✗ Error saving article {i}: {str(e)}")
+                logger.error(f"Error saving article: {e}")
                 continue
         
-        logger.info(f"Complete! Saved {saved_count} articles")
+        return saved_count
+    
+    def fetch_all_news(self) -> int:
+        """Fetch news from all sources"""
+        logger.info("Starting comprehensive news fetch...")
+        
+        if not self.internet_available:
+            logger.error("No internet connection")
+            return 0
+        
+        self.articles = []
+        
+        # Fetch from all sources
+        fetch_methods = [
+            ('NewsAPI', self.fetch_newsapi_detailed),
+            ('RSS Feeds', self.fetch_rss_feeds_detailed),
+            ('Web Scrape', self.fetch_web_scrape_detailed),
+        ]
+        
+        for name, method in fetch_methods:
+            try:
+                logger.info(f"Fetching from {name}...")
+                method()
+                logger.info(f"Found {len(self.articles)} articles from {name}")
+            except Exception as e:
+                logger.error(f"Error in {name} fetch: {e}")
+        
+        # Remove duplicates
+        unique_articles = self.remove_duplicates(self.articles)
+        logger.info(f"Unique articles: {len(unique_articles)} out of {len(self.articles)}")
+        
+        # Save articles
+        saved_count = self.save_articles(unique_articles)
+        
+        logger.info(f"Total saved: {saved_count}")
         return saved_count

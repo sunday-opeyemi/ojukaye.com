@@ -3,135 +3,1046 @@
 
 {% block title %}{{ profile_user.get_full_name|default:profile_user.username }} - Profile{% endblock %}
 
+{% block extra_css %}
+<style>
+    .profile-container {
+        max-width: 1280px;
+        margin: 0 auto;
+        padding: 1.5rem;
+    }
+
+    /* Cover Section */
+    .profile-cover-wrapper {
+        position: relative;
+        height: 320px;
+        background: linear-gradient(145deg, var(--primary), var(--primary-dark));
+        overflow: hidden;
+        border-radius: 24px 24px 0 0;
+    }
+
+    .profile-cover-img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        transition: transform 0.3s ease;
+    }
+
+    .profile-cover-gradient {
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(145deg, var(--primary), var(--primary-dark));
+        position: relative;
+    }
+
+    .profile-cover-gradient::after {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: linear-gradient(to bottom, rgba(0,0,0,0.1) 0%, rgba(0,0,0,0.3) 100%);
+    }
+
+    .cover-actions {
+        position: absolute;
+        bottom: 1.5rem;
+        right: 1.5rem;
+        z-index: 10;
+    }
+
+    .btn-cover-edit {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.625rem 1.25rem;
+        background: rgba(255, 255, 255, 0.95);
+        border: none;
+        border-radius: 9999px;
+        color: var(--gray-900);
+        font-weight: 600;
+        font-size: 0.875rem;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        backdrop-filter: blur(4px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+
+    .btn-cover-edit:hover {
+        background: white;
+        transform: translateY(-2px);
+    }
+
+    /* Avatar Section */
+    .profile-avatar-section {
+        display: flex;
+        gap: 2rem;
+        padding: 0 2rem;
+        margin-top: -80px;
+        margin-bottom: 1.5rem;
+        position: relative;
+        z-index: 20;
+    }
+
+    .profile-avatar-large-wrapper {
+        position: relative;
+        flex-shrink: 0;
+    }
+
+    .profile-avatar-large {
+        width: 140px;
+        height: 140px;
+        border-radius: 50%;
+        border: 5px solid white;
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+        object-fit: cover;
+        transition: transform 0.2s ease;
+    }
+
+    .profile-avatar-placeholder-large {
+        width: 140px;
+        height: 140px;
+        border-radius: 50%;
+        background: linear-gradient(145deg, var(--primary), var(--primary-dark));
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 3.5rem;
+        font-weight: 600;
+        border: 5px solid white;
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+    }
+
+    .avatar-actions {
+        position: absolute;
+        bottom: 8px;
+        right: 8px;
+    }
+
+    .btn-avatar-edit {
+        width: 40px;
+        height: 40px;
+        background: var(--primary);
+        border: 3px solid white;
+        border-radius: 50%;
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+    }
+
+    .btn-avatar-edit:hover {
+        background: var(--primary-dark);
+        transform: scale(1.1) rotate(10deg);
+    }
+
+    /* Profile Header Info */
+    .profile-header-info {
+        flex: 1;
+        padding: 0.5rem 0;
+    }
+
+    .profile-header-name-wrapper {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        margin-bottom: 0.25rem;
+    }
+
+    .profile-header-name {
+        font-size: 2rem;
+        font-weight: 700;
+        color: white;
+        text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        margin: 0;
+    }
+
+    .verified-badge-large {
+        color: var(--primary);
+        font-size: 1.5rem;
+        background: white;
+        border-radius: 50%;
+        line-height: 1;
+    }
+
+    .profile-header-username {
+        font-size: 1.125rem;
+        color: rgba(255, 255, 255, 0.9);
+        margin-bottom: 0.75rem;
+    }
+
+    .profile-header-bio {
+        font-size: 1rem;
+        color: white;
+        margin-bottom: 1rem;
+        line-height: 1.5;
+        max-width: 600px;
+    }
+
+    .profile-header-meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 1.5rem;
+        margin-bottom: 1rem;
+        color: rgba(255, 255, 255, 0.9);
+        font-size: 0.95rem;
+    }
+
+    .profile-header-meta i {
+        margin-right: 0.5rem;
+    }
+
+    .profile-header-meta a {
+        color: white;
+        text-decoration: none;
+    }
+
+    .profile-header-meta a:hover {
+        text-decoration: underline;
+    }
+
+    .profile-header-actions {
+        display: flex;
+        gap: 1rem;
+    }
+
+    /* Stats Bar */
+    .profile-stats-bar {
+        background: white;
+        border-radius: 0 0 24px 24px;
+        padding: 1.5rem 2rem;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        margin-bottom: 2rem;
+    }
+
+    .stats-container {
+        display: flex;
+        justify-content: space-around;
+        max-width: 800px;
+        margin: 0 auto;
+    }
+
+    .stat-item-large {
+        text-align: center;
+        cursor: pointer;
+        padding: 0.5rem 1rem;
+        border-radius: 12px;
+        transition: background 0.2s ease;
+        text-decoration: none;
+        color: inherit;
+    }
+
+    .stat-item-large:hover {
+        background: #f3f4f6;
+    }
+
+    .stat-value {
+        display: block;
+        font-size: 1.75rem;
+        font-weight: 700;
+        color: var(--gray-900);
+        line-height: 1.2;
+    }
+
+    .stat-label {
+        font-size: 0.875rem;
+        color: var(--gray-600);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+
+    /* News Submission Status */
+    .news-status-badge {
+        display: inline-flex;
+        align-items: center;
+        padding: 0.5rem 1rem;
+        border-radius: var(--radius-full);
+        font-size: 0.875rem;
+        font-weight: 600;
+        margin-bottom: 1rem;
+    }
+
+    .news-status-pending {
+        background: #fef3c7;
+        color: #92400e;
+    }
+
+    .news-status-approved {
+        background: #dcfce7;
+        color: #166534;
+    }
+
+    .news-status-rejected {
+        background: #fee2e2;
+        color: #991b1b;
+    }
+
+    /* Profile Content Grid */
+    .profile-content-grid {
+        display: grid;
+        grid-template-columns: 360px 1fr;
+        gap: 2rem;
+    }
+
+    /* Profile Cards */
+    .profile-card {
+        background: white;
+        border-radius: 20px;
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    }
+
+    .card-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 1.25rem;
+    }
+
+    .card-header h3 {
+        font-size: 1.125rem;
+        font-weight: 600;
+        color: var(--gray-900);
+        margin: 0;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .card-header h3 i {
+        color: var(--primary);
+    }
+
+    .btn-icon {
+        width: 36px;
+        height: 36px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 50%;
+        color: var(--gray-600);
+        transition: all 0.2s ease;
+        text-decoration: none;
+    }
+
+    .btn-icon:hover {
+        background: #f3f4f6;
+        color: var(--primary);
+    }
+
+    /* About Section */
+    .about-bio {
+        font-size: 1rem;
+        line-height: 1.6;
+        color: var(--gray-700);
+        margin-bottom: 1.5rem;
+    }
+
+    .about-details {
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+    }
+
+    .detail-item {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        color: var(--gray-700);
+    }
+
+    .detail-item i {
+        width: 1.25rem;
+        color: var(--gray-600);
+    }
+
+    .detail-item a {
+        color: var(--primary);
+        text-decoration: none;
+    }
+
+    .detail-item a:hover {
+        text-decoration: underline;
+    }
+
+    /* Social Links */
+    .social-links {
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+    }
+
+    .social-link-item {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        padding: 0.75rem;
+        border-radius: 12px;
+        text-decoration: none;
+        color: var(--gray-800);
+        transition: all 0.2s ease;
+    }
+
+    .social-link-item:hover {
+        background: #f9fafb;
+        transform: translateX(4px);
+    }
+
+    .social-link-item.twitter i {
+        color: #1da1f2;
+    }
+
+    .social-link-item.facebook i {
+        color: #1877f2;
+    }
+
+    .social-link-item.instagram i {
+        color: #e4405f;
+    }
+
+    .social-link-item.linkedin i {
+        color: #0077b5;
+    }
+
+    .social-link-item.disabled {
+        opacity: 0.6;
+        cursor: default;
+    }
+
+    .social-link-item.disabled:hover {
+        background: none;
+        transform: none;
+    }
+
+    /* Interests Tags */
+    .interests-tags {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+    }
+
+    .interest-tag {
+        background: #eff6ff;
+        color: var(--primary-dark);
+        padding: 0.375rem 1rem;
+        border-radius: 9999px;
+        font-size: 0.875rem;
+        font-weight: 500;
+    }
+
+    /* Profile Tabs */
+    .profile-tabs {
+        display: flex;
+        gap: 0.5rem;
+        background: white;
+        border-radius: 20px;
+        padding: 0.5rem;
+        margin-bottom: 2rem;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        flex-wrap: wrap;
+    }
+
+    .profile-tab {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        padding: 0.75rem;
+        border-radius: 16px;
+        font-size: 0.95rem;
+        font-weight: 600;
+        color: var(--gray-600);
+        text-decoration: none;
+        transition: all 0.2s ease;
+        min-width: 120px;
+    }
+
+    .profile-tab i {
+        font-size: 1rem;
+    }
+
+    .profile-tab:hover {
+        background: #f9fafb;
+        color: var(--gray-800);
+    }
+
+    .profile-tab.active {
+        background: var(--primary);
+        color: white;
+    }
+
+    .profile-tab.active i {
+        color: white;
+    }
+
+    /* Posts Container */
+    .posts-container {
+        display: flex;
+        flex-direction: column;
+        gap: 1.5rem;
+    }
+
+    /* Post Card */
+    .post-card {
+        background: white;
+        border-radius: 20px;
+        border: 1px solid var(--gray-200);
+        overflow: hidden;
+        transition: all 0.3s ease;
+    }
+
+    .post-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+    }
+
+    .post-header {
+        padding: 1.5rem 1.5rem 0.5rem;
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+    }
+
+    .post-author {
+        display: flex;
+        gap: 1rem;
+        flex: 1;
+    }
+
+    .author-avatar {
+        width: 48px;
+        height: 48px;
+        border-radius: 50%;
+        overflow: hidden;
+        flex-shrink: 0;
+        background: linear-gradient(145deg, var(--primary), var(--primary-dark));
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-weight: 600;
+        font-size: 1.25rem;
+    }
+
+    .author-avatar img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    .author-info {
+        flex: 1;
+    }
+
+    .author-name-wrapper {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        margin-bottom: 0.25rem;
+    }
+
+    .author-name {
+        font-weight: 700;
+        color: var(--gray-900);
+        text-decoration: none;
+        font-size: 1rem;
+    }
+
+    .author-name:hover {
+        color: var(--primary);
+    }
+
+    .verified-badge {
+        color: var(--primary);
+        font-size: 0.875rem;
+    }
+
+    .post-badge {
+        background: var(--primary-soft);
+        color: var(--primary-dark);
+        padding: 0.25rem 0.75rem;
+        border-radius: 9999px;
+        font-size: 0.75rem;
+        font-weight: 600;
+    }
+
+    .post-meta {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        font-size: 0.75rem;
+        color: var(--gray-600);
+    }
+
+    .post-meta i {
+        margin-right: 0.25rem;
+    }
+
+    .post-content {
+        padding: 0.5rem 1.5rem 1rem;
+    }
+
+    .post-link {
+        text-decoration: none;
+    }
+
+    .post-title {
+        font-size: 1.25rem;
+        font-weight: 700;
+        color: var(--gray-900);
+        margin-bottom: 0.75rem;
+        line-height: 1.4;
+        transition: color 0.2s;
+    }
+
+    .post-link:hover .post-title {
+        color: var(--primary);
+    }
+
+    .post-text {
+        color: var(--gray-700);
+        line-height: 1.6;
+        margin-bottom: 1rem;
+    }
+
+    .post-image {
+        margin: 1rem 0;
+        border-radius: 16px;
+        overflow: hidden;
+        max-height: 400px;
+    }
+
+    .post-image img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    .post-stats {
+        display: flex;
+        align-items: center;
+        gap: 1.5rem;
+        padding: 0.75rem 1.5rem;
+        border-top: 1px solid var(--gray-200);
+        border-bottom: 1px solid var(--gray-200);
+        background: #f9fafb;
+    }
+
+    .stat-item {
+        display: flex;
+        align-items: center;
+        gap: 0.375rem;
+        font-size: 0.875rem;
+        color: var(--gray-600);
+    }
+
+    .stat-item i {
+        color: var(--gray-500);
+    }
+
+    .post-actions {
+        display: flex;
+        align-items: center;
+        padding: 1rem 1.5rem 1.5rem;
+        gap: 0.75rem;
+    }
+
+    .post-action-btn {
+        flex: 1;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        padding: 0.625rem 1rem;
+        border: 1px solid var(--gray-200);
+        border-radius: 9999px;
+        background: white;
+        color: var(--gray-600);
+        font-size: 0.875rem;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s;
+        text-decoration: none;
+    }
+
+    .post-action-btn:hover {
+        background: #f9fafb;
+        border-color: var(--primary);
+        color: var(--primary);
+    }
+
+    .post-action-btn.liked {
+        background: #fee2e2;
+        border-color: #ef4444;
+        color: #ef4444;
+    }
+
+    .post-action-btn.bookmarked {
+        background: #eff6ff;
+        border-color: var(--primary);
+        color: var(--primary);
+    }
+
+    /* Empty State */
+    .empty-state-container {
+        text-align: center;
+        padding: 4rem 2rem;
+        background: white;
+        border-radius: 20px;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    }
+
+    .empty-state-icon {
+        width: 80px;
+        height: 80px;
+        background: #eff6ff;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 1.5rem;
+    }
+
+    .empty-state-icon i {
+        font-size: 2rem;
+        color: var(--primary);
+    }
+
+    .empty-state-container h3 {
+        font-size: 1.25rem;
+        font-weight: 600;
+        color: var(--gray-900);
+        margin-bottom: 0.5rem;
+    }
+
+    .empty-state-container p {
+        color: var(--gray-600);
+        margin-bottom: 1.5rem;
+    }
+
+    /* News Submission Card */
+    .news-submission-card {
+        background: #f9fafb;
+        border: 1px solid var(--gray-200);
+        border-radius: 16px;
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .submission-header {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        margin-bottom: 1rem;
+    }
+
+    .submission-header i {
+        font-size: 1.5rem;
+        color: var(--primary);
+    }
+
+    .submission-header h3 {
+        font-size: 1rem;
+        font-weight: 600;
+        color: var(--gray-800);
+    }
+
+    .submission-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 1rem;
+        background: white;
+        border-radius: 12px;
+        border: 1px solid var(--gray-200);
+        margin-bottom: 0.75rem;
+    }
+
+    .submission-item:last-child {
+        margin-bottom: 0;
+    }
+
+    .submission-info {
+        flex: 1;
+    }
+
+    .submission-title {
+        font-weight: 600;
+        color: var(--gray-900);
+        margin-bottom: 0.25rem;
+        display: block;
+        text-decoration: none;
+    }
+
+    .submission-title:hover {
+        color: var(--primary);
+    }
+
+    .submission-meta {
+        font-size: 0.75rem;
+        color: var(--gray-600);
+    }
+
+    .submission-status {
+        padding: 0.25rem 0.75rem;
+        border-radius: 9999px;
+        font-size: 0.75rem;
+        font-weight: 600;
+    }
+
+    .status-pending {
+        background: #fef3c7;
+        color: #92400e;
+    }
+
+    .status-approved {
+        background: #dcfce7;
+        color: #166534;
+    }
+
+    .status-rejected {
+        background: #fee2e2;
+        color: #991b1b;
+    }
+
+    .submission-score {
+        padding: 0.25rem 0.5rem;
+        background: #f3f4f6;
+        border-radius: 9999px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        margin-left: 0.5rem;
+    }
+
+    /* Responsive */
+    @media (max-width: 992px) {
+        .profile-content-grid {
+            grid-template-columns: 1fr;
+        }
+        
+        .profile-avatar-section {
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            margin-top: -60px;
+        }
+        
+        .profile-header-name {
+            font-size: 1.75rem;
+        }
+        
+        .profile-tabs {
+            flex-wrap: wrap;
+        }
+        
+        .profile-tab {
+            flex: 1 0 calc(50% - 0.5rem);
+        }
+    }
+
+    @media (max-width: 768px) {
+        .profile-cover-wrapper {
+            height: 250px;
+        }
+        
+        .profile-avatar-large,
+        .profile-avatar-placeholder-large {
+            width: 120px;
+            height: 120px;
+            font-size: 2.5rem;
+        }
+        
+        .stats-container {
+            flex-wrap: wrap;
+        }
+        
+        .stat-item-large {
+            flex: 1 0 calc(50% - 1rem);
+        }
+        
+        .profile-header-actions {
+            flex-direction: column;
+        }
+        
+        .post-actions {
+            flex-wrap: wrap;
+        }
+        
+        .post-action-btn {
+            flex: 1 0 calc(50% - 0.375rem);
+        }
+    }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="profile-container">
-    <!-- Profile Cover & Avatar with Camera Controls -->
-        <div class="profile-header">
-            <div class="profile-cover-wrapper">
-                {% if profile.cover_photo %}
-                <img src="{{ profile.cover_photo.url }}" alt="Cover" class="profile-cover-img" id="profileCoverImg">
-                {% else %}
-                <div class="profile-cover-gradient" id="profileCoverPlaceholder"></div>
-                {% endif %}
-                
-                <!-- Cover Photo Camera Button (Visible only to own profile) -->
-                {% if is_own_profile %}
-                <div class="cover-actions">
-                    <button type="button" class="btn-cover-edit" onclick="document.getElementById('coverUploadInput').click();">
-                        <i class="fas fa-camera"></i>
-                        <span>Edit Cover</span>
-                    </button>
-                    <form id="coverUploadForm" method="POST" action="{% url 'update_cover_photo' %}" enctype="multipart/form-data" style="display: none;">
-                        {% csrf_token %}
-                        <input type="file" id="coverUploadInput" name="cover_photo" accept="image/*" onchange="uploadCoverPhoto(this)">
-                    </form>
-                </div>
-                {% endif %}
-            </div>
+    <!-- Profile Cover & Avatar -->
+    <div class="profile-header">
+        <div class="profile-cover-wrapper">
+            {% if profile.cover_photo %}
+            <img src="{{ profile.cover_photo.url }}" alt="Cover" class="profile-cover-img" id="profileCoverImg">
+            {% else %}
+            <div class="profile-cover-gradient" id="profileCoverPlaceholder"></div>
+            {% endif %}
             
-            <!-- Move avatar section OUTSIDE the cover wrapper -->
-            <div class="profile-avatar-section">
-                <div class="profile-avatar-large-wrapper">
-                    {% if profile.profile_pic %}
-                    <img src="{{ profile.profile_pic.url }}" alt="{{ profile_user.username }}" class="profile-avatar-large" id="profileAvatarImg">
-                    {% else %}
-                    <div class="profile-avatar-placeholder-large" id="profileAvatarPlaceholder">
-                        {{ profile_user.username|first|upper }}
-                    </div>
-                    {% endif %}
-                    
-                    <!-- Avatar Camera Button (Visible only to own profile) -->
-                    {% if is_own_profile %}
-                    <div class="avatar-actions">
-                        <button type="button" class="btn-avatar-edit" onclick="document.getElementById('avatarUploadInput').click();">
-                            <i class="fas fa-camera"></i>
-                        </button>
-                        <form id="avatarUploadForm" method="POST" action="{% url 'update_profile_pic' %}" enctype="multipart/form-data" style="display: none;">
-                            {% csrf_token %}
-                            <input type="file" id="avatarUploadInput" name="profile_pic" accept="image/*" onchange="uploadAvatarPhoto(this)">
-                        </form>
-                    </div>
-                    {% endif %}
-                </div>
-                
-                <div class="profile-header-info">
-                    <div class="profile-header-name-wrapper">
-                        <h1 class="profile-header-name">
-                            {{ profile_user.get_full_name|default:profile_user.username }}
-                        </h1>
-                        {% if profile.is_verified_business %}
-                        <span class="verified-badge-large" title="Verified Business">
-                            <i class="fas fa-check-circle"></i>
-                        </span>
-                        {% endif %}
-                    </div>
-                    <p class="profile-header-username">@{{ profile_user.username }}</p>
-                    
-                    {% if profile.bio %}
-                    <p class="profile-header-bio">{{ profile.bio }}</p>
-                    {% endif %}
-                    
-                    <div class="profile-header-meta">
-                        {% if profile.location %}
-                        <span><i class="fas fa-map-marker-alt"></i> {{ profile.location }}</span>
-                        {% endif %}
-                        {% if profile.website %}
-                        <span><i class="fas fa-link"></i> <a href="{{ profile.website }}" target="_blank" rel="nofollow">{{ profile.website|cut:"https://"|cut:"http://" }}</a></span>
-                        {% endif %}
-                        <span><i class="far fa-calendar-alt"></i> Joined {{ profile_user.date_joined|date:"F Y" }}</span>
-                    </div>
-                    
-                    <div class="profile-header-actions">
-                        {% if is_own_profile %}
-                        <a href="{% url 'edit_profile' %}" class="btn btn-outline">
-                            <i class="fas fa-user-edit"></i> Edit Profile
-                        </a>
-                        <a href="{% url 'create_post' %}?type=profile_post" class="btn btn-primary">
-                            <i class="fas fa-pen-to-square"></i> Create Post
-                        </a>
-                        {% else %}
-                            {% if user.is_authenticated %}
-                            <button class="btn {% if is_following %}btn-outline{% else %}btn-primary{% endif %} follow-btn"
-                                    data-username="{{ profile_user.username }}">
-                                <i class="fas {% if is_following %}fa-user-check{% else %}fa-user-plus{% endif %}"></i>
-                                <span>{% if is_following %}Following{% else %}Follow{% endif %}</span>
-                            </button>
-                            <button class="btn btn-outline" onclick="showMessageDialog('{{ profile_user.username }}')">
-                                <i class="fas fa-envelope"></i> Message
-                            </button>
-                            {% else %}
-                            <a href="{% url 'login' %}?next={% url 'profile_view' username=profile_user.username %}" class="btn btn-primary">
-                                <i class="fas fa-user-plus"></i> Follow
-                            </a>
-                            {% endif %}
-                        {% endif %}
-                    </div>
-                </div>
+            <!-- Cover Photo Camera Button (Visible only to own profile) -->
+            {% if is_own_profile %}
+            <div class="cover-actions">
+                <a href="{% url 'edit_profile' %}" class="btn-cover-edit" title="Edit Profile">
+                    <i class="fas fa-camera"></i>
+                    <span>Edit Cover</span>
+                </a>
             </div>
+            {% endif %}
         </div>
         
-        <!-- Profile Stats Bar -->
-        <div class="profile-stats-bar">
-            <div class="stats-container">
-                <div class="stat-item-large" onclick="{% if followers.count > 0 %}showFollowers(){% endif %}">
-                    <span class="stat-value">{{ followers.count }}</span>
-                    <span class="stat-label">Followers</span>
+        <!-- Avatar Section -->
+        <div class="profile-avatar-large-wrapper">
+            {% if profile.profile_pic %}
+            <img src="{{ profile.profile_pic.url }}" alt="{{ profile_user.username }}" class="profile-avatar-large" id="profileAvatarImg">
+            {% else %}
+            <div class="profile-avatar-placeholder-large" id="profileAvatarPlaceholder">
+                {{ profile_user.username|first|upper }}
+            </div>
+            {% endif %}
+            
+            <!-- Avatar Camera Button (Visible only to own profile) - Links to Edit Profile -->
+            {% if is_own_profile %}
+            <div class="avatar-actions">
+                <a href="{% url 'edit_profile' %}" class="btn-avatar-edit" title="Edit Profile">
+                    <i class="fas fa-camera"></i>
+                </a>
+            </div>
+            {% endif %}
+        </div>
+            
+            <div class="profile-header-info">
+                <div class="profile-header-name-wrapper">
+                    <h1 class="profile-header-name">
+                        {{ profile_user.get_full_name|default:profile_user.username }}
+                    </h1>
+                    {% if profile.is_verified_business %}
+                    <span class="verified-badge-large" title="Verified Business">
+                        <i class="fas fa-check-circle"></i>
+                    </span>
+                    {% endif %}
                 </div>
-                <div class="stat-item-large" onclick="{% if following.count > 0 %}showFollowing(){% endif %}">
-                    <span class="stat-value">{{ following.count }}</span>
-                    <span class="stat-label">Following</span>
+                <p class="profile-header-username">@{{ profile_user.username }}</p>
+                
+                {% if profile.bio %}
+                <p class="profile-header-bio">{{ profile.bio }}</p>
+                {% endif %}
+                
+                <div class="profile-header-meta">
+                    {% if profile.location %}
+                    <span><i class="fas fa-map-marker-alt"></i> {{ profile.location }}</span>
+                    {% endif %}
+                    {% if profile.website %}
+                    <span><i class="fas fa-link"></i> <a href="{{ profile.website }}" target="_blank" rel="nofollow">{{ profile.website|cut:"https://"|cut:"http://" }}</a></span>
+                    {% endif %}
+                    <span><i class="far fa-calendar-alt"></i> Joined {{ profile_user.date_joined|date:"F Y" }}</span>
                 </div>
-                <div class="stat-item-large">
-                    <span class="stat-value">{{ posts.count }}</span>
-                    <span class="stat-label">Posts</span>
-                </div>
-                <div class="stat-item-large">
-                    <span class="stat-value">{{ profile.total_likes_received|default:"0" }}</span>
-                    <span class="stat-label">Likes</span>
+                
+                <div class="profile-header-actions">
+                    {% if is_own_profile %}
+                    <a href="{% url 'edit_profile' %}" class="btn btn-outline">
+                        <i class="fas fa-user-edit"></i> Edit Profile
+                    </a>
+                    <a href="{% url 'create_post' %}?type=profile_post" class="btn btn-primary">
+                        <i class="fas fa-pen-to-square"></i> Create Post
+                    </a>
+                    {% else %}
+                        {% if user.is_authenticated %}
+                        <button class="btn {% if is_following %}btn-outline{% else %}btn-primary{% endif %} follow-btn"
+                                data-username="{{ profile_user.username }}">
+                            <i class="fas {% if is_following %}fa-user-check{% else %}fa-user-plus{% endif %}"></i>
+                            <span>{% if is_following %}Following{% else %}Follow{% endif %}</span>
+                        </button>
+                        <button class="btn btn-outline" onclick="showMessageDialog('{{ profile_user.username }}')">
+                            <i class="fas fa-envelope"></i> Message
+                        </button>
+                        {% else %}
+                        <a href="{% url 'login' %}?next={% url 'profile_view' username=profile_user.username %}" class="btn btn-primary">
+                            <i class="fas fa-user-plus"></i> Follow
+                        </a>
+                        {% endif %}
+                    {% endif %}
                 </div>
             </div>
         </div>
     </div>
+    
+    <!-- Profile Stats Bar -->
+    <div class="profile-stats-bar">
+        <div class="stats-container">
+            <a href="#followers" class="stat-item-large" onclick="showFollowersModal()">
+                <span class="stat-value">{{ followers_count }}</span>
+                <span class="stat-label">Followers</span>
+            </a>
+            <a href="#following" class="stat-item-large" onclick="showFollowingModal()">
+                <span class="stat-value">{{ following_count }}</span>
+                <span class="stat-label">Following</span>
+            </a>
+            <div class="stat-item-large">
+                <span class="stat-value">{{ posts.count }}</span>
+                <span class="stat-label">Posts</span>
+            </div>
+            <div class="stat-item-large">
+                <span class="stat-value">{{ profile.total_likes_received|default:"0" }}</span>
+                <span class="stat-label">Likes</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- News Submission Status (Only for own profile) -->
+    {% if is_own_profile %}
+    <div class="news-submission-card">
+        <div class="submission-header">
+            <i class="fas fa-newspaper"></i>
+            <h3>Your News Submissions</h3>
+            <a href="{% url 'create_post' %}?type=user_news" class="btn btn-sm btn-primary" style="margin-left: auto;">
+                <i class="fas fa-plus"></i> Submit News
+            </a>
+        </div>
+        
+        <div class="submissions-list">
+            {% for post in user_news_submissions|slice:":3" %}
+            <div class="submission-item">
+                <div class="submission-info">
+                    <span class="submission-title">{{ post.title|truncatechars:50 }}</span>
+                    <div class="submission-meta">
+                        <span>Submitted {{ post.created_at|timesince }} ago</span>
+                        {% if post.verification_score %}
+                        <span class="submission-score">{{ post.verification_score|floatformat:2 }}</span>
+                        {% endif %}
+                    </div>
+                </div>
+                <span class="submission-status status-{{ post.submission_status }}">
+                    {{ post.get_submission_status_display }}
+                </span>
+            </div>
+            {% empty %}
+            <p class="text-muted" style="text-align: center; padding: 1rem;">
+                You haven't submitted any news articles yet.
+            </p>
+            {% endfor %}
+            
+            {% if user_news_submissions.count > 3 %}
+            <a href="{% url 'profile_view' username=user.username %}?tab=news" class="btn btn-outline btn-sm btn-block" style="margin-top: 1rem;">
+                View All Submissions
+            </a>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
 
     <!-- Profile Content Grid -->
     <div class="profile-content-grid">
@@ -298,8 +1209,8 @@
                 <a href="?tab=saved" class="profile-tab {% if tab == 'saved' %}active{% endif %}">
                     <i class="fas fa-bookmark"></i> Saved
                 </a>
-                <a href="?tab=profile_posts" class="profile-tab {% if tab == 'profile_posts' %}active{% endif %}">
-                    <i class="fas fa-user"></i> Profile Posts
+                <a href="?tab=news" class="profile-tab {% if tab == 'news' %}active{% endif %}">
+                    <i class="fas fa-newspaper"></i> News
                 </a>
                 {% endif %}
             </div>
@@ -394,29 +1305,75 @@
                             </div>
                             <h3>No saved posts</h3>
                             <p>Bookmark posts you want to read later and they'll appear here.</p>
-                            <a href="{% url 'index' %}" class="btn btn-primary">
+                            <a href="{% url 'home' %}" class="btn btn-primary">
                                 <i class="fas fa-home"></i> Browse Posts
                             </a>
                         </div>
                         {% endfor %}
                     </div>
                     
-                {% elif tab == 'profile_posts' and is_own_profile %}
-                    <!-- Profile Posts (Only visible to own profile) -->
+                {% elif tab == 'news' and is_own_profile %}
+                    <!-- User's News Submissions -->
                     <div class="posts-container">
-                        {% for post in posts %}
-                            {% if post.post_type == 'profile_post' %}
-                                {% include 'includes/post_card.html' with post=post %}
-                            {% endif %}
+                        {% for post in user_news_submissions %}
+                        <div class="post-card">
+                            <div class="post-header">
+                                <div class="post-author">
+                                    <div class="author-avatar">
+                                        {% if post.author.profile.profile_pic %}
+                                        <img src="{{ post.author.profile.profile_pic.url }}" alt="{{ post.author.username }}">
+                                        {% else %}
+                                        <div class="avatar-placeholder">{{ post.author.username|first|upper }}</div>
+                                        {% endif %}
+                                    </div>
+                                    <div class="author-info">
+                                        <div class="author-name-wrapper">
+                                            <span class="author-name">{{ post.author.get_full_name|default:post.author.username }}</span>
+                                            <span class="post-badge">News</span>
+                                        </div>
+                                        <div class="post-meta">
+                                            <span class="post-time" title="{{ post.published_at }}">
+                                                <i class="far fa-clock"></i> 
+                                                <time datetime="{{ post.published_at|date:'c' }}">{{ post.created_at|timesince }} ago</time>
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="post-content">
+                                <a href="{% url 'post_detail' post.id %}" class="post-link">
+                                    <h3 class="post-title">{{ post.title }}</h3>
+                                    <p class="post-text">{{ post.content|truncatechars:200 }}</p>
+                                </a>
+                            </div>
+                            
+                            <div class="post-stats">
+                                <span class="stat-item">
+                                    <i class="fas fa-check-circle"></i> Status: {{ post.get_submission_status_display }}
+                                </span>
+                                {% if post.verification_score %}
+                                <span class="stat-item">
+                                    <i class="fas fa-robot"></i> AI Score: {{ post.verification_score|floatformat:2 }}
+                                </span>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="post-actions">
+                                <a href="{% url 'post_detail' post.id %}" class="post-action-btn">
+                                    <i class="fas fa-eye"></i> View
+                                </a>
+                            </div>
+                        </div>
                         {% empty %}
                         <div class="empty-state-container">
                             <div class="empty-state-icon">
-                                <i class="fas fa-user"></i>
+                                <i class="fas fa-newspaper"></i>
                             </div>
-                            <h3>No profile posts yet</h3>
-                            <p>Profile posts are only visible to you on your profile page.</p>
-                            <a href="{% url 'create_post' %}?type=profile_post" class="btn btn-primary">
-                                <i class="fas fa-pen-to-square"></i> Create Profile Post
+                            <h3>No news submissions</h3>
+                            <p>You haven't submitted any news articles yet.</p>
+                            <a href="{% url 'create_post' %}?type=user_news" class="btn btn-primary">
+                                <i class="fas fa-plus-circle"></i> Submit News
                             </a>
                         </div>
                         {% endfor %}
@@ -427,57 +1384,28 @@
     </div>
 </div>
 
-<!-- Image Cropper Modal -->
-<div id="imageCropperModal" class="crop-modal" style="display: none;">
-    <div class="crop-modal-content">
-        <div class="crop-modal-header">
-            <h3 id="cropModalTitle">Edit Image</h3>
-            <button type="button" class="crop-modal-close" onclick="closeCropModal()">&times;</button>
-        </div>
-        <div class="crop-modal-body">
-            <div class="crop-container">
-                <img id="imageToCrop" src="" alt="Crop Image">
-            </div>
-        </div>
-        <div class="crop-modal-footer">
-            <button type="button" class="btn btn-outline" onclick="closeCropModal()">Cancel</button>
-            <button type="button" class="btn btn-primary" onclick="cropAndSave()">
-                <i class="fas fa-crop-alt"></i> Crop & Save
-            </button>
-        </div>
-    </div>
-</div>
-
-<!-- Followers/Following Modals -->
+<!-- Followers Modal -->
 <div id="followers-modal" class="modal">
     <div class="modal-content">
         <div class="modal-header">
-            <h3>Followers</h3>
+            <h3>Followers ({{ followers_count }})</h3>
             <button class="modal-close">&times;</button>
         </div>
         <div class="modal-body">
-            {% for follower_user in followers %}
-                {% if follower_user and follower_user.username %}
-                <a href="{% url 'profile_view' username=follower_user.username %}" class="follow-item">
-                {% else %}
-                <div class="follow-item disabled">
-                {% endif %}
-                    <div class="follow-avatar">
-                        {% if follower_user.profile.profile_pic %}
-                        <img src="{{ follower_user.profile.profile_pic.url }}" alt="{{ follower_user.username|default:'User' }}">
-                        {% else %}
-                        <div class="avatar-placeholder">{{ follower_user.username|first|upper|default:'U' }}</div>
-                        {% endif %}
-                    </div>
-                    <div class="follow-info">
-                        <span class="follow-name">{{ follower_user.get_full_name|default:follower_user.username|default:'Unknown User' }}</span>
-                        <span class="follow-username">@{{ follower_user.username|default:'unknown' }}</span>
-                    </div>
-                {% if follower_user and follower_user.username %}
-                </a>
-                {% else %}
+            {% for follower in followers %}
+            <a href="{% url 'profile_view' username=follower.username %}" class="follow-item">
+                <div class="follow-avatar">
+                    {% if follower.profile.profile_pic %}
+                    <img src="{{ follower.profile.profile_pic.url }}" alt="{{ follower.username }}">
+                    {% else %}
+                    <div class="avatar-placeholder">{{ follower.username|first|upper }}</div>
+                    {% endif %}
                 </div>
-                {% endif %}
+                <div class="follow-info">
+                    <span class="follow-name">{{ follower.get_full_name|default:follower.username }}</span>
+                    <span class="follow-username">@{{ follower.username }}</span>
+                </div>
+            </a>
             {% empty %}
             <div class="empty-state">
                 <i class="fas fa-users"></i>
@@ -488,1455 +1416,147 @@
     </div>
 </div>
 
+<!-- Following Modal -->
 <div id="following-modal" class="modal">
     <div class="modal-content">
         <div class="modal-header">
-            <h3>Following</h3>
+            <h3>Following ({{ following_count }})</h3>
             <button class="modal-close">&times;</button>
         </div>
         <div class="modal-body">
             {% for following_user in following %}
-                {% if following_user and following_user.username %}
-                <a href="{% url 'profile_view' username=following_user.username %}" class="follow-item">
-                {% else %}
-                <div class="follow-item disabled">
-                {% endif %}
-                    <div class="follow-avatar">
-                        {% if following_user.profile.profile_pic %}
-                        <img src="{{ following_user.profile.profile_pic.url }}" alt="{{ following_user.username|default:'User' }}">
-                        {% else %}
-                        <div class="avatar-placeholder">{{ following_user.username|first|upper|default:'U' }}</div>
-                        {% endif %}
-                    </div>
-                    <div class="follow-info">
-                        <span class="follow-name">{{ following_user.get_full_name|default:following_user.username|default:'Unknown User' }}</span>
-                        <span class="follow-username">@{{ following_user.username|default:'unknown' }}</span>
-                    </div>
-                {% if following_user and following_user.username %}
-                </a>
-                {% else %}
+            <a href="{% url 'profile_view' username=following_user.username %}" class="follow-item">
+                <div class="follow-avatar">
+                    {% if following_user.profile.profile_pic %}
+                    <img src="{{ following_user.profile.profile_pic.url }}" alt="{{ following_user.username }}">
+                    {% else %}
+                    <div class="avatar-placeholder">{{ following_user.username|first|upper }}</div>
+                    {% endif %}
                 </div>
-                {% endif %}
+                <div class="follow-info">
+                    <span class="follow-name">{{ following_user.get_full_name|default:following_user.username }}</span>
+                    <span class="follow-username">@{{ following_user.username }}</span>
+                </div>
+            </a>
+            {% empty %}
+            <div class="empty-state">
+                <i class="fas fa-users"></i>
+                <p>Not following anyone yet</p>
+            </div>
             {% endfor %}
         </div>
     </div>
 </div>
-
-<style>
-/* ===== PROFILE PAGE WITH CAMERA CONTROLS ===== */
-.profile-container {
-    max-width: 1280px;
-    margin: 0 auto;
-    padding: 1.5rem;
-}
-
-/* Cover Section */
-.profile-cover-wrapper {
-    position: relative;
-    height: 320px;
-    background: linear-gradient(145deg, #3b82f6, #1e40af);
-    overflow: hidden;
-    border-radius: 24px 24px 0 0;
-}
-
-.profile-cover-img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    transition: transform 0.3s ease;
-}
-
-.profile-cover-gradient {
-    width: 100%;
-    height: 100%;
-    background: linear-gradient(145deg, #3b82f6, #1e40af);
-    position: relative;
-}
-
-.profile-cover-gradient::after {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: linear-gradient(to bottom, rgba(0,0,0,0.1) 0%, rgba(0,0,0,0.3) 100%);
-}
-
-/* Cover Actions */
-.cover-actions {
-    position: absolute;
-    bottom: 1.5rem;
-    right: 1.5rem;
-    z-index: 10;
-}
-
-.btn-cover-edit {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.5rem;
-    padding: 0.625rem 1.25rem;
-    background: rgba(255, 255, 255, 0.95);
-    border: none;
-    border-radius: 9999px;
-    color: #1f2937;
-    font-weight: 600;
-    font-size: 0.875rem;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    backdrop-filter: blur(4px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-}
-
-.btn-cover-edit:hover {
-    background: white;
-    transform: translateY(-2px);
-    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
-}
-
-.btn-cover-edit i {
-    color: #3b82f6;
-    font-size: 1rem;
-}
-
-/* Avatar Section */
-.profile-avatar-section {
-    display: flex;
-    gap: 2rem;
-    padding: 0 2rem;
-    margin-top: -80px;
-    margin-bottom: 1.5rem;
-    position: relative;
-    z-index: 20;
-}
-
-.profile-avatar-large-wrapper {
-    position: relative;
-    flex-shrink: 0;
-}
-
-.profile-avatar-large {
-    width: 140px;
-    height: 140px;
-    border-radius: 50%;
-    border: 5px solid white;
-    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
-    object-fit: cover;
-    transition: transform 0.2s ease;
-}
-
-.profile-avatar-placeholder-large {
-    width: 140px;
-    height: 140px;
-    border-radius: 50%;
-    background: linear-gradient(145deg, #3b82f6, #2563eb);
-    color: white;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 3.5rem;
-    font-weight: 600;
-    border: 5px solid white;
-    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
-}
-
-/* Avatar Actions */
-.avatar-actions {
-    position: absolute;
-    bottom: 8px;
-    right: 8px;
-}
-
-.btn-avatar-edit {
-    width: 40px;
-    height: 40px;
-    background: #3b82f6;
-    border: 3px solid white;
-    border-radius: 50%;
-    color: white;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    box-shadow: 0 4px 10px rgba(59, 130, 246, 0.4);
-}
-
-.btn-avatar-edit:hover {
-    background: #2563eb;
-    transform: scale(1.1) rotate(10deg);
-}
-
-.btn-avatar-edit i {
-    font-size: 1rem;
-}
-
-/* Profile Header Info */
-.profile-header-info {
-    flex: 1;
-    padding: 0.5rem 0;
-}
-
-.profile-header-name-wrapper {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    margin-bottom: 0.25rem;
-}
-
-.profile-header-name {
-    font-size: 2rem;
-    font-weight: 700;
-    color: white;
-    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    margin: 0;
-}
-
-.verified-badge-large {
-    color: #3b82f6;
-    font-size: 1.5rem;
-    background: white;
-    border-radius: 50%;
-    line-height: 1;
-}
-
-.profile-header-username {
-    font-size: 1.125rem;
-    color: rgba(255, 255, 255, 0.9);
-    margin-bottom: 0.75rem;
-}
-
-.profile-header-bio {
-    font-size: 1rem;
-    color: white;
-    margin-bottom: 1rem;
-    line-height: 1.5;
-}
-
-.profile-header-meta {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 1.5rem;
-    margin-bottom: 1rem;
-    color: rgba(255, 255, 255, 0.9);
-    font-size: 0.95rem;
-}
-
-.profile-header-meta i {
-    margin-right: 0.5rem;
-}
-
-.profile-header-meta a {
-    color: white;
-    text-decoration: none;
-}
-
-.profile-header-meta a:hover {
-    text-decoration: underline;
-}
-
-.profile-header-actions {
-    display: flex;
-    gap: 1rem;
-}
-
-/* Stats Bar */
-.profile-stats-bar {
-    background: white;
-    border-radius: 0 0 24px 24px;
-    padding: 1.5rem 2rem;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-}
-
-.stats-container {
-    display: flex;
-    justify-content: space-around;
-    max-width: 800px;
-    margin: 0 auto;
-}
-
-.stat-item-large {
-    text-align: center;
-    cursor: pointer;
-    padding: 0.5rem 1rem;
-    border-radius: 12px;
-    transition: background 0.2s ease;
-}
-
-.stat-item-large:hover {
-    background: #f3f4f6;
-}
-
-.stat-value {
-    display: block;
-    font-size: 1.75rem;
-    font-weight: 700;
-    color: #1f2937;
-    line-height: 1.2;
-}
-
-.stat-label {
-    font-size: 0.875rem;
-    color: #6b7280;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-}
-
-/* Profile Content Grid */
-.profile-content-grid {
-    display: grid;
-    grid-template-columns: 360px 1fr;
-    gap: 2rem;
-    margin-top: 2rem;
-}
-
-/* Profile Cards */
-.profile-card {
-    background: white;
-    border-radius: 20px;
-    padding: 1.5rem;
-    margin-bottom: 1.5rem;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-}
-
-.card-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 1.25rem;
-}
-
-.card-header h3 {
-    font-size: 1.125rem;
-    font-weight: 600;
-    color: #1f2937;
-    margin: 0;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-}
-
-.card-header h3 i {
-    color: #3b82f6;
-}
-
-.btn-icon {
-    width: 36px;
-    height: 36px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 50%;
-    color: #6b7280;
-    transition: all 0.2s ease;
-}
-
-.btn-icon:hover {
-    background: #f3f4f6;
-    color: #3b82f6;
-}
-
-/* About Section */
-.about-bio {
-    font-size: 1rem;
-    line-height: 1.6;
-    color: #4b5563;
-    margin-bottom: 1.5rem;
-}
-
-.about-details {
-    display: flex;
-    flex-direction: column;
-    gap: 0.75rem;
-}
-
-.detail-item {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    color: #4b5563;
-}
-
-.detail-item i {
-    width: 1.25rem;
-    color: #6b7280;
-}
-
-.detail-item a {
-    color: #3b82f6;
-    text-decoration: none;
-}
-
-.detail-item a:hover {
-    text-decoration: underline;
-}
-
-/* Social Links */
-.social-links {
-    display: flex;
-    flex-direction: column;
-    gap: 0.75rem;
-}
-
-.social-link-item {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    padding: 0.75rem;
-    border-radius: 12px;
-    text-decoration: none;
-    color: #1f2937;
-    transition: all 0.2s ease;
-}
-
-.social-link-item:hover {
-    background: #f9fafb;
-}
-
-.social-link-item.twitter i {
-    color: #1da1f2;
-}
-
-.social-link-item.facebook i {
-    color: #4267b2;
-}
-
-.social-link-item.instagram i {
-    color: #e4405f;
-}
-
-.social-link-item.linkedin i {
-    color: #0077b5;
-}
-
-.social-link-item.disabled {
-    opacity: 0.6;
-    cursor: default;
-}
-
-.social-link-item.disabled:hover {
-    background: none;
-}
-
-/* Interests Tags */
-.interests-tags {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.5rem;
-}
-
-.interest-tag {
-    background: #eff6ff;
-    color: #3b82f6;
-    padding: 0.375rem 1rem;
-    border-radius: 9999px;
-    font-size: 0.875rem;
-    font-weight: 500;
-}
-
-/* Profile Tabs */
-.profile-tabs {
-    display: flex;
-    gap: 0.5rem;
-    background: white;
-    border-radius: 20px;
-    padding: 0.5rem;
-    margin-bottom: 2rem;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-}
-
-.profile-tab {
-    flex: 1;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.5rem;
-    padding: 0.75rem;
-    border-radius: 16px;
-    font-size: 0.95rem;
-    font-weight: 600;
-    color: #6b7280;
-    text-decoration: none;
-    transition: all 0.2s ease;
-}
-
-.profile-tab i {
-    font-size: 1rem;
-}
-
-.profile-tab:hover {
-    background: #f9fafb;
-    color: #1f2937;
-}
-
-.profile-tab.active {
-    background: #3b82f6;
-    color: white;
-}
-
-.profile-tab.active i {
-    color: white;
-}
-
-/* Empty State */
-.empty-state-container {
-    text-align: center;
-    padding: 4rem 2rem;
-    background: white;
-    border-radius: 20px;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-}
-
-.empty-state-icon {
-    width: 80px;
-    height: 80px;
-    background: #eff6ff;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin: 0 auto 1.5rem;
-}
-
-.empty-state-icon i {
-    font-size: 2rem;
-    color: #3b82f6;
-}
-
-.empty-state-container h3 {
-    font-size: 1.25rem;
-    font-weight: 600;
-    color: #1f2937;
-    margin-bottom: 0.5rem;
-}
-
-.empty-state-container p {
-    color: #6b7280;
-    margin-bottom: 1.5rem;
-}
-
-/* Comment Cards */
-.comment-card {
-    background: white;
-    border-radius: 20px;
-    padding: 1.5rem;
-    margin-bottom: 1rem;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-}
-
-.comment-header {
-    margin-bottom: 1rem;
-}
-
-.comment-meta {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-}
-
-.comment-post-title {
-    color: #6b7280;
-    font-size: 0.875rem;
-}
-
-.comment-post-title a {
-    color: #1f2937;
-    font-weight: 600;
-    text-decoration: none;
-}
-
-.comment-post-title a:hover {
-    color: #3b82f6;
-}
-
-.comment-time {
-    color: #6b7280;
-    font-size: 0.75rem;
-}
-
-.comment-body {
-    color: #4b5563;
-    line-height: 1.6;
-    margin-bottom: 1rem;
-}
-
-.comment-footer {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding-top: 0.75rem;
-    border-top: 1px solid #e5e7eb;
-}
-
-.comment-likes {
-    color: #6b7280;
-    font-size: 0.875rem;
-}
-
-.comment-likes i {
-    color: #ef4444;
-    margin-right: 0.25rem;
-}
-
-.comment-link {
-    color: #3b82f6;
-    text-decoration: none;
-    font-size: 0.875rem;
-    font-weight: 600;
-}
-
-.comment-link i {
-    margin-left: 0.25rem;
-}
-
-/* Followers/Following Items */
-.follow-item {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-    padding: 1rem;
-    border-radius: 12px;
-    text-decoration: none;
-    transition: background 0.2s ease;
-}
-
-.follow-item:hover {
-    background: #f9fafb;
-}
-
-.follow-avatar {
-    width: 48px;
-    height: 48px;
-    flex-shrink: 0;
-}
-
-.follow-avatar img {
-    width: 100%;
-    height: 100%;
-    border-radius: 50%;
-    object-fit: cover;
-}
-
-.avatar-placeholder {
-    width: 100%;
-    height: 100%;
-    border-radius: 50%;
-    background: linear-gradient(145deg, #3b82f6, #2563eb);
-    color: white;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 1.25rem;
-    font-weight: 600;
-}
-
-.follow-info {
-    flex: 1;
-    min-width: 0;
-}
-
-.follow-name {
-    display: block;
-    font-weight: 600;
-    color: #1f2937;
-    margin-bottom: 0.125rem;
-}
-
-.follow-username {
-    display: block;
-    font-size: 0.875rem;
-    color: #6b7280;
-}
-
-/* Modals */
-.modal {
-    display: none;
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(0, 0, 0, 0.8);
-    backdrop-filter: blur(8px);
-    align-items: center;
-    justify-content: center;
-    z-index: 9998;
-}
-
-.modal-content {
-    background: white;
-    border-radius: 24px;
-    width: 90%;
-    max-width: 500px;
-    max-height: 80vh;
-    overflow: hidden;
-}
-
-.modal-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 1.25rem 1.5rem;
-    border-bottom: 1px solid #e5e7eb;
-}
-
-.modal-header h3 {
-    font-size: 1.125rem;
-    font-weight: 700;
-    color: #1f2937;
-}
-
-.modal-close {
-    background: none;
-    border: none;
-    font-size: 1.5rem;
-    color: #6b7280;
-    cursor: pointer;
-    width: 36px;
-    height: 36px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 9999px;
-    transition: all 0.2s;
-}
-
-.modal-close:hover {
-    background: #f3f4f6;
-    color: #1f2937;
-}
-
-.modal-body {
-    padding: 1.5rem;
-    max-height: calc(80vh - 80px);
-    overflow-y: auto;
-}
-
-/* Image Cropper Modal */
-.crop-modal {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(0, 0, 0, 0.8);
-    backdrop-filter: blur(8px);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 9999;
-}
-
-.crop-modal-content {
-    background: white;
-    border-radius: 24px;
-    width: 90%;
-    max-width: 800px;
-    max-height: 90vh;
-    overflow: hidden;
-    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
-}
-
-.crop-modal-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 1.25rem 1.5rem;
-    border-bottom: 1px solid #e5e7eb;
-}
-
-.crop-modal-header h3 {
-    font-size: 1.25rem;
-    font-weight: 700;
-    color: #1f2937;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-}
-
-.crop-modal-close {
-    background: none;
-    border: none;
-    font-size: 1.5rem;
-    color: #6b7280;
-    cursor: pointer;
-    width: 36px;
-    height: 36px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 9999px;
-    transition: all 0.2s;
-}
-
-.crop-modal-close:hover {
-    background: #f3f4f6;
-    color: #1f2937;
-}
-
-.crop-modal-body {
-    padding: 1.5rem;
-}
-
-.crop-container {
-    max-height: 500px;
-    overflow: hidden;
-    border-radius: 16px;
-}
-
-.crop-container img {
-    max-width: 100%;
-    max-height: 500px;
-    display: block;
-}
-
-.crop-modal-footer {
-    display: flex;
-    align-items: center;
-    justify-content: flex-end;
-    gap: 1rem;
-    padding: 1.25rem 1.5rem;
-    border-top: 1px solid #e5e7eb;
-    background: #f9fafb;
-}
-
-/* Notification */
-.notification {
-    position: fixed;
-    top: 20px;
-    right: 20px;
-    padding: 1rem 1.5rem;
-    background: white;
-    border-radius: 12px;
-    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    transform: translateX(120%);
-    transition: transform 0.3s ease;
-    z-index: 10000;
-    border-left: 4px solid;
-}
-
-.notification.show {
-    transform: translateX(0);
-}
-
-.notification-success {
-    border-left-color: #10b981;
-}
-
-.notification-success i {
-    color: #10b981;
-}
-
-.notification-error {
-    border-left-color: #ef4444;
-}
-
-.notification-error i {
-    color: #ef4444;
-}
-
-/* Loading Overlay */
-.upload-loading {
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(255, 255, 255, 0.9);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: inherit;
-    z-index: 30;
-}
-
-.upload-loading i {
-    color: #3b82f6;
-    font-size: 2rem;
-}
-
-/* Responsive Design */
-@media (max-width: 992px) {
-    .profile-container {
-        padding: 1rem;
-    }
-    
-    .profile-cover-wrapper {
-        height: 250px;
-    }
-    
-    .profile-avatar-section {
-        flex-direction: column;
-        align-items: center;
-        text-align: center;
-        margin-top: -60px;
-    }
-    
-    .profile-avatar-large,
-    .profile-avatar-placeholder-large {
-        width: 120px;
-        height: 120px;
-        font-size: 2.5rem;
-    }
-    
-    .btn-avatar-edit {
-        width: 36px;
-        height: 36px;
-    }
-    
-    .profile-header-meta {
-        justify-content: center;
-    }
-    
-    .profile-header-actions {
-        justify-content: center;
-    }
-    
-    .profile-content-grid {
-        grid-template-columns: 1fr;
-    }
-    
-    .profile-left-col {
-        order: 2;
-    }
-    
-    .profile-right-col {
-        order: 1;
-    }
-}
-
-@media (max-width: 768px) {
-    .profile-cover-wrapper {
-        height: 200px;
-    }
-    
-    .profile-avatar-large,
-    .profile-avatar-placeholder-large {
-        width: 100px;
-        height: 100px;
-        font-size: 2rem;
-    }
-    
-    .profile-header-name {
-        font-size: 1.5rem;
-    }
-    
-    .cover-actions {
-        bottom: 1rem;
-        right: 1rem;
-    }
-    
-    .btn-cover-edit {
-        padding: 0.5rem 1rem;
-        font-size: 0.75rem;
-    }
-    
-    .btn-cover-edit span {
-        display: none;
-    }
-    
-    .btn-cover-edit i {
-        margin: 0;
-    }
-    
-    .stats-container {
-        flex-wrap: wrap;
-    }
-    
-    .stat-item-large {
-        flex: 1 0 calc(50% - 1rem);
-    }
-    
-    .profile-tabs {
-        flex-wrap: wrap;
-    }
-    
-    .profile-tab {
-        flex: 1 0 calc(50% - 0.5rem);
-    }
-}
-
-@media (max-width: 576px) {
-    .profile-avatar-large,
-    .profile-avatar-placeholder-large {
-        width: 90px;
-        height: 90px;
-        font-size: 1.75rem;
-        border-width: 4px;
-    }
-    
-    .btn-avatar-edit {
-        width: 32px;
-        height: 32px;
-        border-width: 2px;
-    }
-    
-    .btn-avatar-edit i {
-        font-size: 0.875rem;
-    }
-    
-    .profile-header-actions {
-        flex-direction: column;
-    }
-    
-    .profile-header-actions .btn {
-        width: 100%;
-    }
-    
-    .profile-card {
-        padding: 1rem;
-    }
-}
-</style>
 
 <!-- Include Cropper.js -->
 <link href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.12/cropper.min.css" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.12/cropper.min.js"></script>
 
 <script>
-// ===== GLOBAL VARIABLES =====
+// Image cropper and upload functions
 let cropper = null;
-let currentUploadType = null;
-let uploadFormData = null;
-const isAuthenticated = {{ user.is_authenticated|yesno:"true,false" }};
-const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value || '';
 
-// ===== IMAGE CROPPER FUNCTIONS =====
 function uploadAvatarPhoto(input) {
     if (input.files && input.files[0]) {
-        currentUploadType = 'avatar';
-        const file = input.files[0];
-        
-        // Validate file
-        if (!file.type.match('image.*')) {
-            showNotification('Please select an image file', 'error');
-            return;
-        }
-        
-        if (file.size > 5 * 1024 * 1024) {
-            showNotification('File size must be less than 5MB', 'error');
-            return;
-        }
-        
         const reader = new FileReader();
         reader.onload = function(e) {
-            // Show crop modal
-            const modal = document.getElementById('imageCropperModal');
-            const image = document.getElementById('imageToCrop');
-            document.getElementById('cropModalTitle').innerHTML = '<i class="fas fa-crop-alt"></i> Crop Profile Picture';
-            image.src = e.target.result;
-            modal.style.display = 'flex';
+            // Show crop modal (implement your crop modal logic here)
+            alert('Image cropping would appear here');
             
-            // Initialize cropper
-            setTimeout(() => {
-                if (cropper) {
-                    cropper.destroy();
-                }
-                cropper = new Cropper(image, {
-                    aspectRatio: 1,
-                    viewMode: 1,
-                    dragMode: 'move',
-                    autoCropArea: 1,
-                    cropBoxMovable: true,
-                    cropBoxResizable: true,
-                    background: false,
-                    center: true,
-                    guides: true,
-                    highlight: false,
-                    toggleDragModeOnDblclick: false,
-                });
-            }, 100);
-            
-            // Store form data
-            uploadFormData = new FormData();
-            uploadFormData.append('profile_pic', file);
-            uploadFormData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
+            // For now, auto-upload
+            uploadImage(input.files[0], 'avatar');
         };
-        reader.readAsDataURL(file);
+        reader.readAsDataURL(input.files[0]);
     }
 }
 
 function uploadCoverPhoto(input) {
     if (input.files && input.files[0]) {
-        currentUploadType = 'cover';
-        const file = input.files[0];
-        
-        // Validate file
-        if (!file.type.match('image.*')) {
-            showNotification('Please select an image file', 'error');
-            return;
-        }
-        
-        if (file.size > 10 * 1024 * 1024) {
-            showNotification('File size must be less than 10MB', 'error');
-            return;
-        }
-        
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            // Show crop modal
-            const modal = document.getElementById('imageCropperModal');
-            const image = document.getElementById('imageToCrop');
-            document.getElementById('cropModalTitle').innerHTML = '<i class="fas fa-crop-alt"></i> Crop Cover Photo';
-            image.src = e.target.result;
-            modal.style.display = 'flex';
-            
-            // Initialize cropper
-            setTimeout(() => {
-                if (cropper) {
-                    cropper.destroy();
-                }
-                cropper = new Cropper(image, {
-                    aspectRatio: 3.5 / 1,
-                    viewMode: 1,
-                    dragMode: 'move',
-                    autoCropArea: 1,
-                    cropBoxMovable: true,
-                    cropBoxResizable: true,
-                    background: false,
-                    center: true,
-                    guides: true,
-                    highlight: false,
-                    toggleDragModeOnDblclick: false,
-                });
-            }, 100);
-            
-            // Store form data
-            uploadFormData = new FormData();
-            uploadFormData.append('cover_photo', file);
-            uploadFormData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
-        };
-        reader.readAsDataURL(file);
+        uploadImage(input.files[0], 'cover');
     }
 }
 
-function cropAndSave() {
-    if (!cropper) return;
+function uploadImage(file, type) {
+    const formData = new FormData();
+    formData.append(type + '_photo', file);
     
-    // Show loading state
-    const btn = document.querySelector('.crop-modal-footer .btn-primary');
-    const originalText = btn.innerHTML;
-    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
-    btn.disabled = true;
-    
-    // Get cropped canvas
-    let canvas;
-    if (currentUploadType === 'avatar') {
-        canvas = cropper.getCroppedCanvas({
-            width: 400,
-            height: 400,
-            imageSmoothingQuality: 'high',
-        });
-    } else {
-        canvas = cropper.getCroppedCanvas({
-            width: 1500,
-            height: 428,
-            imageSmoothingQuality: 'high',
-        });
-    }
-    
-    // Convert canvas to blob and upload
-    canvas.toBlob(function(blob) {
-        const file = new File([blob], currentUploadType === 'avatar' ? 'profile.jpg' : 'cover.jpg', { type: 'image/jpeg' });
-        
-        if (currentUploadType === 'avatar') {
-            uploadFormData.set('profile_pic', file);
-            uploadImage(uploadFormData, 'avatar');
-        } else {
-            uploadFormData.set('cover_photo', file);
-            uploadImage(uploadFormData, 'cover');
-        }
-    }, 'image/jpeg', 0.95);
-}
-
-function uploadImage(formData, type) {
-    const url = type === 'avatar' ? '{% url "update_profile_pic" %}' : '{% url "update_cover_photo" %}';
+    const url = type === 'avatar' ? "{% url 'update_profile_pic' %}" : "{% url 'update_cover_photo' %}";
     
     fetch(url, {
         method: 'POST',
         body: formData,
         headers: {
-            'X-Requested-With': 'XMLHttpRequest',
-        },
+            'X-CSRFToken': '{{ csrf_token }}'
+        }
     })
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            // Update image preview
             if (type === 'avatar') {
-                updateAvatarPreview(data.image_url);
+                document.getElementById('profileAvatarImg').src = data.image_url + '?t=' + new Date().getTime();
             } else {
-                updateCoverPreview(data.image_url);
+                document.getElementById('profileCoverImg').src = data.image_url + '?t=' + new Date().getTime();
             }
-            
-            showNotification('Image updated successfully!', 'success');
-            closeCropModal();
-        } else {
-            showNotification('Error uploading image. Please try again.', 'error');
-        }
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        showNotification('Error uploading image. Please try again.', 'error');
-    })
-    .finally(() => {
-        // Reset button state
-        const btn = document.querySelector('.crop-modal-footer .btn-primary');
-        if (btn) {
-            btn.innerHTML = '<i class="fas fa-crop-alt"></i> Crop & Save';
-            btn.disabled = false;
+            showNotification('Photo updated successfully!', 'success');
         }
     });
 }
 
-function updateAvatarPreview(imageUrl) {
-    const wrapper = document.querySelector('.profile-avatar-large-wrapper');
-    const existingImg = document.getElementById('profileAvatarImg');
-    const placeholder = document.getElementById('profileAvatarPlaceholder');
-    
-    if (existingImg) {
-        existingImg.src = imageUrl + '?t=' + new Date().getTime();
-        existingImg.style.display = 'block';
-    } else {
-        // Replace placeholder with image
-        wrapper.innerHTML = `
-            <img src="${imageUrl}?t=${new Date().getTime()}" alt="{{ profile_user.username }}" class="profile-avatar-large" id="profileAvatarImg">
-            <div class="avatar-actions">
-                <button type="button" class="btn-avatar-edit" onclick="document.getElementById('avatarUploadInput').click();">
-                    <i class="fas fa-camera"></i>
-                </button>
-            </div>
-        `;
-    }
+// Modal functions
+function showFollowersModal() {
+    document.getElementById('followers-modal').style.display = 'flex';
 }
 
-function updateCoverPreview(imageUrl) {
-    const wrapper = document.querySelector('.profile-cover-wrapper');
-    const existingImg = document.getElementById('profileCoverImg');
-    const placeholder = document.getElementById('profileCoverPlaceholder');
-    
-    if (existingImg) {
-        existingImg.src = imageUrl + '?t=' + new Date().getTime();
-    } else {
-        // Replace placeholder with image
-        const avatarSection = document.querySelector('.profile-avatar-section').outerHTML;
-        wrapper.innerHTML = `
-            <img src="${imageUrl}?t=${new Date().getTime()}" alt="Cover" class="profile-cover-img" id="profileCoverImg">
-            <div class="cover-actions">
-                <button type="button" class="btn-cover-edit" onclick="document.getElementById('coverUploadInput').click();">
-                    <i class="fas fa-camera"></i>
-                    <span>Edit Cover</span>
-                </button>
-            </div>
-            ${avatarSection}
-        `;
-    }
+function showFollowingModal() {
+    document.getElementById('following-modal').style.display = 'flex';
 }
 
-function closeCropModal() {
-    const modal = document.getElementById('imageCropperModal');
-    modal.style.display = 'none';
-    
-    if (cropper) {
-        cropper.destroy();
-        cropper = null;
-    }
-    
-    // Clear file inputs
-    const avatarInput = document.getElementById('avatarUploadInput');
-    const coverInput = document.getElementById('coverUploadInput');
-    if (avatarInput) avatarInput.value = '';
-    if (coverInput) coverInput.value = '';
-}
-
-function showNotification(message, type) {
-    // Check if notification already exists
-    let notification = document.querySelector('.notification');
-    if (notification) {
-        notification.remove();
-    }
-    
-    // Create notification element
-    notification = document.createElement('div');
-    notification.className = `notification notification-${type}`;
-    notification.innerHTML = `
-        <i class="fas ${type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle'}"></i>
-        <span>${message}</span>
-    `;
-    
-    document.body.appendChild(notification);
-    
-    // Show notification
-    setTimeout(() => notification.classList.add('show'), 100);
-    
-    // Remove after 3 seconds
-    setTimeout(() => {
-        notification.classList.remove('show');
-        setTimeout(() => notification.remove(), 300);
-    }, 3000);
-}
-
-// ===== FOLLOW FUNCTIONALITY =====
-function initializeFollowButtons() {
-    document.querySelectorAll('.follow-btn').forEach(btn => {
-        btn.addEventListener('click', async function(e) {
-            e.preventDefault();
-            
-            if (!isAuthenticated) {
-                window.location.href = '/login/?next=' + encodeURIComponent(window.location.pathname);
-                return;
-            }
-            
-            const username = this.dataset.username;
-            
-            try {
-                const response = await fetch(`/profile/${username}/follow/`, {
-                    method: 'POST',
-                    headers: {
-                        'X-CSRFToken': csrfToken,
-                        'X-Requested-With': 'XMLHttpRequest'
-                    }
-                });
-                
-                if (response.ok) {
-                    const data = await response.json();
-                    
-                    // Update button
-                    if (data.followed) {
-                        this.classList.remove('btn-primary');
-                        this.classList.add('btn-outline');
-                        this.innerHTML = '<i class="fas fa-user-check"></i> Following';
-                    } else {
-                        this.classList.remove('btn-outline');
-                        this.classList.add('btn-primary');
-                        this.innerHTML = '<i class="fas fa-user-plus"></i> Follow';
-                    }
-                    
-                    // Update follower count
-                    const followerCount = document.querySelector('.stat-item-large:first-child .stat-value');
-                    if (followerCount) {
-                        followerCount.textContent = data.followers_count;
-                    }
-                }
-            } catch (error) {
-                console.error('Error following user:', error);
-                showNotification('Error following user. Please try again.', 'error');
-            }
-        });
-    });
-}
-
-// ===== MODAL FUNCTIONS =====
-function showFollowers() {
-    const modal = document.getElementById('followers-modal');
-    if (modal) {
-        modal.style.display = 'flex';
-    }
-}
-
-function showFollowing() {
-    const modal = document.getElementById('following-modal');
-    if (modal) {
-        modal.style.display = 'flex';
-    }
-}
-
-function initializeModals() {
-    // Close modals with close button
-    document.querySelectorAll('.modal-close').forEach(btn => {
-        btn.addEventListener('click', function() {
-            this.closest('.modal').style.display = 'none';
-        });
-    });
-    
-    // Close modals when clicking outside
-    window.addEventListener('click', function(e) {
-        if (e.target.classList.contains('modal')) {
-            e.target.style.display = 'none';
-        }
-    });
-    
-    // Close modals with ESC key
-    document.addEventListener('keydown', function(e) {
-        if (e.key === 'Escape') {
-            document.querySelectorAll('.modal, .crop-modal').forEach(modal => {
-                modal.style.display = 'none';
-            });
-            if (cropper) {
-                cropper.destroy();
-                cropper = null;
-            }
-        }
-    });
-}
-
-// ===== MESSAGE FUNCTION =====
-function showMessageDialog(username) {
-    if (!isAuthenticated) {
-        window.location.href = '/login/?next=' + encodeURIComponent(window.location.pathname);
-        return;
-    }
-    // TODO: Implement messaging functionality
-    showNotification('Messaging feature coming soon!', 'success');
-}
-
-// ===== INITIALIZATION =====
-document.addEventListener('DOMContentLoaded', function() {
-    initializeFollowButtons();
-    initializeModals();
-    
-    // Make stat items clickable
-    document.querySelectorAll('.stat-item-large').forEach(item => {
-        item.addEventListener('click', function(e) {
-            const label = this.querySelector('.stat-label')?.textContent;
-            if (label === 'Followers') {
-                showFollowers();
-            } else if (label === 'Following') {
-                showFollowing();
-            }
-        });
+// Close modals
+document.querySelectorAll('.modal-close').forEach(btn => {
+    btn.addEventListener('click', function() {
+        this.closest('.modal').style.display = 'none';
     });
 });
-document.querySelectorAll('.follow-btn').forEach(btn => {
-    btn.addEventListener('click', function(e) {
-        e.preventDefault();
-        const username = this.dataset.username;
-        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
-        
-        fetch(`/follow/${username}/`, {
-            method: 'POST',
-            headers: {
-                'X-CSRFToken': csrfToken,
-                'X-Requested-With': 'XMLHttpRequest'
-            }
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.followed) {
-                this.innerHTML = '<i class="fas fa-user-check"></i> Following';
-                this.classList.add('following');
-            } else {
-                this.innerHTML = '<i class="fas fa-user-plus"></i> Follow';
-                this.classList.remove('following');
-            }
+
+window.addEventListener('click', function(e) {
+    if (e.target.classList.contains('modal')) {
+        e.target.style.display = 'none';
+    }
+});
+
+// Follow button
+document.querySelector('.follow-btn')?.addEventListener('click', function() {
+    const username = this.dataset.username;
+    
+    fetch('/follow/' + username + '/', {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': '{{ csrf_token }}'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.followed) {
+            this.classList.remove('btn-primary');
+            this.classList.add('btn-outline');
+            this.innerHTML = '<i class="fas fa-user-check"></i> Following';
             
             // Update follower count
-            const followerCountEl = document.querySelector('.follower-count');
-            if (followerCountEl) {
-                followerCountEl.textContent = data.followers_count;
-            }
+            document.querySelector('.stat-value').textContent = data.followers_count;
+        } else {
+            this.classList.remove('btn-outline');
+            this.classList.add('btn-primary');
+            this.innerHTML = '<i class="fas fa-user-plus"></i> Follow';
             
-            // Show notification
-            showNotification(data.message, data.followed ? 'success' : 'info');
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            showNotification('An error occurred. Please try again.', 'error');
-        });
+            // Update follower count
+            document.querySelector('.stat-value').textContent = data.followers_count;
+        }
     });
 });
+
+function showNotification(message, type) {
+    // Implement notification
+    alert(message);
+}
 </script>
 {% endblock %}

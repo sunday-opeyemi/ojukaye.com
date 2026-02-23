@@ -5,274 +5,598 @@
 
 {% block content %}
 <div class="create-post-page">
-    <div class="create-post-container">
-        <!-- Header -->
-        <div class="create-post-header">
-            <h1><i class="fas fa-pen-to-square"></i> Create Post</h1>
-            <p>Share your thoughts, news, or updates with the community</p>
-        </div>
-        
-        <!-- Post Type Selection -->
-        <div class="post-type-selector">
-            <div class="post-type-cards">
-                <label class="post-type-card {% if request.GET.type == 'discussion' or not request.GET.type %}active{% endif %}">
-                    <input type="radio" name="post_type" value="discussion" 
-                           {% if request.GET.type == 'discussion' or not request.GET.type %}checked{% endif %}>
-                    <div class="post-type-content">
-                        <i class="fas fa-comments"></i>
-                        <h3>Discussion</h3>
-                        <p>Start a conversation, ask questions, or share opinions</p>
-                    </div>
-                </label>
-                
-                <label class="post-type-card {% if request.GET.type == 'user_news' %}active{% endif %}">
-                    <input type="radio" name="post_type" value="user_news" 
-                           {% if request.GET.type == 'user_news' %}checked{% endif %}>
-                    <div class="post-type-content">
-                        <i class="fas fa-newspaper"></i>
-                        <h3>News</h3>
-                        <p>Share a news article with proper source attribution</p>
-                    </div>
-                </label>
-                
-                <label class="post-type-card {% if request.GET.type == 'profile_post' %}active{% endif %}">
-                    <input type="radio" name="post_type" value="profile_post" 
-                           {% if request.GET.type == 'profile_post' %}checked{% endif %}>
-                    <div class="post-type-content">
-                        <i class="fas fa-user"></i>
-                        <h3>Profile Post</h3>
-                        <p>Personal post only visible on your profile</p>
-                    </div>
-                </label>
+    <!-- LEFT SECTION -->
+    <aside class="left-section">
+        <!-- Welcome Card for Guests -->
+        {% if not user.is_authenticated %}
+        <div class="sidebar-card guest-welcome">
+            <div class="guest-icon">
+                <i class="fas fa-newspaper"></i>
+            </div>
+            <h3>Welcome to Ojukaye News</h3>
+            <p>Stay informed with the latest news from Nigeria and around the world</p>
+            <div class="guest-actions">
+                <a href="{% url 'login' %}" class="btn btn-primary btn-block">Sign In</a>
+                <a href="{% url 'register' %}" class="btn btn-outline btn-block">Register</a>
             </div>
         </div>
-        
-        <!-- Privacy Settings -->
-        <div class="privacy-settings">
-            <h3><i class="fas fa-lock"></i> Who can view this post?</h3>
-            
-            <div class="privacy-options">
-                <label class="privacy-option">
-                    <input type="radio" name="privacy" value="public" checked>
-                    <span class="privacy-icon"><i class="fas fa-globe"></i></span>
-                    <span class="privacy-label">
-                        <strong>Public</strong>
-                        <small>Everyone can see this post</small>
-                    </span>
-                </label>
-                
-                <label class="privacy-option">
-                    <input type="radio" name="privacy" value="followers">
-                    <span class="privacy-icon"><i class="fas fa-users"></i></span>
-                    <span class="privacy-label">
-                        <strong>Followers Only</strong>
-                        <small>Only people who follow you can see this post</small>
-                    </span>
-                </label>
-                
-                <label class="privacy-option">
-                    <input type="radio" name="privacy" value="private">
-                    <span class="privacy-icon"><i class="fas fa-lock"></i></span>
-                    <span class="privacy-label">
-                        <strong>Private</strong>
-                        <small>Only you can see this post</small>
-                    </span>
-                </label>
-                
-                <label class="privacy-option">
-                    <input type="radio" name="privacy" value="specific">
-                    <span class="privacy-icon"><i class="fas fa-user-tag"></i></span>
-                    <span class="privacy-label">
-                        <strong>Specific Followers</strong>
-                        <small>Select specific followers who can view</small>
-                    </span>
-                </label>
-            </div>
-            
-            <!-- Specific followers selection -->
-            <div id="specific-followers-field" style="display: none; margin-top: 1rem;">
-                <label for="{{ form.allowed_viewers.id_for_label }}" class="form-label">
-                    <i class="fas fa-user-check"></i> Select Followers
-                </label>
-                {{ form.allowed_viewers }}
-                <small class="form-text">Hold Ctrl/Cmd to select multiple followers</small>
-            </div>
-        </div>
+        {% endif %}
 
-
-        <!-- Create Post Form -->
-        <form method="post" enctype="multipart/form-data" class="create-post-form" id="createPostForm">
-            {% csrf_token %}
-            
-            <!-- Title Field -->
-            <div class="form-group">
-                <label for="{{ form.title.id_for_label }}" class="form-label">
-                    <i class="fas fa-heading"></i> Title
-                </label>
-                <input type="text" 
-                       name="{{ form.title.name }}" 
-                       id="{{ form.title.id_for_label }}" 
-                       class="form-control {% if form.title.errors %}error{% endif %}"
-                       placeholder="Enter a descriptive title"
-                       value="{{ form.title.value|default:'' }}"
-                       required>
-                {% if form.title.errors %}
-                <div class="form-error">
-                    <i class="fas fa-exclamation-circle"></i> {{ form.title.errors.0 }}
-                </div>
-                {% endif %}
+        <!-- Categories Card -->
+        <div class="sidebar-card">
+            <div class="card-header">
+                <h3><i class="fas fa-tags" style="color: var(--primary);"></i> News Categories</h3>
             </div>
-            
-            <!-- Content Field -->
-            <div class="form-group">
-                <label for="{{ form.content.id_for_label }}" class="form-label">
-                    <i class="fas fa-align-left"></i> Content
-                </label>
-                <textarea name="{{ form.content.name }}" 
-                          id="{{ form.content.id_for_label }}" 
-                          class="form-control {% if form.content.errors %}error{% endif %}"
-                          rows="8"
-                          placeholder="Write your post content here..."
-                          required>{{ form.content.value|default:'' }}</textarea>
-                {% if form.content.errors %}
-                <div class="form-error">
-                    <i class="fas fa-exclamation-circle"></i> {{ form.content.errors.0 }}
-                </div>
-                {% endif %}
-            </div>
-            
-            <!-- Category Field (Hidden for profile posts) -->
-            <div class="form-group category-field" id="categoryField">
-                <label for="{{ form.category.id_for_label }}" class="form-label">
-                    <i class="fas fa-tag"></i> Category
-                </label>
-                <select name="{{ form.category.name }}" 
-                        id="{{ form.category.id_for_label }}" 
-                        class="form-control {% if form.category.errors %}error{% endif %}">
-                    <option value="">Select a category</option>
-                    {% for category in categories %}
-                    <option value="{{ category.id }}" {% if form.category.value == category.id %}selected{% endif %}>
+            <div class="categories-list">
+                <a href="?category=all" class="category-item {% if current_category == 'all' or not current_category %}active{% endif %}" data-category="all">
+                    <span class="category-name">All News</span>
+                    <span class="category-count">{{ total_news|default:"0" }}</span>
+                </a>
+                {% for category in categories %}
+                <a href="?category={{ category.slug }}" class="category-item {% if current_category == category.slug %}active{% endif %}" data-category="{{ category.slug }}">
+                    <span class="category-name">
+                        {% if category.icon %}
+                        <i class="fas fa-{{ category.icon }}"></i>
+                        {% endif %}
                         {{ category.name }}
-                    </option>
+                    </span>
+                    <span class="category-count">{{ category.news_count }}</span>
+                </a>
+                {% empty %}
+                <div class="empty-state small">
+                    <p>No categories yet</p>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Top News Sources -->
+        <div class="sidebar-card">
+            <div class="card-header">
+                <h3><i class="fas fa-globe" style="color: var(--primary);"></i> Top Sources</h3>
+            </div>
+            <div class="sources-list">
+                {% for source in top_sources %}
+                <div class="source-item">
+                    <span class="source-name">{{ source.external_source|truncatechars:25 }}</span>
+                    <span class="source-count">{{ source.count }}</span>
+                </div>
+                {% empty %}
+                <div class="empty-state small">
+                    <p>No sources yet</p>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Trending News -->
+        <div class="sidebar-card">
+            <div class="card-header">
+                <h3><i class="fas fa-fire" style="color: var(--primary);"></i> Trending News</h3>
+            </div>
+            <div class="trending-list">
+                {% for news in trending_news %}
+                <a href="{% url 'post_detail' news.id %}" class="trending-item">
+                    <div class="trending-rank">#{{ forloop.counter }}</div>
+                    <div class="trending-content">
+                        <h4>{{ news.title|truncatechars:50 }}</h4>
+                        <div class="trending-meta">
+                            <span><i class="fas fa-eye"></i> {{ news.views }}</span>
+                            <span><i class="fas fa-heart"></i> {{ news.likes.count }}</span>
+                            <span><i class="fas fa-comment"></i> {{ news.comments.count }}</span>
+                        </div>
+                    </div>
+                </a>
+                {% empty %}
+                <div class="empty-state small">
+                    <i class="fas fa-chart-line"></i>
+                    <p>No trending news yet</p>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Footer Links -->
+        <div class="sidebar-footer">
+            <a href="{% url 'about' %}">About</a>
+            <a href="{% url 'privacy' %}">Privacy</a>
+            <a href="{% url 'terms' %}">Terms</a>
+            <a href="{% url 'help' %}">Help</a>
+            <p class="copyright">© {% now "Y" %} Ojukaye News</p>
+        </div>
+    </aside>
+
+    <!-- MIDDLE SECTION -->
+    <main class="middle-section">
+        <div class="create-post-container">
+            {% if form.errors %}
+            <div class="alert alert-danger">
+                <h4>Please fix the following errors:</h4>
+                <ul>
+                    {% for field, errors in form.errors.items %}
+                        {% for error in errors %}
+                            <li><strong>{{ field }}:</strong> {{ error }}</li>
+                        {% endfor %}
                     {% endfor %}
-                </select>
-                {% if form.category.errors %}
+                </ul>
+                {% if form.non_field_errors %}
+                    <li><strong>General errors:</strong> {{ form.non_field_errors }}</li>
+                {% endif %}
+            </div>
+            {% endif %}
+
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="alert alert-{{ message.tags }}">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+            <!-- Header -->
+            <div class="create-post-header">
+                <h1><i class="fas fa-pen-to-square"></i> Create Post</h1>
+                <p>Share your thoughts, news, or updates with the community</p>
+            </div>
+            
+            <div class="post-type-selector">
+                <div class="post-type-cards">
+                    <label class="post-type-card {% if request.GET.type == 'discussion' or not request.GET.type %}active{% endif %}">
+                        <input type="radio" name="post_type" value="discussion" 
+                            {% if request.GET.type == 'discussion' or not request.GET.type %}checked{% endif %}
+                            required>
+                        <div class="post-type-content">
+                            <i class="fas fa-comments"></i>
+                            <h3>Discussion</h3>
+                            <p>Start a conversation, ask questions, or share opinions</p>
+                        </div>
+                    </label>
+                    
+                    <label class="post-type-card {% if request.GET.type == 'user_news' %}active{% endif %}">
+                        <input type="radio" name="post_type" value="user_news" 
+                            {% if request.GET.type == 'user_news' %}checked{% endif %}
+                            required>
+                        <div class="post-type-content">
+                            <i class="fas fa-newspaper"></i>
+                            <h3>News</h3>
+                            <p>Share a news article with proper source attribution</p>
+                        </div>
+                    </label>
+                    
+                    <label class="post-type-card {% if request.GET.type == 'profile_post' %}active{% endif %}">
+                        <input type="radio" name="post_type" value="profile_post" 
+                            {% if request.GET.type == 'profile_post' %}checked{% endif %}
+                            required>
+                        <div class="post-type-content">
+                            <i class="fas fa-user"></i>
+                            <h3>Profile Post</h3>
+                            <p>Personal post only visible on your profile</p>
+                        </div>
+                    </label>
+                </div>
+                {% if form.post_type.errors %}
                 <div class="form-error">
-                    <i class="fas fa-exclamation-circle"></i> {{ form.category.errors.0 }}
+                    <i class="fas fa-exclamation-circle"></i> {{ form.post_type.errors.0 }}
                 </div>
                 {% endif %}
             </div>
             
-            <!-- News Source Fields (Hidden by default) -->
-            <div id="newsSourceFields" style="display: none;">
-                <div class="form-group">
-                    <label for="{{ form.source_url.id_for_label }}" class="form-label">
-                        <i class="fas fa-link"></i> Source URL <span class="required-star">*</span>
-                    </label>
-                    <input type="url" 
-                           name="{{ form.source_url.name }}" 
-                           id="{{ form.source_url.id_for_label }}" 
-                           class="form-control {% if form.source_url.errors %}error{% endif %}"
-                           placeholder="https://example.com/news-article"
-                           value="{{ form.source_url.value|default:'' }}">
-                    {% if form.source_url.errors %}
-                    <div class="form-error">
-                        <i class="fas fa-exclamation-circle"></i> {{ form.source_url.errors.0 }}
-                    </div>
-                    {% endif %}
-                    <small class="form-text">Required for news posts. Must be a valid URL.</small>
-                </div>
+            <!-- Privacy Settings -->
+            <div class="privacy-settings">
+                <h3><i class="fas fa-lock"></i> Who can view this post?</h3>
                 
-                <div class="form-group">
-                    <label for="{{ form.source_name.id_for_label }}" class="form-label">
-                        <i class="fas fa-newspaper"></i> Source Name
-                    </label>
-                    <input type="text" 
-                           name="{{ form.source_name.name }}" 
-                           id="{{ form.source_name.id_for_label }}" 
-                           class="form-control {% if form.source_name.errors %}error{% endif %}"
-                           placeholder="e.g., BBC News, Premium Times"
-                           value="{{ form.source_name.value|default:'' }}">
-                    <small class="form-text">The name of the news source or website.</small>
-                </div>
-            </div>
-            
-            <!-- Image Upload -->
-            <div class="form-group">
-                <label class="form-label">
-                    <i class="fas fa-image"></i> Image (Optional)
-                </label>
-                <div class="image-upload-area" id="imageUploadArea">
-                    <input type="file" 
-                           name="{{ form.image.name }}" 
-                           id="{{ form.image.id_for_label }}" 
-                           accept="image/*"
-                           style="display: none;">
-                    <div class="upload-placeholder">
-                        <i class="fas fa-cloud-upload-alt"></i>
-                        <p>Click or drag to upload an image</p>
-                        <span class="upload-hint">PNG, JPG, GIF up to 10MB</span>
-                    </div>
-                    <div class="image-preview" style="display: none;">
-                        <img src="" alt="Preview">
-                        <button type="button" class="remove-image-btn">
-                            <i class="fas fa-times"></i>
-                        </button>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- Post Settings -->
-            <div class="post-settings">
-                <h3><i class="fas fa-cog"></i> Post Settings</h3>
-                
-                <div class="settings-grid">
-                    <label class="setting-checkbox">
-                        <input type="checkbox" name="{{ form.allow_comments.name }}" 
-                               {% if form.allow_comments.value %}checked{% endif %}>
-                        <span>
-                            <i class="fas fa-comments"></i>
-                            <strong>Allow Comments</strong>
-                            <small>Let others comment on your post</small>
+                <div class="privacy-options">
+                    <label class="privacy-option">
+                        <input type="radio" name="privacy" value="public" checked>
+                        <span class="privacy-icon"><i class="fas fa-globe"></i></span>
+                        <span class="privacy-label">
+                            <strong>Public</strong>
+                            <small>Everyone can see this post</small>
                         </span>
                     </label>
                     
-                    <label class="setting-checkbox">
-                        <input type="checkbox" name="{{ form.allow_sharing.name }}"
-                               {% if form.allow_sharing.value %}checked{% endif %}>
-                        <span>
-                            <i class="fas fa-share-alt"></i>
-                            <strong>Allow Sharing</strong>
-                            <small>Let others share your post</small>
+                    <label class="privacy-option">
+                        <input type="radio" name="privacy" value="followers">
+                        <span class="privacy-icon"><i class="fas fa-users"></i></span>
+                        <span class="privacy-label">
+                            <strong>Followers Only</strong>
+                            <small>Only people who follow you can see this post</small>
+                        </span>
+                    </label>
+                    
+                    <label class="privacy-option">
+                        <input type="radio" name="privacy" value="private">
+                        <span class="privacy-icon"><i class="fas fa-lock"></i></span>
+                        <span class="privacy-label">
+                            <strong>Private</strong>
+                            <small>Only you can see this post</small>
+                        </span>
+                    </label>
+                    
+                    <label class="privacy-option">
+                        <input type="radio" name="privacy" value="specific">
+                        <span class="privacy-icon"><i class="fas fa-user-tag"></i></span>
+                        <span class="privacy-label">
+                            <strong>Specific Followers</strong>
+                            <small>Select specific followers who can view</small>
                         </span>
                     </label>
                 </div>
+                
+                <!-- Specific followers selection -->
+                <div id="specific-followers-field" style="display: none; margin-top: 1rem;">
+                    <label for="{{ form.allowed_viewers.id_for_label }}" class="form-label">
+                        <i class="fas fa-user-check"></i> Select Followers
+                    </label>
+                    {{ form.allowed_viewers }}
+                    <small class="form-text">Hold Ctrl/Cmd to select multiple followers</small>
+                </div>
             </div>
+
+            <!-- Create Post Form -->
+            <form method="post" enctype="multipart/form-data" class="create-post-form" id="createPostForm">
+                {% csrf_token %}
+                
+                <!-- CRITICAL FIX: Hidden field to ensure post_type is always submitted -->
+                <input type="hidden" name="post_type" id="hidden_post_type" value="">
+                
+                <!-- Title Field -->
+                <div class="form-group">
+                    <label for="{{ form.title.id_for_label }}" class="form-label">
+                        <i class="fas fa-heading"></i> Title <span class="required-star">*</span>
+                    </label>
+                    <input type="text" 
+                           name="{{ form.title.name }}" 
+                           id="{{ form.title.id_for_label }}" 
+                           class="form-control {% if form.title.errors %}error{% endif %}"
+                           placeholder="Enter a descriptive title"
+                           value="{{ form.title.value|default:'' }}"
+                           required>
+                    {% if form.title.errors %}
+                    <div class="form-error">
+                        <i class="fas fa-exclamation-circle"></i> {{ form.title.errors.0 }}
+                    </div>
+                    {% endif %}
+                </div>
+                
+                <!-- Content Field -->
+                <div class="form-group">
+                    <label for="{{ form.content.id_for_label }}" class="form-label">
+                        <i class="fas fa-align-left"></i> Content <span class="required-star">*</span>
+                    </label>
+                    <textarea name="{{ form.content.name }}" 
+                              id="{{ form.content.id_for_label }}" 
+                              class="form-control {% if form.content.errors %}error{% endif %}"
+                              rows="8"
+                              placeholder="Write your post content here..."
+                              required>{{ form.content.value|default:'' }}</textarea>
+                    {% if form.content.errors %}
+                    <div class="form-error">
+                        <i class="fas fa-exclamation-circle"></i> {{ form.content.errors.0 }}
+                    </div>
+                    {% endif %}
+                </div>
+                
+                <!-- Category Field (Hidden for profile posts, required for news) -->
+                <div class="form-group category-field" id="categoryField">
+                    <label for="{{ form.category.id_for_label }}" class="form-label">
+                        <i class="fas fa-tag"></i> Category 
+                        <span class="required-star" id="categoryRequiredStar">*</span>
+                        <span class="optional-text" id="categoryOptionalText" style="display: none;">(Optional)</span>
+                    </label>
+                    <select name="{{ form.category.name }}" 
+                            id="{{ form.category.id_for_label }}" 
+                            class="form-control {% if form.category.errors %}error{% endif %}">
+                        <option value="">-- Select a category --</option>
+                        {% for category in categories %}
+                        <option value="{{ category.id }}" {% if form.category.value|stringformat:"s" == category.id|stringformat:"s" %}selected{% endif %}>
+                            {{ category.name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                    {% if form.category.errors %}
+                    <div class="form-error">
+                        <i class="fas fa-exclamation-circle"></i> {{ form.category.errors.0 }}
+                    </div>
+                    {% endif %}
+                    <small class="form-text category-help-text" id="categoryHelpText">
+                        Select a category for your post
+                    </small>
+                </div>
+                
+                <!-- News Source Fields (Hidden by default) -->
+                <div id="newsSourceFields" style="display: none;">
+                    <h3><i class="fas fa-source"></i> Source Information</h3>
+                    
+                    <div class="form-group">
+                        <label for="{{ form.source_url.id_for_label }}" class="form-label">
+                            <i class="fas fa-link"></i> Source URL <span class="required-star">*</span>
+                        </label>
+                        <input type="url" 
+                               name="{{ form.source_url.name }}" 
+                               id="{{ form.source_url.id_for_label }}" 
+                               class="form-control {% if form.source_url.errors %}error{% endif %}"
+                               placeholder="https://example.com/news-article"
+                               value="{{ form.source_url.value|default:'' }}">
+                        {% if form.source_url.errors %}
+                        <div class="form-error">
+                            <i class="fas fa-exclamation-circle"></i> {{ form.source_url.errors.0 }}
+                        </div>
+                        {% endif %}
+                        <small class="form-text">Required for news posts. Must be a valid URL.</small>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="{{ form.source_name.id_for_label }}" class="form-label">
+                            <i class="fas fa-newspaper"></i> Source Name
+                        </label>
+                        <input type="text" 
+                               name="{{ form.source_name.name }}" 
+                               id="{{ form.source_name.id_for_label }}" 
+                               class="form-control {% if form.source_name.errors %}error{% endif %}"
+                               placeholder="e.g., BBC News, Premium Times"
+                               value="{{ form.source_name.value|default:'' }}">
+                        <small class="form-text">The name of the news source or website.</small>
+                    </div>
+                </div>
+                
+                <!-- Media Upload Section -->
+                <div class="media-upload-section">
+                    <h3><i class="fas fa-media"></i> Add Media (Optional)</h3>
+                    
+                    <!-- Image Upload -->
+                    <div class="form-group">
+                        <label class="form-label">
+                            <i class="fas fa-image"></i> Image
+                        </label>
+                        <div class="image-upload-area" id="imageUploadArea">
+                            <input type="file" 
+                                   name="{{ form.image.name }}" 
+                                   id="{{ form.image.id_for_label }}" 
+                                   accept="image/*"
+                                   style="display: none;">
+                            <div class="upload-placeholder">
+                                <i class="fas fa-cloud-upload-alt"></i>
+                                <p>Click or drag to upload an image</p>
+                                <span class="upload-hint">PNG, JPG, GIF up to 10MB</span>
+                            </div>
+                            <div class="image-preview" style="display: none;">
+                                <img src="" alt="Preview">
+                                <button type="button" class="remove-image-btn">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Video URL -->
+                    <div class="form-group">
+                        <label for="{{ form.video_url.id_for_label }}" class="form-label">
+                            <i class="fas fa-video"></i> Video URL
+                        </label>
+                        <input type="url" 
+                               name="{{ form.video_url.name }}" 
+                               id="{{ form.video_url.id_for_label }}" 
+                               class="form-control"
+                               placeholder="https://youtube.com/watch?v=... or direct video URL"
+                               value="{{ form.video_url.value|default:'' }}">
+                        <small class="form-text">YouTube, Vimeo, or direct video link</small>
+                    </div>
+                    
+                    <!-- Audio URL -->
+                    <div class="form-group">
+                        <label for="{{ form.audio_url.id_for_label }}" class="form-label">
+                            <i class="fas fa-music"></i> Audio URL
+                        </label>
+                        <input type="url" 
+                               name="{{ form.audio_url.name }}" 
+                               id="{{ form.audio_url.id_for_label }}" 
+                               class="form-control"
+                               placeholder="https://spotify.com/track/... or direct audio URL"
+                               value="{{ form.audio_url.value|default:'' }}">
+                        <small class="form-text">Spotify, SoundCloud, or direct audio link</small>
+                    </div>
+                </div>
+                
+                <!-- Post Settings -->
+                <div class="post-settings">
+                    <h3><i class="fas fa-cog"></i> Post Settings</h3>
+                    
+                    <div class="settings-grid">
+                        <label class="setting-checkbox">
+                            <input type="checkbox" name="{{ form.allow_comments.name }}" 
+                                   {% if form.allow_comments.value %}checked{% endif %}>
+                            <span>
+                                <i class="fas fa-comments"></i>
+                                <strong>Allow Comments</strong>
+                                <small>Let others comment on your post</small>
+                            </span>
+                        </label>
+                        
+                        <label class="setting-checkbox">
+                            <input type="checkbox" name="{{ form.allow_sharing.name }}"
+                                   {% if form.allow_sharing.value %}checked{% endif %}>
+                            <span>
+                                <i class="fas fa-share-alt"></i>
+                                <strong>Allow Sharing</strong>
+                                <small>Let others share your post</small>
+                            </span>
+                        </label>
+                    </div>
+                </div>
+                
+                <!-- Form Actions -->
+                <div class="form-actions">
+                    <a href="javascript:history.back()" class="btn btn-outline">
+                        <i class="fas fa-times"></i> Cancel
+                    </a>
+                    <button type="submit" class="btn btn-primary btn-lg" id="submitBtn">
+                        <i class="fas fa-paper-plane"></i> Publish Post
+                    </button>
+                </div>
+            </form>
             
-            <!-- Form Actions -->
-            <div class="form-actions">
-                <a href="javascript:history.back()" class="btn btn-outline">
-                    <i class="fas fa-times"></i> Cancel
-                </a>
-                <button type="submit" class="btn btn-primary btn-lg">
-                    <i class="fas fa-paper-plane"></i> Publish Post
-                </button>
+            <!-- Posting Guidelines -->
+            <div class="posting-guidelines">
+                <h4><i class="fas fa-info-circle"></i> Posting Guidelines</h4>
+                <ul>
+                    <li><i class="fas fa-check-circle"></i> Be respectful and constructive in your discussions</li>
+                    <li><i class="fas fa-check-circle"></i> Verify news sources before sharing</li>
+                    <li><i class="fas fa-check-circle"></i> No spam, harassment, or misinformation</li>
+                    <li><i class="fas fa-check-circle"></i> Profile posts are only visible on your profile</li>
+                    <li><i class="fas fa-check-circle"></i> News posts require admin approval before going public</li>
+                </ul>
             </div>
-        </form>
-        
-        <!-- Posting Guidelines -->
-        <div class="posting-guidelines">
-            <h4><i class="fas fa-info-circle"></i> Posting Guidelines</h4>
-            <ul>
-                <li><i class="fas fa-check-circle"></i> Be respectful and constructive in your discussions</li>
-                <li><i class="fas fa-check-circle"></i> Verify news sources before sharing</li>
-                <li><i class="fas fa-check-circle"></i> No spam, harassment, or misinformation</li>
-                <li><i class="fas fa-check-circle"></i> Profile posts are only visible on your profile</li>
-                <li><i class="fas fa-check-circle"></i> News posts require admin approval before going public</li>
-            </ul>
         </div>
-    </div>
+    </main>
+
+    <!-- RIGHT SECTION -->
+    <aside class="right-section">
+        <!-- Sponsored/Advertisement Posts -->
+        <div class="sidebar-card sponsored-card">
+            <div class="card-header">
+                <h3><i class="fas fa-ad" style="color: var(--primary);"></i> Sponsored Content</h3>
+            </div>
+            <div class="sponsored-list">
+                {% for ad in sponsored_posts %}
+                <div class="sponsored-item" data-ad-id="{{ ad.id }}">
+                    <div class="sponsored-badge-small">Ad</div>
+                    <a href="{{ ad.target_url|default:ad.get_absolute_url }}" class="sponsored-content" onclick="trackAdClick('{{ ad.id }}')">
+                        {% if ad.image %}
+                        <div class="sponsored-image">
+                            <img src="{{ ad.image.url }}" alt="{{ ad.title }}">
+                        </div>
+                        {% elif ad.image_url %}
+                        <div class="sponsored-image">
+                            <img src="{{ ad.image_url }}" alt="{{ ad.title }}">
+                        </div>
+                        {% endif %}
+                        <div class="sponsored-info">
+                            <h4>{{ ad.title|truncatechars:40 }}</h4>
+                            <p>{{ ad.description|default:ad.content|truncatechars:60 }}</p>
+                            <span class="sponsored-link">Learn more <i class="fas fa-arrow-right"></i></span>
+                        </div>
+                    </a>
+                </div>
+                {% empty %}
+                <div class="empty-state small">
+                    <i class="fas fa-ad"></i>
+                    <p>No sponsored content</p>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Ad Submission Prompt -->
+        <div class="sidebar-card ad-prompt-card">
+            <div class="ad-prompt-content">
+                <i class="fas fa-bullhorn"></i>
+                <h4>Advertise with us</h4>
+                <p>Reach thousands of engaged readers daily</p>
+                {% if user.is_authenticated and user.profile.account_type == 'business' and user.profile.is_verified_business %}
+                <a href="{% url 'ad_submission' %}" class="btn btn-primary btn-sm">
+                    Submit Ad
+                </a>
+                {% elif user.is_authenticated %}
+                {% comment %} <a href="{% url 'business_registration' %}" class="btn btn-outline btn-sm"> {% endcomment %}
+                    Register Business
+                </a>
+                {% else %}
+                <a href="{% url 'login' %}" class="btn btn-outline btn-sm">
+                    Login to Advertise
+                </a>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- News Statistics -->
+        <div class="sidebar-card">
+            <div class="card-header">
+                <h3><i class="fas fa-chart-bar" style="color: var(--primary);"></i> News Stats</h3>
+            </div>
+            <div class="stats-list">
+                <div class="stat-item">
+                    <span class="stat-label">Total Users</span>
+                    <span class="stat-value">{{ total_users|default:"0" }}</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">News Articles</span>
+                    <span class="stat-value">{{ total_news|default:"0" }}</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">Comments</span>
+                    <span class="stat-value">{{ total_comments|default:"0" }}</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">Verified News</span>
+                    <span class="stat-value">{{ verified_count|default:"0" }}</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Newsletter Signup -->
+        <div class="sidebar-card newsletter-card">
+            <div class="newsletter-content">
+                <i class="fas fa-envelope-open-text"></i>
+                <h4>Newsletter</h4>
+                <p>Get the top stories delivered to your inbox</p>
+                <form class="newsletter-form" method="post" action="{% url 'newsletter_signup' %}">
+                    {% csrf_token %}
+                    <input type="email" name="email" placeholder="Your email address" class="form-input" required>
+                    <button type="submit" class="btn btn-primary btn-block">Subscribe</button>
+                </form>
+            </div>
+        </div>
+    </aside>
 </div>
+
+<style>
+/* Additional styles for create post page */
+.required-star {
+    color: #ef4444;
+    margin-left: 0.25rem;
+}
+
+.optional-text {
+    color: #6b7280;
+    font-size: 0.875rem;
+    font-weight: normal;
+    margin-left: 0.5rem;
+}
+
+.media-upload-section {
+    padding: 1.5rem 0;
+    border-top: 1px solid #e5e7eb;
+    border-bottom: 1px solid #e5e7eb;
+    margin: 1.5rem 0;
+}
+
+.media-upload-section h3 {
+    margin: 0 0 1rem;
+    font-size: 1.1rem;
+    color: #374151;
+}
+
+.media-upload-section h3 i {
+    margin-right: 0.5rem;
+    color: var(--primary);
+}
+
+.form-text {
+    display: block;
+    margin-top: 0.5rem;
+    font-size: 0.875rem;
+    color: #6b7280;
+}
+
+#newsSourceFields h3 {
+    margin: 1rem 0;
+    font-size: 1.1rem;
+    color: #374151;
+}
+
+#newsSourceFields h3 i {
+    margin-right: 0.5rem;
+    color: var(--primary);
+}
+</style>
 
 <script>
     document.addEventListener('DOMContentLoaded', function() {
@@ -284,16 +608,28 @@
         const uploadPlaceholder = uploadArea.querySelector('.upload-placeholder');
         const imagePreview = uploadArea.querySelector('.image-preview');
         const previewImg = imagePreview.querySelector('img');
+        const hiddenPostType = document.getElementById('hidden_post_type');
+        const categoryRequiredStar = document.getElementById('categoryRequiredStar');
+        const categoryOptionalText = document.getElementById('categoryOptionalText');
+        const categoryHelpText = document.getElementById('categoryHelpText');
         
         // Handle post type changes
         function handlePostTypeChange() {
-            const selectedType = document.querySelector('input[name="post_type"]:checked').value;
+            const selectedRadio = document.querySelector('input[name="post_type"]:checked');
+            if (!selectedRadio) return;
+            
+            const selectedType = selectedRadio.value;
+            
+            // Update hidden field
+            if (hiddenPostType) {
+                hiddenPostType.value = selectedType;
+            }
             
             // Update active state on cards
             document.querySelectorAll('.post-type-card').forEach(card => {
                 card.classList.remove('active');
             });
-            document.querySelector(`input[name="post_type"][value="${selectedType}"]`).closest('.post-type-card').classList.add('active');
+            selectedRadio.closest('.post-type-card').classList.add('active');
             
             // Show/hide fields based on post type
             if (selectedType === 'profile_post') {
@@ -302,7 +638,15 @@
                 
                 // Remove required from category
                 const categorySelect = document.getElementById('{{ form.category.id_for_label }}');
-                if (categorySelect) categorySelect.required = false;
+                if (categorySelect) {
+                    categorySelect.required = false;
+                    categorySelect.removeAttribute('required');
+                }
+                
+                // Update UI hints
+                if (categoryRequiredStar) categoryRequiredStar.style.display = 'none';
+                if (categoryOptionalText) categoryOptionalText.style.display = 'inline';
+                if (categoryHelpText) categoryHelpText.textContent = 'Category is not needed for profile posts';
                 
             } else if (selectedType === 'user_news') {
                 categoryField.style.display = 'block';
@@ -310,11 +654,22 @@
                 
                 // Make source URL required
                 const sourceUrl = document.getElementById('{{ form.source_url.id_for_label }}');
-                if (sourceUrl) sourceUrl.required = true;
+                if (sourceUrl) {
+                    sourceUrl.required = true;
+                    sourceUrl.setAttribute('required', 'required');
+                }
                 
                 // Make category required
                 const categorySelect = document.getElementById('{{ form.category.id_for_label }}');
-                if (categorySelect) categorySelect.required = true;
+                if (categorySelect) {
+                    categorySelect.required = true;
+                    categorySelect.setAttribute('required', 'required');
+                }
+                
+                // Update UI hints
+                if (categoryRequiredStar) categoryRequiredStar.style.display = 'inline';
+                if (categoryOptionalText) categoryOptionalText.style.display = 'none';
+                if (categoryHelpText) categoryHelpText.textContent = 'Category is required for news posts';
                 
             } else { // discussion
                 categoryField.style.display = 'block';
@@ -322,17 +677,34 @@
                 
                 // Remove required from source URL
                 const sourceUrl = document.getElementById('{{ form.source_url.id_for_label }}');
-                if (sourceUrl) sourceUrl.required = false;
+                if (sourceUrl) {
+                    sourceUrl.required = false;
+                    sourceUrl.removeAttribute('required');
+                }
                 
                 // Make category optional but show field
                 const categorySelect = document.getElementById('{{ form.category.id_for_label }}');
-                if (categorySelect) categorySelect.required = false;
+                if (categorySelect) {
+                    categorySelect.required = false;
+                    categorySelect.removeAttribute('required');
+                }
+                
+                // Update UI hints
+                if (categoryRequiredStar) categoryRequiredStar.style.display = 'none';
+                if (categoryOptionalText) categoryOptionalText.style.display = 'inline';
+                if (categoryHelpText) categoryHelpText.textContent = 'Category is optional for discussions';
             }
         }
         
         postTypeRadios.forEach(radio => {
             radio.addEventListener('change', handlePostTypeChange);
         });
+        
+        // Set initial hidden field value
+        const checkedRadio = document.querySelector('input[name="post_type"]:checked');
+        if (checkedRadio && hiddenPostType) {
+            hiddenPostType.value = checkedRadio.value;
+        }
         
         // Initial call
         handlePostTypeChange();
@@ -384,27 +756,80 @@
         }
         
         // Remove image
-        document.querySelector('.remove-image-btn').addEventListener('click', function(e) {
-            e.stopPropagation();
-            imageUpload.value = '';
-            previewImg.src = '';
-            uploadPlaceholder.style.display = 'block';
-            imagePreview.style.display = 'none';
-        });
+        const removeBtn = document.querySelector('.remove-image-btn');
+        if (removeBtn) {
+            removeBtn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                imageUpload.value = '';
+                previewImg.src = '';
+                uploadPlaceholder.style.display = 'block';
+                imagePreview.style.display = 'none';
+            });
+        }
         
         // Form validation
         document.getElementById('createPostForm').addEventListener('submit', function(e) {
-            const postType = document.querySelector('input[name="post_type"]:checked').value;
+            const checkedRadio = document.querySelector('input[name="post_type"]:checked');
+            if (!checkedRadio) {
+                e.preventDefault();
+                alert('Please select a post type');
+                return false;
+            }
+            
+            const postType = checkedRadio.value;
+            
+            // Update hidden field before submit
+            if (hiddenPostType) {
+                hiddenPostType.value = postType;
+            }
+            
+            // Validate title
+            const title = document.getElementById('{{ form.title.id_for_label }}');
+            if (!title.value.trim()) {
+                e.preventDefault();
+                alert('Please enter a title');
+                title.focus();
+                return false;
+            }
+            
+            // Validate content
+            const content = document.getElementById('{{ form.content.id_for_label }}');
+            if (!content.value.trim()) {
+                e.preventDefault();
+                alert('Please enter content');
+                content.focus();
+                return false;
+            }
             
             if (postType === 'user_news') {
                 const sourceUrl = document.getElementById('{{ form.source_url.id_for_label }}');
                 if (!sourceUrl.value.trim()) {
                     e.preventDefault();
-                    showNotification('Source URL is required for news posts', 'error');
+                    alert('Source URL is required for news posts');
                     sourceUrl.focus();
+                    return false;
+                }
+                
+                const category = document.getElementById('{{ form.category.id_for_label }}');
+                if (!category.value) {
+                    e.preventDefault();
+                    alert('Please select a category for your news post');
+                    category.focus();
+                    return false;
                 }
             }
+            
+            // Show loading state
+            const submitBtn = document.getElementById('submitBtn');
+            if (submitBtn) {
+                submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Publishing...';
+                submitBtn.disabled = true;
+            }
+            
+            return true;
         });
+        
+        // Privacy settings
         document.querySelectorAll('input[name="privacy"]').forEach(radio => {
             radio.addEventListener('change', function() {
                 const specificField = document.getElementById('specific-followers-field');
@@ -415,309 +840,22 @@
                 }
             });
         });
+        
+        // Show specific followers field if already selected
+        const selectedPrivacy = document.querySelector('input[name="privacy"]:checked');
+        if (selectedPrivacy && selectedPrivacy.value === 'specific') {
+            document.getElementById('specific-followers-field').style.display = 'block';
+        }
     });
-</script>
 
-<style>
-    .create-post-page {
-        max-width: 900px;
-        margin: 0 auto;
-        padding: 2rem 0;
+    // Ad tracking function
+    function trackAdClick(adId) {
+        fetch(`/api/track-ad-click/${adId}/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+            }
+        }).catch(error => console.error('Error tracking ad click:', error));
     }
-    
-    .create-post-container {
-        background: var(--white);
-        border-radius: var(--radius-lg);
-        border: 1px solid var(--gray-200);
-        padding: 2rem;
-    }
-    
-    .create-post-header {
-        text-align: center;
-        margin-bottom: 2rem;
-    }
-    
-    .create-post-header h1 {
-        font-size: 2rem;
-        font-weight: 700;
-        color: var(--gray-900);
-        margin-bottom: 0.5rem;
-    }
-    
-    .create-post-header h1 i {
-        color: var(--primary);
-    }
-    
-    .create-post-header p {
-        color: var(--gray-600);
-    }
-    
-    .post-type-cards {
-        display: grid;
-        grid-template-columns: repeat(3, 1fr);
-        gap: 1rem;
-        margin-bottom: 2rem;
-    }
-    
-    .post-type-card {
-        position: relative;
-        cursor: pointer;
-    }
-    
-    .post-type-card input[type="radio"] {
-        position: absolute;
-        opacity: 0;
-    }
-    
-    .post-type-content {
-        padding: 1.5rem 1rem;
-        border: 2px solid var(--gray-200);
-        border-radius: var(--radius-lg);
-        text-align: center;
-        transition: all 0.2s;
-    }
-    
-    .post-type-card:hover .post-type-content {
-        border-color: var(--primary);
-        background: var(--primary-light);
-    }
-    
-    .post-type-card.active .post-type-content {
-        border-color: var(--primary);
-        background: var(--primary-soft);
-    }
-    
-    .post-type-content i {
-        font-size: 2rem;
-        color: var(--gray-600);
-        margin-bottom: 0.5rem;
-    }
-    
-    .post-type-card.active .post-type-content i {
-        color: var(--primary);
-    }
-    
-    .post-type-content h3 {
-        font-size: 1.125rem;
-        font-weight: 600;
-        margin-bottom: 0.5rem;
-        color: var(--gray-800);
-    }
-    
-    .post-type-content p {
-        font-size: 0.875rem;
-        color: var(--gray-600);
-        margin-bottom: 0;
-    }
-    
-    .create-post-form .form-group {
-        margin-bottom: 1.5rem;
-    }
-    
-    .form-control {
-        width: 100%;
-        padding: 0.75rem 1rem;
-        border: 1.5px solid var(--gray-200);
-        border-radius: var(--radius-md);
-        font-size: 1rem;
-        transition: all 0.2s;
-    }
-    
-    .form-control:focus {
-        outline: none;
-        border-color: var(--primary);
-        box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
-    }
-    
-    .form-control.error {
-        border-color: var(--danger);
-        background: #fef2f2;
-    }
-    
-    .form-text {
-        display: block;
-        margin-top: 0.25rem;
-        font-size: 0.75rem;
-        color: var(--gray-600);
-    }
-    
-    .required-star {
-        color: var(--danger);
-    }
-    
-    .image-upload-area {
-        border: 2px dashed var(--gray-300);
-        border-radius: var(--radius-lg);
-        padding: 2rem;
-        text-align: center;
-        cursor: pointer;
-        transition: all 0.2s;
-    }
-    
-    .image-upload-area:hover,
-    .image-upload-area.dragover {
-        border-color: var(--primary);
-        background: var(--primary-light);
-    }
-    
-    .upload-placeholder i {
-        font-size: 3rem;
-        color: var(--gray-400);
-        margin-bottom: 0.5rem;
-    }
-    
-    .upload-placeholder p {
-        font-size: 1rem;
-        color: var(--gray-700);
-        margin-bottom: 0.25rem;
-    }
-    
-    .upload-hint {
-        font-size: 0.75rem;
-        color: var(--gray-600);
-    }
-    
-    .image-preview {
-        position: relative;
-        display: inline-block;
-    }
-    
-    .image-preview img {
-        max-width: 100%;
-        max-height: 300px;
-        border-radius: var(--radius-md);
-    }
-    
-    .remove-image-btn {
-        position: absolute;
-        top: 0.5rem;
-        right: 0.5rem;
-        width: 32px;
-        height: 32px;
-        background: rgba(0,0,0,0.5);
-        border: none;
-        border-radius: 50%;
-        color: white;
-        cursor: pointer;
-        transition: all 0.2s;
-    }
-    
-    .remove-image-btn:hover {
-        background: rgba(0,0,0,0.7);
-        transform: scale(1.1);
-    }
-    
-    .post-settings {
-        background: var(--gray-50);
-        border-radius: var(--radius-lg);
-        padding: 1.5rem;
-        margin: 1.5rem 0;
-    }
-    
-    .post-settings h3 {
-        font-size: 1rem;
-        font-weight: 600;
-        margin-bottom: 1rem;
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-        color: var(--gray-800);
-    }
-    
-    .settings-grid {
-        display: grid;
-        grid-template-columns: repeat(2, 1fr);
-        gap: 1rem;
-    }
-    
-    .setting-checkbox {
-        display: flex;
-        align-items: flex-start;
-        gap: 0.75rem;
-        cursor: pointer;
-    }
-    
-    .setting-checkbox input[type="checkbox"] {
-        width: 18px;
-        height: 18px;
-        margin-top: 0.125rem;
-        accent-color: var(--primary);
-    }
-    
-    .setting-checkbox span {
-        flex: 1;
-    }
-    
-    .setting-checkbox strong {
-        display: block;
-        font-size: 0.875rem;
-        color: var(--gray-800);
-    }
-    
-    .setting-checkbox small {
-        font-size: 0.75rem;
-        color: var(--gray-600);
-    }
-    
-    .form-actions {
-        display: flex;
-        align-items: center;
-        justify-content: flex-end;
-        gap: 1rem;
-        margin-top: 2rem;
-    }
-    
-    .posting-guidelines {
-        margin-top: 2rem;
-        padding-top: 1.5rem;
-        border-top: 1px solid var(--gray-200);
-    }
-    
-    .posting-guidelines h4 {
-        font-size: 1rem;
-        font-weight: 600;
-        margin-bottom: 1rem;
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-        color: var(--gray-800);
-    }
-    
-    .posting-guidelines ul {
-        list-style: none;
-        padding: 0;
-        margin: 0;
-    }
-    
-    .posting-guidelines li {
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-        padding: 0.5rem 0;
-        font-size: 0.875rem;
-        color: var(--gray-700);
-    }
-    
-    .posting-guidelines li i {
-        color: var(--success);
-    }
-    
-    @media (max-width: 768px) {
-        .post-type-cards {
-            grid-template-columns: 1fr;
-        }
-        
-        .settings-grid {
-            grid-template-columns: 1fr;
-        }
-        
-        .form-actions {
-            flex-direction: column;
-        }
-        
-        .form-actions .btn {
-            width: 100%;
-        }
-    }
-</style>
+</script>
 {% endblock %}

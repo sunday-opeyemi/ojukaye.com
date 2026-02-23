@@ -4,7 +4,10 @@ from django.contrib.auth.models import User
 from django.contrib.auth.forms import UserCreationForm
 from django.core.validators import URLValidator, ValidationError
 from django.utils import timezone
-from .models import SystemSettings
+from .models import (
+    Post, Category, Comment, UserProfile, Advertisement, 
+    Group, Follow, SystemSettings
+)
 from decimal import Decimal
 
 class RegistrationForm(UserCreationForm):
@@ -95,49 +98,160 @@ class RegistrationForm(UserCreationForm):
         
         return user
 
+    
+    
+
+class BusinessProfileForm(forms.ModelForm):
+    class Meta:
+        model = UserProfile
+        fields = [
+            'business_name', 'business_registration', 'business_address',
+            'business_phone', 'business_email', 'business_website',
+        ]
+        widgets = {
+            'business_name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Your Business Name'}),
+            'business_registration': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Registration Number'}),
+            'business_address': forms.Textarea(attrs={'class': 'form-control', 'rows': 3, 'placeholder': 'Business Address'}),
+            'business_phone': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Phone Number'}),
+            'business_email': forms.EmailInput(attrs={'class': 'form-control', 'placeholder': 'Business Email'}),
+            'business_website': forms.URLInput(attrs={'class': 'form-control', 'placeholder': 'https://example.com'}),
+        }
+
+
+class AdSubmissionForm(forms.ModelForm):
+    class Meta:
+        model = Advertisement
+        fields = [
+            'ad_type', 'title', 'description', 'image', 'target_url',
+            'budget', 'start_date', 'end_date',
+            'target_categories', 'target_locations', 'target_keywords',
+        ]
+        widgets = {
+            'title': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ad Title'}),
+            'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 4, 'placeholder': 'Ad Description'}),
+            'target_url': forms.URLInput(attrs={'class': 'form-control', 'placeholder': 'https://example.com'}),
+            'budget': forms.NumberInput(attrs={'class': 'form-control', 'placeholder': 'Budget in NGN'}),
+            'start_date': forms.DateTimeInput(attrs={'class': 'form-control', 'type': 'datetime-local'}),
+            'end_date': forms.DateTimeInput(attrs={'class': 'form-control', 'type': 'datetime-local'}),
+            'target_locations': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Lagos, Abuja, Port Harcourt'}),
+            'target_keywords': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'tech, business, sports'}),
+            'ad_type': forms.Select(attrs={'class': 'form-control'}),
+            'target_categories': forms.SelectMultiple(attrs={'class': 'form-control', 'size': '5'}),
+        }
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Make required fields
+        self.fields['budget'].required = True
+        self.fields['start_date'].required = True
+        self.fields['end_date'].required = True
+        self.fields['target_url'].required = True
+    
+    def clean(self):
+        cleaned_data = super().clean()
+        start_date = cleaned_data.get('start_date')
+        end_date = cleaned_data.get('end_date')
+        budget = cleaned_data.get('budget')
+        
+        if start_date and end_date and start_date >= end_date:
+            raise ValidationError('End date must be after start date')
+        
+        if budget and budget < 1000:
+            raise ValidationError('Minimum budget is ₦1,000')
+        
+        return cleaned_data
+
+
+
+class GroupForm(forms.ModelForm):
+    class Meta:
+        model = Group
+        fields = ['name', 'description', 'group_type', 'cover_image', 'icon']
+        widgets = {
+            'name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Group Name'}),
+            'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 4, 'placeholder': 'Group Description'}),
+            'group_type': forms.Select(attrs={'class': 'form-control'}),
+        }
+
+class SystemSettingsForm(forms.ModelForm):
+    """Form for system settings"""
+    class Meta:
+        model = SystemSettings
+        fields = '__all__'
+        widgets = {
+            'maintenance_message': forms.Textarea(attrs={'rows': 3}),
+            'meta_description': forms.Textarea(attrs={'rows': 3}),
+            'robots_txt': forms.Textarea(attrs={'rows': 5}),
+            'trusted_sources': forms.Textarea(attrs={'rows': 3, 'placeholder': 'punchng.com, vanguardngr.com, premiumtimesng.com'}),
+            'blocked_sources': forms.Textarea(attrs={'rows': 3, 'placeholder': 'suspicious-site.com'}),
+        }
+
+
 class PostForm(forms.ModelForm):
     POST_TYPE_CHOICES = [
-        ('discussion', 'Discussion'),
-        ('user_news', 'User News'),
-        ('profile_post', 'Profile Post'),
+        ('discussion', 'Discussion - Public discussion post'),
+        ('user_news', 'User News - Submit news for verification'),
+        ('profile_post', 'Profile Post - Private profile update'),
     ]
     
     post_type = forms.ChoiceField(
         choices=POST_TYPE_CHOICES,
-        widget=forms.RadioSelect,
-        initial='discussion'
+        widget=forms.RadioSelect(attrs={'class': 'post-type-radio'}),
+        initial='discussion',
+        required=True,
+        error_messages={
+            'required': 'Please select a post type'
+        }
     )
     
-    # Define privacy choices here instead of referencing Post.PRIVACY_CHOICES
+    
     PRIVACY_CHOICES = [
-        ('public', 'Public - Everyone can view'),
-        ('followers', 'Followers Only - Only my followers can view'),
-        ('private', 'Private - Only me'),
-        ('specific', 'Specific Followers - Select specific followers'),
+        ('public', '🌍 Public - Everyone can view'),
+        ('followers', '👥 Followers Only - Only my followers can view'),
+        ('private', '🔒 Private - Only me'),
+        ('specific', '🎯 Specific Followers - Select specific followers'),
     ]
     
     privacy = forms.ChoiceField(
         choices=PRIVACY_CHOICES,
-        widget=forms.RadioSelect,
+        widget=forms.RadioSelect(attrs={'class': 'privacy-radio'}),
         initial='public',
-        required=True
+        required=False
     )
     
     allowed_viewers = forms.ModelMultipleChoiceField(
-        queryset=None,  # Will be set in __init__
-        widget=forms.SelectMultiple(attrs={'class': 'form-control', 'size': '10'}),
-        required=False,
-        help_text='Select specific followers who can view this post'
+        queryset=None,
+        widget=forms.SelectMultiple(attrs={'class': 'form-control', 'size': '5'}),
+        required=False
     )
     
+    # Media fields
+    video_url = forms.URLField(required=False, widget=forms.URLInput(attrs={'class': 'form-control'}))
+    audio_url = forms.URLField(required=False, widget=forms.URLInput(attrs={'class': 'form-control'}))
+    image = forms.ImageField(required=False, widget=forms.FileInput(attrs={'class': 'form-control'}))
+    image_url = forms.URLField(required=False, widget=forms.URLInput(attrs={'class': 'form-control'}))
+    
+    # News source fields
+    source_url = forms.URLField(required=False, widget=forms.URLInput(attrs={'class': 'form-control'}))
+    source_name = forms.CharField(required=False, max_length=255, widget=forms.TextInput(attrs={'class': 'form-control'}))
+    
+    # Category
+    category = forms.ModelChoiceField(
+        queryset=Category.objects.filter(is_active=True),
+        required=False,
+        widget=forms.Select(attrs={'class': 'form-control'})
+    )
+    
+    # Settings
+    allow_comments = forms.BooleanField(required=False, initial=True, widget=forms.CheckboxInput())
+    allow_sharing = forms.BooleanField(required=False, initial=True, widget=forms.CheckboxInput())
+    
     class Meta:
-        # Import Post model here to avoid circular import
-        from .models import Post
         model = Post
         fields = [
             'title', 'content', 'post_type', 'privacy', 'allowed_viewers',
-            'category', 'source_url', 'source_name', 'image',
-            'allow_comments', 'allow_sharing'
+            'category', 'source_url', 'source_name', 'image', 'image_url',
+            'video_url', 'audio_url', 'allow_comments', 'allow_sharing'
         ]
         widgets = {
             'title': forms.TextInput(attrs={
@@ -151,30 +265,80 @@ class PostForm(forms.ModelForm):
                 'placeholder': 'Write your post content...',
                 'required': True
             }),
-            'category': forms.Select(attrs={'class': 'form-control'}),
-            'source_url': forms.URLInput(attrs={
-                'class': 'form-control',
-                'placeholder': 'https://example.com/news-article'
-            }),
-            'source_name': forms.TextInput(attrs={
-                'class': 'form-control',
-                'placeholder': 'Source name (e.g., BBC News)'
-            }),
-            'allow_comments': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
-            'allow_sharing': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
         }
     
     def __init__(self, *args, **kwargs):
         self.user = kwargs.pop('user', None)
         super().__init__(*args, **kwargs)
         
-        # Set allowed_viewers queryset to user's followers
+        # Make post_type required and ensure it's in the form
+        self.fields['post_type'].required = True
+        
+        # Debug print to see what's happening
+        if self.data:
+            print("PostForm received data:", self.data)
+            if 'post_type' in self.data:
+                print("post_type value:", self.data['post_type'])
+            else:
+                print("WARNING: post_type not in POST data!")
+        
+        # Set initial post_type if provided in initial data
+        if 'initial' in kwargs and 'post_type' in kwargs['initial']:
+            self.fields['post_type'].initial = kwargs['initial']['post_type']
+        
         if self.user:
-            from django.contrib.auth.models import User
             from .models import Follow
-            self.fields['allowed_viewers'].queryset = User.objects.filter(
+            # Get followers for allowed_viewers
+            followers = User.objects.filter(
                 followers__follower=self.user
-            ).distinct()
+            ).distinct().order_by('username')
+            self.fields['allowed_viewers'].queryset = followers
+            
+            # Set help text if no followers
+            if followers.count() == 0:
+                self.fields['allowed_viewers'].help_text = "You don't have any followers yet"
+        
+        # Set conditional requirements based on post type
+        self.set_conditional_requirements()
+
+
+    def set_conditional_requirements(self):
+        """Set field requirements based on post type"""
+        post_type = self.data.get('post_type') or self.initial.get('post_type')
+        
+        if post_type == 'user_news':
+            # News posts require source URL and category
+            self.fields['source_url'].required = True
+            self.fields['source_url'].error_messages = {
+                'required': 'Source URL is required for news posts'
+            }
+            self.fields['category'].required = True
+            self.fields['category'].error_messages = {
+                'required': 'Please select a category for your news post'
+            }
+        elif post_type == 'profile_post':
+            # Profile posts don't need category
+            self.fields['category'].required = False
+            self.fields['source_url'].required = False
+            self.fields['source_name'].required = False
+        else:  # discussion
+            # Discussion posts have optional category
+            self.fields['category'].required = False
+            self.fields['source_url'].required = False
+            self.fields['source_name'].required = False
+    
+    def clean_post_type(self):
+            """Validate post_type field"""
+            post_type = self.cleaned_data.get('post_type')
+            
+            if not post_type:
+                raise forms.ValidationError('Please select a post type')
+            
+            valid_types = [choice[0] for choice in self.POST_TYPE_CHOICES]
+            if post_type not in valid_types:
+                raise forms.ValidationError(f'Invalid post type: {post_type}')
+            
+            return post_type
     
     def clean(self):
         cleaned_data = super().clean()
@@ -182,532 +346,162 @@ class PostForm(forms.ModelForm):
         privacy = cleaned_data.get('privacy')
         allowed_viewers = cleaned_data.get('allowed_viewers')
         source_url = cleaned_data.get('source_url')
+        category = cleaned_data.get('category')
         
-        if post_type == 'user_news' and not source_url:
-            raise forms.ValidationError('Source URL is required for User News posts')
-        
-        # Validate URL for user news
-        if post_type == 'user_news' and source_url:
-            try:
-                validator = URLValidator()
-                validator(source_url)
-            except ValidationError:
-                raise forms.ValidationError('Please enter a valid URL for the source')
-        
-        # Profile posts don't need category
-        if post_type == 'profile_post':
+        # Validate based on post type
+        if post_type == 'user_news':
+            # News posts must have source URL
+            if not source_url:
+                self.add_error('source_url', 'Source URL is required for news posts')
+            
+            # News posts must have category
+            if not category:
+                self.add_error('category', 'Category is required for news posts')
+        elif post_type == 'profile_post':
+            # Profile posts don't need category
             cleaned_data['category'] = None
+        else:  # discussion
+            # Discussion posts have optional category
+            pass
         
-        # Validate specific followers selection
-        if privacy == 'specific' and not allowed_viewers:
-            raise forms.ValidationError('Please select at least one follower to view this post')
+        # Validate privacy settings
+        if privacy == 'specific':
+            if not allowed_viewers or allowed_viewers.count() == 0:
+                self.add_error('allowed_viewers', 'Please select at least one follower for specific privacy')
+            elif allowed_viewers.count() > 0 and self.user:
+                # Ensure selected users are actually followers
+                followers = User.objects.filter(
+                    followers__follower=self.user
+                ).values_list('id', flat=True)
+                
+                for viewer in allowed_viewers:
+                    if viewer.id not in followers:
+                        self.add_error('allowed_viewers', f'{viewer.username} is not following you')
         
-        return cleaned_data
-    
-    
-    
-class AdSubmissionForm(forms.ModelForm):
-    ad_type = forms.ChoiceField(
-        # Choices will be set in __init__ to avoid circular import
-        widget=forms.Select(attrs={'class': 'form-control'})
-    )
-    
-    class Meta:
-        # Import Advertisement model here
-        from .models import Advertisement
-        model = Advertisement
-        fields = [
-            'ad_type', 'title', 'content', 'image', 'target_url',
-            'budget', 'start_date', 'end_date',
-            'target_categories', 'target_locations', 'target_keywords',
-            'max_clicks', 'max_impressions'
-        ]
-        widgets = {
-            'title': forms.TextInput(attrs={
-                'class': 'form-control',
-                'placeholder': 'Ad title'
-            }),
-            'content': forms.Textarea(attrs={
-                'class': 'form-control',
-                'rows': 4,
-                'placeholder': 'Ad content (optional for banner ads)'
-            }),
-            'target_url': forms.URLInput(attrs={
-                'class': 'form-control',
-                'placeholder': 'https://your-website.com'
-            }),
-            'budget': forms.NumberInput(attrs={
-                'class': 'form-control',
-                'min': '1000',
-                'step': '100'
-            }),
-            'start_date': forms.DateTimeInput(attrs={
-                'class': 'form-control',
-                'type': 'datetime-local'
-            }),
-            'end_date': forms.DateTimeInput(attrs={
-                'class': 'form-control',
-                'type': 'datetime-local'
-            }),
-            'target_categories': forms.SelectMultiple(attrs={'class': 'form-control'}),
-            'target_locations': forms.TextInput(attrs={
-                'class': 'form-control',
-                'placeholder': 'Lagos, Abuja, Nigeria (comma separated)'
-            }),
-            'target_keywords': forms.TextInput(attrs={
-                'class': 'form-control',
-                'placeholder': 'news, politics, sports (comma separated)'
-            }),
-            'max_clicks': forms.NumberInput(attrs={
-                'class': 'form-control',
-                'min': '0',
-                'placeholder': '0 = unlimited'
-            }),
-            'max_impressions': forms.NumberInput(attrs={
-                'class': 'form-control',
-                'min': '0',
-                'placeholder': '0 = unlimited'
-            }),
-        }
-    
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        # Set choices after model is loaded
-        from .models import Advertisement
-        self.fields['ad_type'].choices = Advertisement.AD_TYPES
-    
-    def clean(self):
-        cleaned_data = super().clean()
-        budget = cleaned_data.get('budget')
-        start_date = cleaned_data.get('start_date')
-        end_date = cleaned_data.get('end_date')
+        # Profile posts should have private privacy by default
+        if post_type == 'profile_post' and privacy != 'private':
+            cleaned_data['privacy'] = 'private'
         
-        # Get system settings
-        from .models import SystemSettings
-        try:
-            settings = SystemSettings.objects.first()
-        except SystemSettings.DoesNotExist:
-            settings = SystemSettings.objects.create()
+        # Validate title and content length
+        title = cleaned_data.get('title', '')
+        if title and len(title) < 3:
+            self.add_error('title', 'Title must be at least 3 characters long')
+        elif title and len(title) > 200:
+            self.add_error('title', 'Title must be less than 200 characters')
         
-        # Budget validation
-        if budget and budget < settings.min_ad_budget:
-            raise forms.ValidationError(
-                f'Minimum budget is ₦{settings.min_ad_budget}'
-            )
-        
-        # Date validation
-        if start_date and end_date:
-            if start_date >= end_date:
-                raise forms.ValidationError('End date must be after start date')
-            
-            if start_date < timezone.now():
-                raise forms.ValidationError('Start date cannot be in the past')
+        content = cleaned_data.get('content', '')
+        if content and len(content) < 3:
+            self.add_error('content', 'Content must be at least 3 characters long')
         
         return cleaned_data
+    
+    def save(self, commit=True):
+        post = super().save(commit=False)
+        
+        # Set post_type explicitly
+        post.post_type = self.cleaned_data.get('post_type')
+        
+        # Handle media URLs
+        video_url = self.cleaned_data.get('video_url')
+        if video_url:
+            post.video_urls = [{'url': video_url, 'type': 'embed', 'source': 'user'}]
+            post.has_media = True
+        
+        audio_url = self.cleaned_data.get('audio_url')
+        if audio_url:
+            post.audio_urls = [{'url': audio_url, 'type': 'embed', 'source': 'user'}]
+            post.has_media = True
+        
+        # Handle image
+        if self.cleaned_data.get('image'):
+            post.image = self.cleaned_data['image']
+        elif self.cleaned_data.get('image_url'):
+            post.image_url = self.cleaned_data['image_url']
+        
+        # Handle source for news posts
+        if post.post_type == 'user_news':
+            if self.cleaned_data.get('source_url'):
+                post.external_url = self.cleaned_data['source_url']
+                post.source_url = self.cleaned_data['source_url']  # Set both fields
+            if self.cleaned_data.get('source_name'):
+                post.external_source = self.cleaned_data['source_name']
+                post.source_name = self.cleaned_data['source_name']  # Set both fields
+        
+        # Handle privacy settings
+        post.privacy = self.cleaned_data.get('privacy', 'public')
+        
+        if commit:
+            post.save()
+            self.save_m2m()
+            
+            # Handle allowed viewers for specific privacy
+            if post.privacy == 'specific' and self.cleaned_data.get('allowed_viewers'):
+                post.allowed_viewers.set(self.cleaned_data['allowed_viewers'])
+        
+        return post
+    
+    def clean_title(self):
+        """Validate title field"""
+        title = self.cleaned_data.get('title', '').strip()
+        if not title:
+            raise forms.ValidationError('Title is required')
+        return title
+    
+    def clean_content(self):
+        """Validate content field"""
+        content = self.cleaned_data.get('content', '').strip()
+        if not content:
+            raise forms.ValidationError('Content is required')
+        return content
 
-class BusinessProfileForm(forms.ModelForm):
-    class Meta:
-        # Import UserProfile model here
-        from .models import UserProfile
-        model = UserProfile
-        fields = [
-            'business_name', 'business_registration', 'business_address',
-            'business_phone', 'business_email', 'business_website',
-            'profile_pic', 'cover_photo', 'bio'
-        ]
-        widgets = {
-            'business_name': forms.TextInput(attrs={
-                'class': 'form-control',
-                'placeholder': 'Official Business Name'
-            }),
-            'business_registration': forms.TextInput(attrs={
-                'class': 'form-control',
-                'placeholder': 'RC Number or Registration ID'
-            }),
-            'business_address': forms.Textarea(attrs={
-                'class': 'form-control',
-                'rows': 3,
-                'placeholder': 'Business Address'
-            }),
-            'business_phone': forms.TextInput(attrs={
-                'class': 'form-control',
-                'placeholder': '+234 800 000 0000'
-            }),
-            'business_email': forms.EmailInput(attrs={
-                'class': 'form-control',
-                'placeholder': 'business@example.com'
-            }),
-            'business_website': forms.URLInput(attrs={
-                'class': 'form-control',
-                'placeholder': 'https://your-business.com'
-            }),
-            'bio': forms.Textarea(attrs={
-                'class': 'form-control',
-                'rows': 4,
-                'placeholder': 'Tell us about your business...'
-            }),
-        }
-
-class GroupForm(forms.ModelForm):
-    class Meta:
-        # Import Group model here
-        from .models import Group
-        model = Group
-        fields = [
-            'name', 'description', 'group_type',
-            'cover_image', 'icon',
-            'allow_member_posts', 'require_post_approval'
-        ]
-        widgets = {
-            'name': forms.TextInput(attrs={
-                'class': 'form-control',
-                'placeholder': 'Group Name'
-            }),
-            'description': forms.Textarea(attrs={
-                'class': 'form-control',
-                'rows': 4,
-                'placeholder': 'Describe your group...'
-            }),
-            'group_type': forms.Select(attrs={'class': 'form-control'}),
-            'allow_member_posts': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
-            'require_post_approval': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
-        }
-
-class SystemSettingsForm(forms.ModelForm):
-    class Meta:
-        model = SystemSettings
-        fields = '__all__'
-        widgets = {
-            # AI Settings
-            'verification_threshold': forms.NumberInput(attrs={
-                'step': '0.01',
-                'min': '0',
-                'max': '1',
-                'class': 'form-control'
-            }),
-            'max_posts_to_verify': forms.NumberInput(attrs={
-                'min': '1',
-                'max': '500',
-                'class': 'form-control'
-            }),
-            'verification_schedule': forms.Select(attrs={
-                'class': 'form-control'
-            }),
-            
-            # News Fetching
-            'fetch_schedule': forms.Select(attrs={
-                'class': 'form-control'
-            }),
-            'max_news_per_fetch': forms.NumberInput(attrs={
-                'min': '1',
-                'max': '200',
-                'class': 'form-control'
-            }),
-            'trusted_sources': forms.Textarea(attrs={
-                'rows': 3,
-                'placeholder': 'e.g. punchng.com, vanguardngr.com, premiumtimesng.com',
-                'class': 'form-control'
-            }),
-            'blocked_sources': forms.Textarea(attrs={
-                'rows': 3,
-                'placeholder': 'e.g. fakenews.com, clickbait.net',
-                'class': 'form-control'
-            }),
-            
-            # Post Settings
-            'max_posts_per_day': forms.NumberInput(attrs={
-                'min': '1',
-                'max': '100',
-                'class': 'form-control'
-            }),
-            'max_post_length': forms.NumberInput(attrs={
-                'min': '100',
-                'max': '50000',
-                'class': 'form-control'
-            }),
-            'max_image_size': forms.NumberInput(attrs={
-                'min': '1',
-                'max': '20',
-                'step': '1',
-                'class': 'form-control'
-            }),
-            'allowed_image_types': forms.TextInput(attrs={
-                'placeholder': 'jpg,jpeg,png,gif,webp',
-                'class': 'form-control'
-            }),
-            
-            # Ad Settings
-            'max_ads_per_business': forms.NumberInput(attrs={
-                'min': '1',
-                'max': '50',
-                'class': 'form-control'
-            }),
-            'banner_rotation_interval': forms.NumberInput(attrs={
-                'min': '5',
-                'max': '3600',
-                'class': 'form-control'
-            }),
-            'min_ad_budget': forms.NumberInput(attrs={
-                'step': '100',
-                'min': '100',
-                'class': 'form-control'
-            }),
-            'ad_impression_rate': forms.NumberInput(attrs={
-                'step': '0.0001',
-                'min': '0.0001',
-                'class': 'form-control'
-            }),
-            'ad_click_rate': forms.NumberInput(attrs={
-                'step': '0.01',
-                'min': '0.01',
-                'class': 'form-control'
-            }),
-            
-            # Group Settings
-            'max_groups_per_user': forms.NumberInput(attrs={
-                'min': '1',
-                'max': '20',
-                'class': 'form-control'
-            }),
-            'min_members_for_public_group': forms.NumberInput(attrs={
-                'min': '1',
-                'max': '100',
-                'class': 'form-control'
-            }),
-            
-            # Trending Settings
-            'trending_calculation_interval': forms.NumberInput(attrs={
-                'min': '1',
-                'max': '72',
-                'class': 'form-control'
-            }),
-            'trending_time_window': forms.NumberInput(attrs={
-                'min': '1',
-                'max': '168',
-                'class': 'form-control'
-            }),
-            'engagement_weight_like': forms.NumberInput(attrs={
-                'step': '0.1',
-                'min': '0',
-                'class': 'form-control'
-            }),
-            'engagement_weight_comment': forms.NumberInput(attrs={
-                'step': '0.1',
-                'min': '0',
-                'class': 'form-control'
-            }),
-            'engagement_weight_share': forms.NumberInput(attrs={
-                'step': '0.1',
-                'min': '0',
-                'class': 'form-control'
-            }),
-            'engagement_weight_view': forms.NumberInput(attrs={
-                'step': '0.001',
-                'min': '0',
-                'class': 'form-control'
-            }),
-            
-            # Cache & Performance
-            'cache_timeout': forms.NumberInput(attrs={
-                'min': '0',
-                'max': '86400',
-                'class': 'form-control'
-            }),
-            
-            # Maintenance
-            'maintenance_message': forms.Textarea(attrs={
-                'rows': 3,
-                'class': 'form-control'
-            }),
-            
-            # SEO
-            'meta_description': forms.Textarea(attrs={
-                'rows': 2,
-                'class': 'form-control'
-            }),
-            'meta_keywords': forms.Textarea(attrs={
-                'rows': 2,
-                'class': 'form-control',
-                'placeholder': 'news, nigeria, breaking news, politics'
-            }),
-            'robots_txt': forms.Textarea(attrs={
-                'rows': 5,
-                'class': 'form-control code-editor',
-                'style': 'font-family: monospace;'
-            }),
-            
-            # Social Media
-            'facebook_url': forms.URLInput(attrs={
-                'class': 'form-control',
-                'placeholder': 'https://facebook.com/yourpage'
-            }),
-            'twitter_url': forms.URLInput(attrs={
-                'class': 'form-control',
-                'placeholder': 'https://twitter.com/yourhandle'
-            }),
-            'instagram_url': forms.URLInput(attrs={
-                'class': 'form-control',
-                'placeholder': 'https://instagram.com/yourpage'
-            }),
-            'linkedin_url': forms.URLInput(attrs={
-                'class': 'form-control',
-                'placeholder': 'https://linkedin.com/company/yourcompany'
-            }),
-            'youtube_url': forms.URLInput(attrs={
-                'class': 'form-control',
-                'placeholder': 'https://youtube.com/c/yourchannel'
-            }),
-            'telegram_url': forms.URLInput(attrs={
-                'class': 'form-control',
-                'placeholder': 'https://t.me/yourgroup'
-            }),
-            'whatsapp_number': forms.TextInput(attrs={
-                'class': 'form-control',
-                'placeholder': '+2348012345678'
-            }),
-            
-            # Contact
-            'contact_email': forms.EmailInput(attrs={
-                'class': 'form-control',
-                'placeholder': 'contact@yourdomain.com'
-            }),
-            'support_email': forms.EmailInput(attrs={
-                'class': 'form-control',
-                'placeholder': 'support@yourdomain.com'
-            }),
-            'contact_phone': forms.TextInput(attrs={
-                'class': 'form-control',
-                'placeholder': '+2348012345678'
-            }),
-            'address': forms.Textarea(attrs={
-                'rows': 2,
-                'class': 'form-control'
-            }),
-            
-            # User Settings
-            'default_user_role': forms.Select(attrs={
-                'class': 'form-control'
-            }),
-        }
-    
-    def clean_verification_threshold(self):
-        threshold = self.cleaned_data['verification_threshold']
-        if threshold < 0 or threshold > 1:
-            raise forms.ValidationError('Threshold must be between 0 and 1')
-        return threshold
-    
-    def clean_trusted_sources(self):
-        sources = self.cleaned_data['trusted_sources']
-        if sources:
-            # Clean up the input
-            sources_list = [s.strip() for s in sources.split(',') if s.strip()]
-            return ', '.join(sources_list)
-        return sources
-    
-    def clean_blocked_sources(self):
-        sources = self.cleaned_data['blocked_sources']
-        if sources:
-            sources_list = [s.strip() for s in sources.split(',') if s.strip()]
-            return ', '.join(sources_list)
-        return sources
-    
-    def clean_allowed_image_types(self):
-        types = self.cleaned_data['allowed_image_types']
-        if types:
-            types_list = [t.strip().lower() for t in types.split(',') if t.strip()]
-            return ', '.join(types_list)
-        return 'jpg,jpeg,png,gif,webp'
-    
-    
     
 # Keep existing forms
 class CommentForm(forms.ModelForm):
     class Meta:
-        from .models import Comment
         model = Comment
-        fields = ['content']
+        fields = ['content', 'image']
         widgets = {
             'content': forms.Textarea(attrs={
                 'class': 'form-control',
                 'rows': 3,
-                'placeholder': 'Add a comment...',
-                'required': True
-            })
+                'placeholder': 'Write your comment...'
+            }),
+            'image': forms.FileInput(attrs={
+                'class': 'form-control',
+                'accept': 'image/*'
+            }),
         }
+    
+    def clean_content(self):
+        content = self.cleaned_data.get('content')
+        if not content or len(content.strip()) < 2:
+            raise ValidationError('Comment must be at least 2 characters long')
+        return content
 
 class UserProfileForm(forms.ModelForm):
     class Meta:
-        from .models import UserProfile
         model = UserProfile
         fields = [
-            'bio', 'profile_pic', 'cover_photo', 'location', 'website', 
-            'twitter_handle', 'phone', 'date_of_birth', 'occupation', 
-            'interests', 'facebook_url', 'instagram_url', 'linkedin_url'
+            'bio', 'profile_pic', 'cover_photo', 'location', 'website',
+            'phone', 'date_of_birth', 'occupation', 'interests',
+            'facebook_url', 'twitter_handle', 'instagram_url', 'linkedin_url',
+            'privacy_level', 'email_notifications', 'show_online_status',
+            'receive_promo_emails', 'ad_notifications'
         ]
         widgets = {
-            'bio': forms.Textarea(attrs={
-                'class': 'form-control',
-                'rows': 4,
-                'placeholder': 'Tell us about yourself...'
-            }),
-            'location': forms.TextInput(attrs={
-                'class': 'form-control',
-                'placeholder': 'Your location'
-            }),
-            'website': forms.URLInput(attrs={
-                'class': 'form-control',
-                'placeholder': 'https://yourwebsite.com'
-            }),
-            'twitter_handle': forms.TextInput(attrs={
-                'class': 'form-control',
-                'placeholder': '@username'
-            }),
-            'phone': forms.TextInput(attrs={
-                'class': 'form-control',
-                'placeholder': '+234 800 000 0000'
-            }),
-            'date_of_birth': forms.DateInput(attrs={
-                'class': 'form-control',
-                'type': 'date'
-            }),
-            'occupation': forms.TextInput(attrs={
-                'class': 'form-control',
-                'placeholder': 'Your occupation'
-            }),
-            'interests': forms.Textarea(attrs={
-                'class': 'form-control',
-                'rows': 3,
-                'placeholder': 'Sports, Technology, Politics, etc.'
-            }),
-            'facebook_url': forms.URLInput(attrs={
-                'class': 'form-control',
-                'placeholder': 'https://facebook.com/username'
-            }),
-            'instagram_url': forms.URLInput(attrs={
-                'class': 'form-control',
-                'placeholder': 'https://instagram.com/username'
-            }),
-            'linkedin_url': forms.URLInput(attrs={
-                'class': 'form-control',
-                'placeholder': 'https://linkedin.com/in/username'
-            }),
+            'bio': forms.Textarea(attrs={'rows': 4, 'class': 'form-control', 'placeholder': 'Tell us about yourself...'}),
+            'date_of_birth': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
+            'interests': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'e.g., Technology, Sports, Politics'}),
         }
 
+
 class UserUpdateForm(forms.ModelForm):
+    email = forms.EmailField(required=True, widget=forms.EmailInput(attrs={'class': 'form-control'}))
+    
     class Meta:
         model = User
         fields = ['first_name', 'last_name', 'email']
         widgets = {
-            'first_name': forms.TextInput(attrs={
-                'class': 'form-control',
-                'placeholder': 'First name'
-            }),
-            'last_name': forms.TextInput(attrs={
-                'class': 'form-control',
-                'placeholder': 'Last name'
-            }),
-            'email': forms.EmailInput(attrs={
-                'class': 'form-control',
-                'placeholder': 'Email address'
-            }),
+            'first_name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'First Name'}),
+            'last_name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Last Name'}),
         }

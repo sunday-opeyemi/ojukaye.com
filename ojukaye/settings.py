@@ -162,7 +162,7 @@ AD_IMPRESSION_RATE = 0.001  # ₦1 per 1000 impressions
 MIN_AD_BUDGET = 1000.00  # Minimum ad budget in Naira
 
 # News API Configuration
-NEWS_API_KEY = 'a5fe9144753b4ad79db0d5f6a99503f0' 
+NEWS_API_KEY = 'd50e0d8833d6444ebe8acfdd4d59fd55' 
 NEWS_SOURCES = [
     'premiumtimesng.com',
     'punchng.com',
@@ -171,6 +171,14 @@ NEWS_SOURCES = [
     'thisdaylive.com',
     'sunnewsonline.com',
 ]
+NEWS_FETCH_SETTINGS = {
+    'TIMEOUT': 15,
+    'MAX_RETRIES': 3,
+    'USER_AGENT_ROTATION': True,
+    'USE_PROXIES': False,  # Set to True if you have proxies
+    'RESPECT_ROBOTS_TXT': True,
+    'DELAY_BETWEEN_REQUESTS': 1,
+}
 ENABLE_NEWS_VERIFICATION = True
 AUTO_VERIFY_NEWS = True
 AUTO_DELETE_FAKE_NEWS = False
@@ -200,15 +208,12 @@ SITE_DESCRIPTION = 'Nigeria\'s Modern News & Discussion Platform'
 
 CACHES = {
     'default': {
-        'BACKEND': 'django.core.cache.backends.redis.RedisCache',
-        'LOCATION': 'redis://127.0.0.1:6379/1',
-        'OPTIONS': {
-            'CLIENT_CLASS': 'django_redis.client.DefaultClient',
-        }
+        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+        'LOCATION': 'unique-snowflake',
     }
 }
 
-# Cache timeouts
+# Keep your existing CACHE_TIMEOUTS
 CACHE_TIMEOUTS = {
     'banners': 300,  # 5 minutes
     'categories': 3600,  # 1 hour

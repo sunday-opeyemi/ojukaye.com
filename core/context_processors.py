@@ -23,7 +23,7 @@ def site_context(request):
         categories = Category.objects.filter(
             parent__isnull=True
         ).annotate(
-            post_count=Count('post')
+            post_count=Count('posts')
         ).filter(post_count__gt=0).order_by('-post_count')[:15]
         
         for category in categories:

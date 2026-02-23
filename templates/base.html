@@ -121,15 +121,15 @@
                         </a>
                         {% endif %}
                         
-                        <div class="dropdown-divider"></div>
+                        {% comment %} <div class="dropdown-divider"></div>
                         <a href="#" class="dropdown-item dark-mode-toggle">
                             <i class="fas fa-moon"></i>
                             Dark Mode
-                        </a>
-                        <a href="{% url 'settings' %}" class="dropdown-item">
+                        </a> {% endcomment %}
+                        {% comment %} <a href="{% url 'settings' %}" class="dropdown-item">
                             <i class="fas fa-sliders-h"></i>
                             Settings
-                        </a>
+                        </a> {% endcomment %}
                         <div class="dropdown-divider"></div>
                         <a href="{% url 'logout' %}" class="dropdown-item logout-item">
                             <i class="fas fa-sign-out-alt"></i>

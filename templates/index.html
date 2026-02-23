@@ -29,25 +29,31 @@
                             {% endif %}
                         </div>
                         <h3 class="profile-name">{{ user.get_full_name|default:user.username }}</h3>
-                        <p class="profile-username">@{{ user.username }}</p>
+                        <p class="profile-username">
+                            <i class="fas fa-at"></i> {{ user.username }}
+                        </p>
                         
                         {% if user.profile.bio %}
                         <p class="profile-bio">{{ user.profile.bio|truncatechars:120 }}</p>
                         {% endif %}
                         
                         <div class="profile-stats">
-                            <div class="stat">
-                                <span class="stat-value">{{ total_posts }}</span>
+                            <a href="{% url 'profile_view' username=user.username %}" class="stat">
+                                <span class="stat-value">{{ user_stats.total_posts }}</span>
                                 <span class="stat-label">Posts</span>
-                            </div>
-                            <div class="stat">
-                                <span class="stat-value followers-count">{{ followers_count|default:user.followers.count }}</span>
+                            </a>
+                            <a href="#followers-list" class="stat" onclick="showFollowersModal()">
+                                <span class="stat-value followers-count">{{ user_stats.followers_count }}</span>
                                 <span class="stat-label">Followers</span>
-                            </div>
-                            <div class="stat">
-                                <span class="stat-value following-count">{{ following_count|default:user.following.count }}</span>
+                            </a>
+                            <a href="#following-list" class="stat" onclick="showFollowingModal()">
+                                <span class="stat-value following-count">{{ user_stats.following_count }}</span>
                                 <span class="stat-label">Following</span>
-                            </div>
+                            </a>
+                            <a href="{% url 'profile_view' username=user.username %}#comments" class="stat">
+                                <span class="stat-value">{{ user_stats.total_comments }}</span>
+                                <span class="stat-label">Comments</span>
+                            </a>
                         </div>
                         
                         <div class="profile-actions">
@@ -65,24 +71,82 @@
             <!-- User Stats Card -->
             <div class="sidebar-card">
                 <div class="card-header">
-                    <h3><i class="fas fa-chart-simple" style="color: var(--primary);"></i> Your Activity</h3>
+                    <h3><i class="fas fa-chart-simple"></i> Your Activity</h3>
                 </div>
                 <div class="user-stats">
                     <div class="stat-row">
                         <span><i class="fas fa-pen-to-square"></i> Posts Created</span>
-                        <span class="stat-number">{{ total_posts }}</span>
+                        <span class="stat-number">{{ user_stats.total_posts }}</span>
                     </div>
                     <div class="stat-row">
                         <span><i class="fas fa-heart"></i> Likes Given</span>
-                        <span class="stat-number">{{ total_likes_given }}</span>
+                        <span class="stat-number">{{ user_stats.total_likes_given }}</span>
                     </div>
                     <div class="stat-row">
                         <span><i class="fas fa-comment"></i> Comments Made</span>
-                        <span class="stat-number">{{ total_comments }}</span>
+                        <span class="stat-number">{{ user_stats.total_comments }}</span>
                     </div>
                     <div class="stat-row">
                         <span><i class="fas fa-retweet"></i> Reposts</span>
-                        <span class="stat-number">{{ total_reposts }}</span>
+                        <span class="stat-number">{{ user_stats.total_reposts }}</span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Following/Followers Quick View -->
+            <div class="sidebar-card">
+                <div class="card-header">
+                    <h3><i class="fas fa-users"></i> Your Network</h3>
+                </div>
+                <div class="network-preview">
+                    <!-- Following Preview -->
+                    <div class="network-section">
+                        <div class="network-header">
+                            <h4>Following <span class="network-count">{{ user_stats.following_count }}</span></h4>
+                            <a href="#" onclick="showFollowingModal()" class="view-all-link">View all</a>
+                        </div>
+                        <div class="network-avatars">
+                            {% for follow in following_preview %}
+                            <a href="{% url 'profile_view' username=follow.following.username %}" class="network-avatar" title="{{ follow.following.get_full_name|default:follow.following.username }}">
+                                {% if follow.following.profile.profile_pic %}
+                                <img src="{{ follow.following.profile.profile_pic.url }}" alt="{{ follow.following.username }}">
+                                {% else %}
+                                <div class="avatar-placeholder">{{ follow.following.username|first|upper }}</div>
+                                {% endif %}
+                            </a>
+                            {% empty %}
+                            <p class="empty-message">You're not following anyone yet</p>
+                            {% endfor %}
+                            
+                            {% if user_stats.following_count > 5 %}
+                            <a href="#" onclick="showFollowingModal()" class="more-link">+{{ user_stats.following_count|add:"-5" }} more</a>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <!-- Followers Preview -->
+                    <div class="network-section">
+                        <div class="network-header">
+                            <h4>Followers <span class="network-count">{{ user_stats.followers_count }}</span></h4>
+                            <a href="#" onclick="showFollowersModal()" class="view-all-link">View all</a>
+                        </div>
+                        <div class="network-avatars">
+                            {% for follow in followers_preview %}
+                            <a href="{% url 'profile_view' username=follow.follower.username %}" class="network-avatar" title="{{ follow.follower.get_full_name|default:follow.follower.username }}">
+                                {% if follow.follower.profile.profile_pic %}
+                                <img src="{{ follow.follower.profile.profile_pic.url }}" alt="{{ follow.follower.username }}">
+                                {% else %}
+                                <div class="avatar-placeholder">{{ follow.follower.username|first|upper }}</div>
+                                {% endif %}
+                            </a>
+                            {% empty %}
+                            <p class="empty-message">No followers yet</p>
+                            {% endfor %}
+                            
+                            {% if user_stats.followers_count > 5 %}
+                            <a href="#" onclick="showFollowersModal()" class="more-link">+{{ user_stats.followers_count|add:"-5" }} more</a>
+                            {% endif %}
+                        </div>
                     </div>
                 </div>
             </div>
@@ -109,8 +173,8 @@
                     <a href="{% url 'notifications' %}" class="menu-item">
                         <i class="fas fa-bell"></i>
                         <span>Notifications</span>
-                        {% if user.notifications.unread.count > 0 %}
-                        <span class="badge">{{ user.notifications.unread.count }}</span>
+                        {% if unread_notifications_count > 0 %}
+                        <span class="badge">{{ unread_notifications_count }}</span>
                         {% endif %}
                     </a>
                     
@@ -318,7 +382,7 @@
                         
                         <div class="view-all-link">
                             <a href="{% url 'profile_view' username=user.username %}" class="btn btn-outline btn-block">
-                                View All Your Posts
+                                View All Your Posts ({{ user_stats.total_posts }} total)
                             </a>
                         </div>
                     {% else %}
@@ -338,32 +402,32 @@
                 
                 <!-- INTERACTED POSTS TAB -->
                 <div class="tab-pane" id="interacted">
-                    {% for item in interacted_posts %}
-                    <article class="post-card interacted-post">
-                        <!-- Post Header -->
-                        <div class="post-header">
-                            <div class="post-author">
-                                <div class="author-avatar">
-                                    {% if item.post.author.profile.profile_pic %}
-                                    <img src="{{ item.post.author.profile.profile_pic.url }}" alt="{{ item.post.author.username }}">
-                                    {% else %}
-                                    <div class="avatar-placeholder">{{ item.post.author.username|first|upper }}</div>
-                                    {% endif %}
-                                </div>
-                                <div class="author-info">
-                                    <div class="author-name-wrapper">
-                                        {% if item.post.author and item.post.author.username %}
-                                        <a href="{% url 'profile_view' username=item.post.author.username %}" class="author-name">
-                                            {{ item.post.author.get_full_name|default:item.post.author.username }}
-                                        </a>
+                    {% if interacted_posts %}
+                        {% for item in interacted_posts %}
+                        <article class="post-card interacted-post">
+                            <!-- Post Header -->
+                            <div class="post-header">
+                                <div class="post-author">
+                                    <div class="author-avatar">
+                                        {% if item.post.author.profile.profile_pic %}
+                                        <img src="{{ item.post.author.profile.profile_pic.url }}" alt="{{ item.post.author.username }}">
                                         {% else %}
-                                        <span class="author-name">
-                                            {{ item.post.external_source|default:'News Bot' }}
-                                        </span>
+                                        <div class="avatar-placeholder">{{ item.post.author.username|first|upper }}</div>
                                         {% endif %}
-                                        
-                                        <span class="interaction-badge">
-                                            {% if user.is_authenticated %}
+                                    </div>
+                                    <div class="author-info">
+                                        <div class="author-name-wrapper">
+                                            {% if item.post.author and item.post.author.username %}
+                                            <a href="{% url 'profile_view' username=item.post.author.username %}" class="author-name">
+                                                {{ item.post.author.get_full_name|default:item.post.author.username }}
+                                            </a>
+                                            {% else %}
+                                            <span class="author-name">
+                                                {{ item.post.external_source|default:'News Bot' }}
+                                            </span>
+                                            {% endif %}
+                                            
+                                            <span class="interaction-badge">
                                                 {% if item.user_liked %}
                                                 <span class="badge liked"><i class="fas fa-heart"></i> Liked</span>
                                                 {% endif %}
@@ -375,35 +439,41 @@
                                                 {% if item.user_reposted %}
                                                 <span class="badge reposted"><i class="fas fa-retweet"></i> Reposted</span>
                                                 {% endif %}
-                                            {% endif %}
-                                        </span>
-                                    </div>
-                                    <div class="post-meta">
-                                        <span class="post-time" title="{{ item.post.published_at }}">
-                                            <i class="far fa-clock"></i> 
-                                            <time datetime="{{ item.post.published_at|date:'c' }}">{{ item.post.published_at|timesince }} ago</time>
-                                        </span>
+                                            </span>
+                                        </div>
+                                        <div class="post-meta">
+                                            <span class="post-time" title="{{ item.post.published_at }}">
+                                                <i class="far fa-clock"></i> 
+                                                <time datetime="{{ item.post.published_at|date:'c' }}">{{ item.post.published_at|timesince }} ago</time>
+                                            </span>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
-                        </div>
+                            
+                            <!-- Post Content Preview -->
+                            <div class="post-content">
+                                <a href="{% url 'post_detail' item.post.id %}" class="post-link">
+                                    <h4 class="post-title-small">{{ item.post.title }}</h4>
+                                    <p class="post-text-small">{{ item.post.content|truncatechars:200 }}</p>
+                                </a>
+                            </div>
+                            
+                            <!-- Quick Actions -->
+                            <div class="post-actions compact">
+                                <a href="{% url 'post_detail' item.post.id %}" class="btn btn-sm btn-outline">
+                                    <i class="fas fa-eye"></i> View Post
+                                </a>
+                            </div>
+                        </article>
+                        {% endfor %}
                         
-                        <!-- Post Content Preview -->
-                        <div class="post-content">
-                            <a href="{% url 'post_detail' item.post.id %}" class="post-link">
-                                <h4 class="post-title-small">{{ item.post.title }}</h4>
-                                <p class="post-text-small">{{ item.post.content|truncatechars:200 }}</p>
+                        <div class="view-all-link">
+                            <a href="{% url 'activity_feed' %}?type=interactions" class="btn btn-outline btn-block">
+                                View All Interactions
                             </a>
                         </div>
-                        
-                        <!-- Quick Actions -->
-                        <div class="post-actions compact">
-                            <a href="{% url 'post_detail' item.post.id %}" class="btn btn-sm btn-outline">
-                                <i class="fas fa-eye"></i> View Post
-                            </a>
-                        </div>
-                    </article>
-                    {% empty %}
+                    {% else %}
                     <!-- Empty state -->
                     <div class="empty-state-container">
                         <div class="empty-state-icon">
@@ -415,7 +485,7 @@
                             <i class="fas fa-newspaper"></i> Browse News
                         </a>
                     </div>
-                    {% endfor %}
+                    {% endif %}
                 </div>
                 
                 <!-- RECENT ACTIVITY TAB -->
@@ -435,8 +505,12 @@
                                 <i class="fas fa-retweet" style="color: #8b5cf6;"></i>
                                 {% elif activity.activity_type == 'post_saved' %}
                                 <i class="fas fa-bookmark" style="color: #f59e0b;"></i>
+                                {% elif activity.activity_type == 'user_followed' %}
+                                <i class="fas fa-user-plus" style="color: var(--success);"></i>
+                                {% elif activity.activity_type == 'user_unfollowed' %}
+                                <i class="fas fa-user-minus" style="color: var(--danger);"></i>
                                 {% else %}
-                                <i class="fas fa-circle"></i>
+                                <i class="fas fa-circle" style="color: var(--text-tertiary);"></i>
                                 {% endif %}
                             </div>
                             <div class="activity-content">
@@ -445,6 +519,11 @@
                                     {% if activity.post %}
                                     <a href="{% url 'post_detail' activity.post.id %}" class="activity-post-link">
                                         {{ activity.post.title|truncatechars:50 }}
+                                    </a>
+                                    {% endif %}
+                                    {% if activity.target_user %}
+                                    <a href="{% url 'profile_view' username=activity.target_user.username %}" class="activity-post-link">
+                                        @{{ activity.target_user.username }}
                                     </a>
                                     {% endif %}
                                 </div>
@@ -478,12 +557,12 @@
             <!-- Suggested Users -->
             <div class="sidebar-card">
                 <div class="card-header">
-                    <h3><i class="fas fa-user-plus" style="color: var(--primary);"></i> Who to Follow</h3>
+                    <h3><i class="fas fa-user-plus"></i> Who to Follow</h3>
                 </div>
                 <div class="suggested-users-list">
                     {% for suggested_user in suggested_users %}
                     <div class="suggested-user">
-                        <div class="user-info">
+                        <a href="{% url 'profile_view' username=suggested_user.username %}" class="user-info">
                             <div class="user-avatar-small">
                                 {% if suggested_user.profile.profile_pic %}
                                 <img src="{{ suggested_user.profile.profile_pic.url }}" alt="{{ suggested_user.username }}">
@@ -492,12 +571,13 @@
                                 {% endif %}
                             </div>
                             <div class="user-details">
-                                <a href="{% url 'profile_view' username=suggested_user.username %}" class="user-name">
-                                    {{ suggested_user.get_full_name|default:suggested_user.username }}
-                                </a>
+                                <span class="user-name">{{ suggested_user.get_full_name|default:suggested_user.username }}</span>
                                 <span class="user-username">@{{ suggested_user.username }}</span>
+                                <span class="user-stats">
+                                    <small>{{ suggested_user.followers.count }} followers</small>
+                                </span>
                             </div>
-                        </div>
+                        </a>
                         <button class="btn-follow" data-username="{{ suggested_user.username }}">
                             <i class="fas fa-plus"></i> Follow
                         </button>
@@ -510,10 +590,31 @@
                 </div>
             </div>
             
+            <!-- Your Network Stats -->
+            <div class="sidebar-card">
+                <div class="card-header">
+                    <h3><i class="fas fa-users"></i> Your Network</h3>
+                </div>
+                <div class="stats-list">
+                    <div class="stat-item">
+                        <span class="stat-label">Following</span>
+                        <span class="stat-value">{{ user_stats.following_count }}</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Followers</span>
+                        <span class="stat-value">{{ user_stats.followers_count }}</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">People you may know</span>
+                        <span class="stat-value">{{ suggested_users|length }}</span>
+                    </div>
+                </div>
+            </div>
+            
             <!-- Quick Links to Online News -->
             <div class="sidebar-card">
                 <div class="card-header">
-                    <h3><i class="fas fa-newspaper" style="color: var(--primary);"></i> Latest News</h3>
+                    <h3><i class="fas fa-newspaper"></i> Latest News</h3>
                 </div>
                 <div class="quick-news">
                     <p>Stay updated with the latest happenings in Nigeria and around the world</p>
@@ -526,7 +627,7 @@
             <!-- Your Bookmarks Summary -->
             <div class="sidebar-card">
                 <div class="card-header">
-                    <h3><i class="fas fa-bookmark" style="color: var(--primary);"></i> Your Bookmarks</h3>
+                    <h3><i class="fas fa-bookmark"></i> Your Bookmarks</h3>
                 </div>
                 <div class="bookmarks-summary">
                     {% with bookmark_count=user.bookmarked_posts.count %}
@@ -547,6 +648,388 @@
         </aside>
     </div>
 </div>
+
+<!-- FOLLOWING MODAL -->
+<div class="modal" id="followingModal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3><i class="fas fa-user-friends"></i> Following ({{ user_stats.following_count }})</h3>
+            <button class="modal-close" onclick="closeFollowingModal()">&times;</button>
+        </div>
+        <div class="modal-body">
+            <div class="users-list" id="followingList">
+                <!-- Will be populated via AJAX -->
+                <div class="loading-indicator">
+                    <i class="fas fa-spinner fa-spin"></i> Loading...
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- FOLLOWERS MODAL -->
+<div class="modal" id="followersModal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3><i class="fas fa-users"></i> Followers ({{ user_stats.followers_count }})</h3>
+            <button class="modal-close" onclick="closeFollowersModal()">&times;</button>
+        </div>
+        <div class="modal-body">
+            <div class="users-list" id="followersList">
+                <!-- Will be populated via AJAX -->
+                <div class="loading-indicator">
+                    <i class="fas fa-spinner fa-spin"></i> Loading...
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+/* Network Preview Styles */
+.network-preview {
+    padding: 1rem 1.25rem;
+}
+
+.network-section {
+    margin-bottom: 1.5rem;
+}
+
+.network-section:last-child {
+    margin-bottom: 0;
+}
+
+.network-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 0.75rem;
+}
+
+.network-header h4 {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+}
+
+.network-count {
+    background: var(--bg-tertiary);
+    padding: 0.125rem 0.5rem;
+    border-radius: var(--radius-full);
+    font-size: 0.75rem;
+    color: var(--text-tertiary);
+}
+
+.view-all-link {
+    font-size: 0.75rem;
+    color: var(--primary);
+    text-decoration: none;
+}
+
+.view-all-link:hover {
+    text-decoration: underline;
+}
+
+.network-avatars {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.network-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    overflow: hidden;
+    display: block;
+    transition: all 0.2s ease;
+    border: 2px solid var(--border-color);
+    text-decoration: none;
+}
+
+.network-avatar:hover {
+    transform: scale(1.1);
+    border-color: var(--primary);
+    box-shadow: var(--shadow-md);
+    z-index: 5;
+}
+
+.network-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.network-avatar .avatar-placeholder {
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1rem;
+    font-weight: 600;
+}
+
+.more-link {
+    font-size: 0.75rem;
+    color: var(--text-tertiary);
+    text-decoration: none;
+    padding: 0.25rem 0.5rem;
+    background: var(--bg-tertiary);
+    border-radius: var(--radius-full);
+    transition: all 0.2s;
+}
+
+.more-link:hover {
+    background: var(--primary);
+    color: white;
+}
+
+/* Users List in Modal */
+.users-list {
+    max-height: 400px;
+    overflow-y: auto;
+    padding: 0.5rem 0;
+}
+
+.user-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1rem;
+    border-bottom: 1px solid var(--border-color);
+    transition: all 0.2s;
+}
+
+.user-item:last-child {
+    border-bottom: none;
+}
+
+.user-item:hover {
+    background: var(--hover-bg);
+}
+
+.user-item-link {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    text-decoration: none;
+    flex: 1;
+}
+
+.user-item-avatar {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    overflow: hidden;
+    flex-shrink: 0;
+    background: linear-gradient(135deg, var(--primary-light), var(--primary));
+}
+
+.user-item-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.user-item-avatar .avatar-placeholder {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: 600;
+    font-size: 1.25rem;
+}
+
+.user-item-info {
+    flex: 1;
+}
+
+.user-item-name {
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 0.125rem;
+    font-size: 0.9375rem;
+}
+
+.user-item-username {
+    font-size: 0.75rem;
+    color: var(--text-tertiary);
+    margin-bottom: 0.25rem;
+}
+
+.user-item-bio {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    display: -webkit-box;
+    -webkit-line-clamp: 1;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.user-item-stats {
+    display: flex;
+    gap: 1rem;
+    margin-top: 0.25rem;
+    font-size: 0.625rem;
+    color: var(--text-tertiary);
+}
+
+.user-item-stats span {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.user-item-stats i {
+    color: var(--primary);
+}
+
+.user-item-follow-btn {
+    padding: 0.375rem 0.75rem;
+    background: var(--primary);
+    color: white;
+    border: none;
+    border-radius: var(--radius-full);
+    font-size: 0.75rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+    margin-left: 1rem;
+}
+
+.user-item-follow-btn:hover {
+    background: var(--primary-dark);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-sm);
+}
+
+.user-item-follow-btn.following {
+    background: var(--success);
+}
+
+.loading-indicator {
+    text-align: center;
+    padding: 2rem;
+    color: var(--text-tertiary);
+}
+
+.empty-message {
+    text-align: center;
+    padding: 2rem;
+    color: var(--text-tertiary);
+    font-size: 0.875rem;
+}
+
+/* Modal Styles */
+.modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(4px);
+    z-index: 1100;
+    align-items: center;
+    justify-content: center;
+}
+
+.modal.active {
+    display: flex;
+}
+
+.modal-content {
+    background: var(--card-bg);
+    border-radius: var(--radius-lg);
+    max-width: 500px;
+    width: 90%;
+    max-height: 80vh;
+    overflow: hidden;
+    border: 1px solid var(--border-color);
+    box-shadow: var(--shadow-xl);
+    animation: modalSlideIn 0.3s ease;
+}
+
+.modal-header {
+    padding: 1.25rem 1.5rem;
+    border-bottom: 1px solid var(--border-color);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.modal-header h3 {
+    font-size: 1.125rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.modal-header h3 i {
+    color: var(--primary);
+}
+
+.modal-close {
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    color: var(--text-tertiary);
+    cursor: pointer;
+    transition: color 0.2s;
+    line-height: 1;
+}
+
+.modal-close:hover {
+    color: var(--danger);
+}
+
+.modal-body {
+    padding: 0;
+    max-height: calc(80vh - 70px);
+    overflow-y: auto;
+}
+
+@keyframes modalSlideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-50px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Dark Mode Adjustments */
+[data-theme="dark"] .network-avatar {
+    border-color: var(--border-color);
+}
+
+[data-theme="dark"] .network-avatar:hover {
+    border-color: var(--primary);
+}
+
+[data-theme="dark"] .user-item {
+    border-color: var(--border-color);
+}
+
+[data-theme="dark"] .modal-content {
+    background: var(--card-bg);
+}
+</style>
 
 <script>
     // Tab switching functionality
@@ -620,7 +1103,7 @@
         btn.addEventListener('click', function(e) {
             e.preventDefault();
             const postId = this.dataset.postId;
-            const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+            const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value || '{{ csrf_token }}';
             
             fetch(`/post/${postId}/like/`, {
                 method: 'POST',
@@ -655,6 +1138,7 @@
     document.querySelectorAll('.btn-follow').forEach(btn => {
         btn.addEventListener('click', function(e) {
             e.preventDefault();
+            e.stopPropagation();
             const username = this.dataset.username;
             
             fetch(`/follow/${username}/`, {
@@ -666,15 +1150,293 @@
             })
             .then(response => response.json())
             .then(data => {
-                if (data.followed) {
-                    this.innerHTML = '<i class="fas fa-check"></i> Following';
-                    this.classList.add('following');
-                } else {
-                    this.innerHTML = '<i class="fas fa-plus"></i> Follow';
-                    this.classList.remove('following');
+                if (data.followed !== undefined) {
+                    if (data.followed) {
+                        this.innerHTML = '<i class="fas fa-check"></i> Following';
+                        this.classList.add('following');
+                        
+                        // Update follower count in stats
+                        const followerCountElem = document.querySelector('.followers-count');
+                        if (followerCountElem) {
+                            const currentCount = parseInt(followerCountElem.textContent);
+                            followerCountElem.textContent = currentCount + 1;
+                        }
+                    } else {
+                        this.innerHTML = '<i class="fas fa-plus"></i> Follow';
+                        this.classList.remove('following');
+                        
+                        // Update follower count in stats
+                        const followerCountElem = document.querySelector('.followers-count');
+                        if (followerCountElem) {
+                            const currentCount = parseInt(followerCountElem.textContent);
+                            followerCountElem.textContent = Math.max(0, currentCount - 1);
+                        }
+                    }
                 }
             });
         });
     });
+    
+    // Bookmark button functionality
+    document.querySelectorAll('.bookmark-btn').forEach(btn => {
+        btn.addEventListener('click', function(e) {
+            e.preventDefault();
+            const postId = this.dataset.postId;
+            
+            fetch(`/post/${postId}/bookmark/`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': '{{ csrf_token }}',
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.bookmarked !== undefined) {
+                    const icon = this.querySelector('i');
+                    
+                    if (data.bookmarked) {
+                        icon.classList.remove('far');
+                        icon.classList.add('fas');
+                        this.classList.add('bookmarked');
+                        
+                        // Show success message
+                        showNotification('Post saved to bookmarks', 'success');
+                    } else {
+                        icon.classList.remove('fas');
+                        icon.classList.add('far');
+                        this.classList.remove('bookmarked');
+                        
+                        showNotification('Post removed from bookmarks', 'info');
+                    }
+                }
+            });
+        });
+    });
+    
+    // Share button functionality
+    document.querySelectorAll('.share-btn').forEach(btn => {
+        btn.addEventListener('click', function(e) {
+            e.preventDefault();
+            const title = this.dataset.title;
+            const url = window.location.origin + this.dataset.url;
+            
+            if (navigator.share) {
+                navigator.share({
+                    title: title,
+                    url: url
+                }).catch(console.error);
+            } else {
+                // Fallback - copy to clipboard
+                navigator.clipboard.writeText(url).then(() => {
+                    showNotification('Link copied to clipboard!', 'success');
+                }).catch(() => {
+                    showNotification('Failed to copy link', 'error');
+                });
+            }
+        });
+    });
+    
+    // Following Modal Functions
+    function showFollowingModal() {
+        const modal = document.getElementById('followingModal');
+        modal.classList.add('active');
+        
+        // Load following list
+        loadFollowingList();
+    }
+    
+    function closeFollowingModal() {
+        const modal = document.getElementById('followingModal');
+        modal.classList.remove('active');
+    }
+    
+    // Followers Modal Functions
+    function showFollowersModal() {
+        const modal = document.getElementById('followersModal');
+        modal.classList.add('active');
+        
+        // Load followers list
+        loadFollowersList();
+    }
+    
+    function closeFollowersModal() {
+        const modal = document.getElementById('followersModal');
+        modal.classList.remove('active');
+    }
+    
+    // Load Following List via AJAX
+    function loadFollowingList() {
+        const followingList = document.getElementById('followingList');
+        
+        fetch(`/api/users/{{ user.username }}/following/`, {
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.users && data.users.length > 0) {
+                let html = '';
+                data.users.forEach(user => {
+                    html += `
+                        <div class="user-item">
+                            <a href="/profile/${user.username}/" class="user-item-link">
+                                <div class="user-item-avatar">
+                                    ${user.avatar ? 
+                                        `<img src="${user.avatar}" alt="${user.username}">` : 
+                                        `<div class="avatar-placeholder">${user.username.charAt(0).toUpperCase()}</div>`
+                                    }
+                                </div>
+                                <div class="user-item-info">
+                                    <div class="user-item-name">${user.full_name || user.username}</div>
+                                    <div class="user-item-username">@${user.username}</div>
+                                    ${user.bio ? `<div class="user-item-bio">${user.bio.substring(0, 60)}${user.bio.length > 60 ? '...' : ''}</div>` : ''}
+                                    <div class="user-item-stats">
+                                        <span><i class="fas fa-pen"></i> ${user.posts_count}</span>
+                                        <span><i class="fas fa-users"></i> ${user.followers_count}</span>
+                                    </div>
+                                </div>
+                            </a>
+                            <button class="user-item-follow-btn ${user.is_following ? 'following' : ''}" 
+                                    data-username="${user.username}"
+                                    onclick="followFromModal(this, event)">
+                                ${user.is_following ? '<i class="fas fa-check"></i> Following' : '<i class="fas fa-plus"></i> Follow'}
+                            </button>
+                        </div>
+                    `;
+                });
+                followingList.innerHTML = html;
+            } else {
+                followingList.innerHTML = '<div class="empty-message">You are not following anyone yet</div>';
+            }
+        })
+        .catch(error => {
+            followingList.innerHTML = '<div class="empty-message">Error loading following list</div>';
+            console.error('Error:', error);
+        });
+    }
+    
+    // Load Followers List via AJAX
+    function loadFollowersList() {
+        const followersList = document.getElementById('followersList');
+        
+        fetch(`/api/users/{{ user.username }}/followers/`, {
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.users && data.users.length > 0) {
+                let html = '';
+                data.users.forEach(user => {
+                    html += `
+                        <div class="user-item">
+                            <a href="/profile/${user.username}/" class="user-item-link">
+                                <div class="user-item-avatar">
+                                    ${user.avatar ? 
+                                        `<img src="${user.avatar}" alt="${user.username}">` : 
+                                        `<div class="avatar-placeholder">${user.username.charAt(0).toUpperCase()}</div>`
+                                    }
+                                </div>
+                                <div class="user-item-info">
+                                    <div class="user-item-name">${user.full_name || user.username}</div>
+                                    <div class="user-item-username">@${user.username}</div>
+                                    ${user.bio ? `<div class="user-item-bio">${user.bio.substring(0, 60)}${user.bio.length > 60 ? '...' : ''}</div>` : ''}
+                                    <div class="user-item-stats">
+                                        <span><i class="fas fa-pen"></i> ${user.posts_count}</span>
+                                        <span><i class="fas fa-users"></i> ${user.followers_count}</span>
+                                    </div>
+                                </div>
+                            </a>
+                            <button class="user-item-follow-btn ${user.is_following ? 'following' : ''}" 
+                                    data-username="${user.username}"
+                                    onclick="followFromModal(this, event)">
+                                ${user.is_following ? '<i class="fas fa-check"></i> Following' : '<i class="fas fa-plus"></i> Follow'}
+                            </button>
+                        </div>
+                    `;
+                });
+                followersList.innerHTML = html;
+            } else {
+                followersList.innerHTML = '<div class="empty-message">No followers yet</div>';
+            }
+        })
+        .catch(error => {
+            followersList.innerHTML = '<div class="empty-message">Error loading followers list</div>';
+            console.error('Error:', error);
+        });
+    }
+    
+    // Follow from modal
+    function followFromModal(btn, event) {
+        event.preventDefault();
+        event.stopPropagation();
+        const username = btn.dataset.username;
+        
+        fetch(`/follow/${username}/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': '{{ csrf_token }}',
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.followed !== undefined) {
+                if (data.followed) {
+                    btn.innerHTML = '<i class="fas fa-check"></i> Following';
+                    btn.classList.add('following');
+                } else {
+                    btn.innerHTML = '<i class="fas fa-plus"></i> Follow';
+                    btn.classList.remove('following');
+                }
+                
+                // Update follower count in sidebar
+                const followerCountElem = document.querySelector('.followers-count');
+                if (followerCountElem) {
+                    const currentCount = parseInt(followerCountElem.textContent);
+                    followerCountElem.textContent = data.followed ? currentCount + 1 : Math.max(0, currentCount - 1);
+                }
+            }
+        });
+    }
+    
+    // Close modals when clicking outside
+    window.addEventListener('click', function(e) {
+        const followingModal = document.getElementById('followingModal');
+        const followersModal = document.getElementById('followersModal');
+        
+        if (e.target === followingModal) {
+            closeFollowingModal();
+        }
+        if (e.target === followersModal) {
+            closeFollowersModal();
+        }
+    });
+    
+    // Show notification function
+    function showNotification(message, type = 'info') {
+        const notification = document.createElement('div');
+        notification.className = `notification notification-${type}`;
+        notification.innerHTML = `
+            <div class="notification-content">
+                <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-circle' : 'info-circle'}"></i>
+                <span>${message}</span>
+            </div>
+        `;
+        
+        document.body.appendChild(notification);
+        
+        setTimeout(() => {
+            notification.classList.add('show');
+        }, 10);
+        
+        setTimeout(() => {
+            notification.classList.remove('show');
+            setTimeout(() => notification.remove(), 300);
+        }, 3000);
+    }
 </script>
 {% endblock %}

@@ -1,0 +1,662 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}News Submissions - Admin{% endblock %}
+
+{% block extra_css %}
+<style>
+    .admin-container {
+        max-width: 1400px;
+        margin: 0 auto;
+        padding: 2rem;
+    }
+
+    .admin-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 2rem;
+        flex-wrap: wrap;
+        gap: 1rem;
+    }
+
+    .admin-title {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }
+
+    .admin-title i {
+        font-size: 2rem;
+        color: var(--primary);
+        background: var(--primary-soft);
+        padding: 1rem;
+        border-radius: var(--radius-lg);
+    }
+
+    .admin-title h1 {
+        font-size: 2rem;
+        font-weight: 700;
+        color: var(--gray-900);
+        margin-bottom: 0.5rem;
+    }
+
+    .admin-title p {
+        color: var(--gray-600);
+    }
+
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: 1rem;
+        margin-bottom: 2rem;
+    }
+
+    .stat-card {
+        background: var(--white);
+        border-radius: var(--radius-lg);
+        padding: 1.25rem;
+        border: 1px solid var(--gray-200);
+        transition: all 0.2s;
+    }
+
+    .stat-card:hover {
+        box-shadow: var(--shadow-md);
+    }
+
+    .stat-card.pending {
+        border-left: 4px solid #f59e0b;
+    }
+
+    .stat-card.approved {
+        border-left: 4px solid #10b981;
+    }
+
+    .stat-card.rejected {
+        border-left: 4px solid #ef4444;
+    }
+
+    .stat-card.flagged {
+        border-left: 4px solid #8b5cf6;
+    }
+
+    .stat-value {
+        font-size: 2rem;
+        font-weight: 700;
+        color: var(--gray-900);
+        line-height: 1;
+        margin-bottom: 0.25rem;
+    }
+
+    .stat-label {
+        font-size: 0.875rem;
+        color: var(--gray-600);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+
+    .filter-bar {
+        background: var(--white);
+        border-radius: var(--radius-lg);
+        border: 1px solid var(--gray-200);
+        padding: 1rem;
+        margin-bottom: 1.5rem;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 1rem;
+    }
+
+    .filter-tabs {
+        display: flex;
+        gap: 0.25rem;
+        background: var(--gray-100);
+        padding: 0.25rem;
+        border-radius: var(--radius-full);
+    }
+
+    .filter-tab {
+        padding: 0.5rem 1rem;
+        border-radius: var(--radius-full);
+        font-size: 0.875rem;
+        font-weight: 600;
+        color: var(--gray-600);
+        text-decoration: none;
+        transition: all 0.2s;
+    }
+
+    .filter-tab:hover {
+        background: var(--gray-200);
+        color: var(--gray-800);
+    }
+
+    .filter-tab.active {
+        background: var(--primary);
+        color: white;
+    }
+
+    .search-box {
+        display: flex;
+        gap: 0.5rem;
+        flex: 1;
+        max-width: 400px;
+    }
+
+    .search-box input {
+        flex: 1;
+        padding: 0.5rem 1rem;
+        border: 1px solid var(--gray-200);
+        border-radius: var(--radius-full);
+        font-size: 0.875rem;
+    }
+
+    .search-box button {
+        padding: 0.5rem 1.5rem;
+        background: var(--primary);
+        color: white;
+        border: none;
+        border-radius: var(--radius-full);
+        font-weight: 600;
+        cursor: pointer;
+    }
+
+    .bulk-actions {
+        background: var(--gray-100);
+        border-radius: var(--radius-lg);
+        padding: 1rem;
+        margin-bottom: 1rem;
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        flex-wrap: wrap;
+    }
+
+    .bulk-actions select {
+        padding: 0.5rem;
+        border: 1px solid var(--gray-200);
+        border-radius: var(--radius-md);
+        background: white;
+    }
+
+    .table-container {
+        background: var(--white);
+        border-radius: var(--radius-lg);
+        border: 1px solid var(--gray-200);
+        overflow-x: auto;
+    }
+
+    table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    th {
+        text-align: left;
+        padding: 1rem;
+        background: var(--gray-50);
+        font-weight: 600;
+        color: var(--gray-700);
+        border-bottom: 1px solid var(--gray-200);
+    }
+
+    td {
+        padding: 1rem;
+        border-bottom: 1px solid var(--gray-100);
+        vertical-align: middle;
+    }
+
+    tr:last-child td {
+        border-bottom: none;
+    }
+
+    tr:hover {
+        background: var(--gray-50);
+    }
+
+    .post-title {
+        font-weight: 600;
+        color: var(--gray-900);
+        max-width: 300px;
+    }
+
+    .post-title a {
+        color: inherit;
+        text-decoration: none;
+    }
+
+    .post-title a:hover {
+        color: var(--primary);
+    }
+
+    .author-info {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .author-avatar {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        overflow: hidden;
+    }
+
+    .author-avatar img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    .verification-score {
+        display: inline-flex;
+        align-items: center;
+        padding: 0.25rem 0.75rem;
+        border-radius: var(--radius-full);
+        font-weight: 600;
+        font-size: 0.75rem;
+    }
+
+    .score-high {
+        background: #dcfce7;
+        color: #166534;
+    }
+
+    .score-medium {
+        background: #fef3c7;
+        color: #92400e;
+    }
+
+    .score-low {
+        background: #fee2e2;
+        color: #991b1b;
+    }
+
+    .status-badge {
+        display: inline-flex;
+        align-items: center;
+        padding: 0.25rem 0.75rem;
+        border-radius: var(--radius-full);
+        font-size: 0.75rem;
+        font-weight: 600;
+    }
+
+    .status-pending {
+        background: #fef3c7;
+        color: #92400e;
+    }
+
+    .status-approved {
+        background: #dcfce7;
+        color: #166534;
+    }
+
+    .status-rejected {
+        background: #fee2e2;
+        color: #991b1b;
+    }
+
+    .status-flagged {
+        background: #ede9fe;
+        color: #6b21a8;
+    }
+
+    .action-buttons {
+        display: flex;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+    }
+
+    .btn-icon {
+        width: 36px;
+        height: 36px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: var(--radius-full);
+        background: var(--gray-100);
+        color: var(--gray-700);
+        border: none;
+        cursor: pointer;
+        transition: all 0.2s;
+        text-decoration: none;
+    }
+
+    .btn-icon:hover {
+        background: var(--primary);
+        color: white;
+    }
+
+    .btn-icon.approve:hover {
+        background: #10b981;
+    }
+
+    .btn-icon.reject:hover {
+        background: #ef4444;
+    }
+
+    .btn-icon.view:hover {
+        background: var(--primary);
+    }
+
+    .checkbox {
+        width: 20px;
+        height: 20px;
+        cursor: pointer;
+    }
+
+    .pagination {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        margin-top: 2rem;
+    }
+
+    .pagination-link {
+        padding: 0.5rem 1rem;
+        border: 1px solid var(--gray-200);
+        border-radius: var(--radius-md);
+        color: var(--gray-700);
+        text-decoration: none;
+        transition: all 0.2s;
+    }
+
+    .pagination-link:hover {
+        background: var(--primary);
+        color: white;
+    }
+
+    .pagination-current {
+        padding: 0.5rem 1rem;
+        font-weight: 600;
+        color: var(--gray-800);
+    }
+
+    @media (max-width: 768px) {
+        .admin-container {
+            padding: 1rem;
+        }
+        
+        .filter-bar {
+            flex-direction: column;
+            align-items: stretch;
+        }
+        
+        .filter-tabs {
+            overflow-x: auto;
+            padding: 0.5rem;
+        }
+        
+        .search-box {
+            max-width: 100%;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="admin-container">
+    <!-- Header -->
+    <div class="admin-header">
+        <div class="admin-title">
+            <i class="fas fa-newspaper"></i>
+            <div>
+                <h1>News Submissions</h1>
+                <p>Review and manage user-submitted news articles</p>
+            </div>
+        </div>
+        <a href="{% url 'admin_auto_fetched_news' %}" class="btn btn-outline">
+            <i class="fas fa-sync-alt"></i> View Auto-Fetched News
+        </a>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="stats-grid">
+        <div class="stat-card pending">
+            <div class="stat-value">{{ stats.pending }}</div>
+            <div class="stat-label">Pending Review</div>
+        </div>
+        <div class="stat-card approved">
+            <div class="stat-value">{{ stats.approved }}</div>
+            <div class="stat-label">Approved</div>
+        </div>
+        <div class="stat-card rejected">
+            <div class="stat-value">{{ stats.rejected }}</div>
+            <div class="stat-label">Rejected</div>
+        </div>
+        <div class="stat-card flagged">
+            <div class="stat-value">{{ stats.flagged }}</div>
+            <div class="stat-label">Flagged</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value">{{ stats.ai_verified }}</div>
+            <div class="stat-label">AI Verified</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value">{{ stats.ai_fake }}</div>
+            <div class="stat-label">AI Fake</div>
+        </div>
+    </div>
+
+    <!-- Filter Bar -->
+    <div class="filter-bar">
+        <div class="filter-tabs">
+            <a href="?filter=pending" class="filter-tab {% if filter_type == 'pending' %}active{% endif %}">Pending</a>
+            <a href="?filter=approved" class="filter-tab {% if filter_type == 'approved' %}active{% endif %}">Approved</a>
+            <a href="?filter=rejected" class="filter-tab {% if filter_type == 'rejected' %}active{% endif %}">Rejected</a>
+            <a href="?filter=flagged" class="filter-tab {% if filter_type == 'flagged' %}active{% endif %}">Flagged</a>
+            <a href="?filter=ai_verified" class="filter-tab {% if filter_type == 'ai_verified' %}active{% endif %}">AI Verified</a>
+            <a href="?filter=ai_fake" class="filter-tab {% if filter_type == 'ai_fake' %}active{% endif %}">AI Fake</a>
+            <a href="?filter=all" class="filter-tab {% if filter_type == 'all' %}active{% endif %}">All</a>
+        </div>
+
+        <form class="search-box" method="GET">
+            <input type="hidden" name="filter" value="{{ filter_type }}">
+            <input type="text" name="q" placeholder="Search by title, author, source..." value="{{ search_query }}">
+            <button type="submit"><i class="fas fa-search"></i></button>
+        </form>
+    </div>
+
+    <!-- Bulk Actions -->
+    <form method="POST" action="{% url 'admin_bulk_news_action' %}" id="bulkActionForm">
+        {% csrf_token %}
+        <div class="bulk-actions">
+            <select name="bulk_action" id="bulkActionSelect">
+                <option value="">Select action</option>
+                <option value="approve">Approve selected</option>
+                <option value="reject">Reject selected</option>
+                <option value="run_ai">Run AI verification</option>
+            </select>
+            <button type="button" class="btn btn-primary" onclick="confirmBulkAction()">
+                Apply to selected
+            </button>
+            <span class="selected-count" id="selectedCount">0 selected</span>
+        </div>
+
+        <!-- Table -->
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th><input type="checkbox" id="selectAll" class="checkbox"></th>
+                        <th>Title</th>
+                        <th>Author</th>
+                        <th>Category</th>
+                        <th>Source</th>
+                        <th>AI Score</th>
+                        <th>Status</th>
+                        <th>Submitted</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for post in submissions %}
+                    <tr>
+                        <td><input type="checkbox" name="post_ids" value="{{ post.id }}" class="checkbox post-checkbox"></td>
+                        <td>
+                            <div class="post-title">
+                                <a href="{% url 'admin_news_detail' post.id %}">{{ post.title|truncatechars:60 }}</a>
+                                {% if post.has_media %}
+                                <i class="fas fa-video" style="color: var(--primary); margin-left: 0.5rem;" title="Has media"></i>
+                                {% endif %}
+                            </div>
+                        </td>
+                        <td>
+                            <div class="author-info">
+                                <div class="author-avatar">
+                                    {% if post.author.profile.profile_pic %}
+                                    <img src="{{ post.author.profile.profile_pic.url }}" alt="{{ post.author.username }}">
+                                    {% else %}
+                                    <div class="avatar-placeholder">{{ post.author.username|first|upper }}</div>
+                                    {% endif %}
+                                </div>
+                                <a href="{% url 'profile_view' username=post.author.username %}">@{{ post.author.username }}</a>
+                            </div>
+                        </td>
+                        <td>{{ post.category.name|default:"—" }}</td>
+                        <td>
+                            {% if post.external_source %}
+                            {{ post.external_source|truncatechars:20 }}
+                            {% else %}
+                            <span class="text-muted">No source</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if post.verification_score %}
+                            <span class="verification-score {% if post.verification_score >= 0.8 %}score-high{% elif post.verification_score >= 0.6 %}score-medium{% else %}score-low{% endif %}">
+                                {{ post.verification_score|floatformat:2 }}
+                            </span>
+                            {% else %}
+                            —
+                            {% endif %}
+                        </td>
+                        <td>
+                            <span class="status-badge status-{{ post.submission_status }}">
+                                {{ post.get_submission_status_display }}
+                            </span>
+                        </td>
+                        <td>{{ post.created_at|timesince }} ago</td>
+                        <td>
+                            <div class="action-buttons">
+                                <a href="{% url 'admin_news_detail' post.id %}" class="btn-icon view" title="Review">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+                                {% if post.submission_status == 'pending' %}
+                                <form method="POST" action="{% url 'admin_news_detail' post.id %}" style="display: inline;">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="action" value="approve">
+                                    <button type="submit" class="btn-icon approve" title="Approve" onclick="return confirm('Approve this news article?')">
+                                        <i class="fas fa-check"></i>
+                                    </button>
+                                </form>
+                                <form method="POST" action="{% url 'admin_news_detail' post.id %}" style="display: inline;">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="action" value="reject">
+                                    <input type="hidden" name="rejection_reason" value="Not suitable for publication">
+                                    <button type="submit" class="btn-icon reject" title="Reject" onclick="return confirm('Reject this news article?')">
+                                        <i class="fas fa-times"></i>
+                                    </button>
+                                </form>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="9" style="text-align: center; padding: 3rem;">
+                            <div class="empty-state">
+                                <i class="fas fa-newspaper" style="font-size: 3rem; color: var(--gray-400); margin-bottom: 1rem;"></i>
+                                <h3>No submissions found</h3>
+                                <p>There are no news submissions matching your criteria.</p>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </form>
+
+    <!-- Pagination -->
+    {% if page_obj.has_other_pages %}
+    <div class="pagination">
+        {% if page_obj.has_previous %}
+        <a href="?page=1&filter={{ filter_type }}&q={{ search_query }}" class="pagination-link">
+            <i class="fas fa-angle-double-left"></i>
+        </a>
+        <a href="?page={{ page_obj.previous_page_number }}&filter={{ filter_type }}&q={{ search_query }}" class="pagination-link">
+            <i class="fas fa-angle-left"></i>
+        </a>
+        {% endif %}
+
+        <span class="pagination-current">
+            Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+        </span>
+
+        {% if page_obj.has_next %}
+        <a href="?page={{ page_obj.next_page_number }}&filter={{ filter_type }}&q={{ search_query }}" class="pagination-link">
+            <i class="fas fa-angle-right"></i>
+        </a>
+        <a href="?page={{ page_obj.paginator.num_pages }}&filter={{ filter_type }}&q={{ search_query }}" class="pagination-link">
+            <i class="fas fa-angle-double-right"></i>
+        </a>
+        {% endif %}
+    </div>
+    {% endif %}
+</div>
+
+<script>
+    // Select All functionality
+    const selectAllCheckbox = document.getElementById('selectAll');
+    const postCheckboxes = document.querySelectorAll('.post-checkbox');
+    const selectedCountSpan = document.getElementById('selectedCount');
+
+    function updateSelectedCount() {
+        const checked = document.querySelectorAll('.post-checkbox:checked').length;
+        selectedCountSpan.textContent = checked + ' selected';
+    }
+
+    if (selectAllCheckbox) {
+        selectAllCheckbox.addEventListener('change', function() {
+            postCheckboxes.forEach(checkbox => {
+                checkbox.checked = this.checked;
+            });
+            updateSelectedCount();
+        });
+    }
+
+    postCheckboxes.forEach(checkbox => {
+        checkbox.addEventListener('change', updateSelectedCount);
+    });
+
+    // Bulk action confirmation
+    function confirmBulkAction() {
+        const action = document.getElementById('bulkActionSelect').value;
+        const checked = document.querySelectorAll('.post-checkbox:checked').length;
+        
+        if (checked === 0) {
+            alert('Please select at least one post');
+            return;
+        }
+        
+        if (!action) {
+            alert('Please select an action');
+            return;
+        }
+        
+        let message = '';
+        if (action === 'approve') {
+            message = `Approve ${checked} selected news articles?`;
+        } else if (action === 'reject') {
+            message = `Reject ${checked} selected news articles?`;
+        } else if (action === 'run_ai') {
+            message = `Run AI verification on ${checked} selected news articles?`;
+        }
+        
+        if (confirm(message)) {
+            document.getElementById('bulkActionForm').submit();
+        }
+    }
+</script>
+{% endblock %}

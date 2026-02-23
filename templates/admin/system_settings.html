@@ -1,18 +1,18 @@
 {% extends 'base.html' %}
 {% load static %}
 
-{% block title %}System Settings - Ojukaye{% endblock %}
+{% block title %}System Settings - Admin{% endblock %}
 
 {% block extra_css %}
 <style>
     .settings-container {
-        max-width: 1400px;
+        max-width: 1200px;
         margin: 0 auto;
         padding: 2rem;
     }
 
     .settings-header {
-        display: flex;
+        display: flex
         align-items: center;
         justify-content: space-between;
         margin-bottom: 2rem;
@@ -38,25 +38,11 @@
         font-size: 2rem;
         font-weight: 700;
         color: var(--gray-900);
-        margin-bottom: 0.5rem;
+        margin-bottom: 0.25rem;
     }
 
     .settings-title p {
         color: var(--gray-600);
-    }
-
-    .settings-meta {
-        display: flex;
-        align-items: center;
-        gap: 1rem;
-    }
-
-    .last-updated {
-        padding: 0.5rem 1rem;
-        background: var(--gray-100);
-        border-radius: var(--radius-full);
-        font-size: 0.875rem;
-        color: var(--gray-700);
     }
 
     .status-badge {
@@ -66,7 +52,7 @@
         border-radius: var(--radius-full);
         font-size: 0.875rem;
         font-weight: 600;
-        gap: 0.5rem;
+        background: var(--gray-100);
     }
 
     .status-badge.success {
@@ -79,14 +65,13 @@
         color: #92400e;
     }
 
-    .status-badge.danger {
-        background: #fee2e2;
-        color: #991b1b;
+    .status-badge i {
+        margin-right: 0.5rem;
     }
 
     .settings-grid {
         display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(650px, 1fr));
+        grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
         gap: 1.5rem;
     }
 
@@ -102,7 +87,7 @@
         box-shadow: var(--shadow-lg);
     }
 
-    .settings-card-header {
+    .card-header {
         padding: 1.25rem 1.5rem;
         background: var(--gray-50);
         border-bottom: 1px solid var(--gray-200);
@@ -111,12 +96,12 @@
         gap: 0.75rem;
     }
 
-    .settings-card-header i {
+    .card-header i {
         font-size: 1.25rem;
         color: var(--primary);
     }
 
-    .settings-card-header h2 {
+    .card-header h2 {
         font-size: 1.125rem;
         font-weight: 600;
         color: var(--gray-800);
@@ -132,7 +117,7 @@
         color: var(--gray-700);
     }
 
-    .settings-card-body {
+    .card-body {
         padding: 1.5rem;
     }
 
@@ -170,7 +155,7 @@
     }
 
     .help-text i {
-        color: var(--gray-500);
+        color: var(--primary);
         font-size: 0.75rem;
     }
 
@@ -187,17 +172,7 @@
     .form-control:focus {
         outline: none;
         border-color: var(--primary);
-        box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
-    }
-
-    .form-control.is-invalid {
-        border-color: var(--danger);
-    }
-
-    .invalid-feedback {
-        color: var(--danger);
-        font-size: 0.75rem;
-        margin-top: 0.25rem;
+        box-shadow: 0 0 0 3px var(--primary-soft);
     }
 
     .checkbox-group {
@@ -240,19 +215,12 @@
         accent-color: var(--primary);
     }
 
-    .code-editor {
-        font-family: 'Courier New', monospace;
-        font-size: 0.875rem;
-        background: var(--gray-900);
-        color: var(--gray-100);
-        border: none;
-    }
-
+    /* AI Status Card */
     .ai-status-card {
         background: linear-gradient(145deg, #0b1120, #0f172a);
         color: white;
-        padding: 1rem;
-        border-radius: var(--radius-md);
+        padding: 1.5rem;
+        border-radius: var(--radius-lg);
         margin-bottom: 1.5rem;
     }
 
@@ -316,12 +284,55 @@
         font-weight: 700;
     }
 
-    .settings-divider {
-        margin: 1.5rem 0;
-        border: 0;
-        border-top: 1px solid var(--gray-200);
+    /* Source Tags */
+    .source-tags {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        margin-top: 0.5rem;
     }
 
+    .source-tag {
+        background: var(--gray-100);
+        padding: 0.375rem 0.875rem;
+        border-radius: var(--radius-full);
+        font-size: 0.8125rem;
+        color: var(--gray-700);
+        display: inline-flex;
+        align-items: center;
+        gap: 0.375rem;
+        border: 1px solid var(--gray-200);
+    }
+
+    .source-tag i {
+        color: var(--primary);
+        font-size: 0.75rem;
+    }
+
+    .source-tag.trusted {
+        background: #dcfce7;
+        color: #166534;
+        border-color: #86efac;
+    }
+
+    .source-tag.blocked {
+        background: #fee2e2;
+        color: #991b1b;
+        border-color: #fecaca;
+    }
+
+    .source-tag .remove {
+        cursor: pointer;
+        margin-left: 0.25rem;
+        color: inherit;
+        opacity: 0.7;
+    }
+
+    .source-tag .remove:hover {
+        opacity: 1;
+    }
+
+    /* Form Actions */
     .settings-actions {
         display: flex;
         justify-content: flex-end;
@@ -340,12 +351,13 @@
         border-radius: var(--radius-md);
         font-weight: 600;
         font-size: 0.9375rem;
-        transition: all 0.2s;
         border: none;
         cursor: pointer;
         display: inline-flex;
         align-items: center;
         gap: 0.5rem;
+        transition: all 0.2s;
+        text-decoration: none;
     }
 
     .btn-primary {
@@ -371,38 +383,20 @@
     }
 
     .btn-danger {
-        background: var(--danger);
+        background: #ef4444;
         color: white;
     }
 
     .btn-danger:hover {
         background: #b91c1c;
-        transform: translateY(-1px);
-        box-shadow: var(--shadow-md);
     }
 
-    .source-tags {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 0.5rem;
-        margin-top: 0.5rem;
+    .btn-sm {
+        padding: 0.5rem 1rem;
+        font-size: 0.8125rem;
     }
 
-    .source-tag {
-        background: var(--gray-100);
-        padding: 0.25rem 0.75rem;
-        border-radius: var(--radius-full);
-        font-size: 0.75rem;
-        color: var(--gray-700);
-        display: inline-flex;
-        align-items: center;
-        gap: 0.25rem;
-    }
-
-    .source-tag i {
-        color: var(--gray-500);
-    }
-
+    /* Responsive */
     @media (max-width: 768px) {
         .settings-container {
             padding: 1rem;
@@ -424,6 +418,15 @@
         .ai-metrics {
             grid-template-columns: 1fr;
         }
+        
+        .settings-actions {
+            flex-direction: column-reverse;
+            position: static;
+        }
+        
+        .settings-actions .btn {
+            width: 100%;
+        }
     }
 </style>
 {% endblock %}
@@ -439,34 +442,26 @@
                 <p>Configure global system settings and AI automation</p>
             </div>
         </div>
-        <div class="settings-meta">
-            <span class="last-updated">
-                <i class="far fa-clock"></i> Last updated: {{ form.instance.updated_at|timesince }} ago
-                {% if form.instance.updated_by %}
-                    by @{{ form.instance.updated_by.username }}
-                {% endif %}
-            </span>
-            <span class="status-badge {% if form.instance.maintenance_mode %}warning{% else %}success{% endif %}">
-                <i class="fas {% if form.instance.maintenance_mode %}fa-exclamation-triangle{% else %}fa-check-circle{% endif %}"></i>
-                {% if form.instance.maintenance_mode %}Maintenance Mode{% else %}Live{% endif %}
-            </span>
+        <div class="status-badge {% if settings.maintenance_mode %}warning{% else %}success{% endif %}">
+            <i class="fas {% if settings.maintenance_mode %}fa-exclamation-triangle{% else %}fa-check-circle{% endif %}"></i>
+            {% if settings.maintenance_mode %}Maintenance Mode{% else %}System Live{% endif %}
         </div>
     </div>
 
-    <form method="post" enctype="multipart/form-data">
+    <form method="post">
         {% csrf_token %}
         
         <div class="settings-grid">
-            <!-- AI & Automation Settings Card -->
+            <!-- AI & Automation Settings -->
             <div class="settings-card">
-                <div class="settings-card-header">
+                <div class="card-header">
                     <i class="fas fa-robot"></i>
                     <h2>AI Verification & Automation</h2>
                     <span class="card-badge">
-                        {% if form.instance.auto_verify_news %}Active{% else %}Inactive{% endif %}
+                        {% if settings.auto_verify_news %}Active{% else %}Inactive{% endif %}
                     </span>
                 </div>
-                <div class="settings-card-body">
+                <div class="card-body">
                     <!-- AI Status Card -->
                     <div class="ai-status-card">
                         <div class="ai-status-header">
@@ -474,25 +469,23 @@
                                 <i class="fas fa-microchip"></i>
                                 <span>AI Verification Status</span>
                             </div>
-                            <span class="ai-status-badge {% if form.instance.auto_verify_news %}active{% else %}inactive{% endif %}">
-                                {% if form.instance.auto_verify_news %}ACTIVE{% else %}INACTIVE{% endif %}
+                            <span class="ai-status-badge {% if settings.auto_verify_news %}active{% else %}inactive{% endif %}">
+                                {% if settings.auto_verify_news %}ACTIVE{% else %}INACTIVE{% endif %}
                             </span>
                         </div>
-                        {% if form.instance.auto_verify_news %}
+                        {% if settings.auto_verify_news %}
                         <div class="ai-metrics">
                             <div class="ai-metric-item">
-                                <div class="ai-metric-label">Threshold</div>
-                                <div class="ai-metric-value">{{ form.instance.verification_threshold|floatformat:2 }}</div>
+                                <div class="ai-metric-label">Auto-Approve Threshold</div>
+                                <div class="ai-metric-value">{{ settings.auto_approve_threshold|default:"0.8" }}</div>
                             </div>
                             <div class="ai-metric-item">
-                                <div class="ai-metric-label">Schedule</div>
-                                <div class="ai-metric-value">{{ form.instance.get_verification_schedule_display }}</div>
+                                <div class="ai-metric-label">Verified Today</div>
+                                <div class="ai-metric-value">{{ verified_today|default:"0" }}</div>
                             </div>
                             <div class="ai-metric-item">
-                                <div class="ai-metric-label">Auto-Post</div>
-                                <div class="ai-metric-value">
-                                    {% if form.instance.auto_post_verified_news %}Yes{% else %}No{% endif %}
-                                </div>
+                                <div class="ai-metric-label">Fake Detected</div>
+                                <div class="ai-metric-value">{{ fake_detected|default:"0" }}</div>
                             </div>
                         </div>
                         {% endif %}
@@ -511,74 +504,119 @@
                         </div>
                     </div>
 
-                    <div id="aiSettings" style="display: {% if form.instance.auto_verify_news %}block{% else %}none{% endif %};">
+                    <div id="aiSettings" style="display: {% if settings.auto_verify_news %}block{% else %}none{% endif %};">
                         <div class="form-group">
-                            <div class="checkbox-group">
-                                {{ form.auto_post_verified_news }}
-                                <label for="{{ form.auto_post_verified_news.id_for_label }}">
-                                    Enable Auto-Posting
-                                </label>
-                            </div>
-                            <div class="help-text">
-                                <i class="fas fa-info-circle"></i>
-                                Automatically post verified news to online news page
-                            </div>
-                        </div>
-
-                        <div class="form-group">
-                            <div class="checkbox-group">
-                                {{ form.auto_delete_fake_news }}
-                                <label for="{{ form.auto_delete_fake_news.id_for_label }}">
-                                    Auto-Delete Fake News
-                                </label>
-                            </div>
-                            <div class="help-text">
-                                <i class="fas fa-info-circle"></i>
-                                Automatically archive news detected as fake
-                            </div>
-                        </div>
-
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label for="{{ form.verification_threshold.id_for_label }}">
-                                    <i class="fas fa-sliders-h"></i> Verification Threshold
-                                </label>
-                                {{ form.verification_threshold }}
-                                <div class="help-text">
-                                    Minimum confidence score required for auto-approval
-                                </div>
-                            </div>
-                            <div class="form-group">
-                                <label for="{{ form.max_posts_to_verify.id_for_label }}">
-                                    <i class="fas fa-list"></i> Max Posts Per Batch
-                                </label>
-                                {{ form.max_posts_to_verify }}
-                                <div class="help-text">
-                                    Maximum posts to verify in one batch
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="form-group">
-                            <label for="{{ form.verification_schedule.id_for_label }}">
-                                <i class="fas fa-calendar-alt"></i> Verification Schedule
+                            <label for="{{ form.auto_approve_threshold.id_for_label }}">
+                                Auto-Approve Threshold (0.0 - 1.0)
                             </label>
-                            {{ form.verification_schedule }}
+                            {{ form.auto_approve_threshold }}
                             <div class="help-text">
-                                How often to run automatic verification
+                                Minimum AI score required for auto-approval. Higher = stricter.
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <div class="checkbox-group">
+                                {{ form.require_manual_review_for_fake }}
+                                <label for="{{ form.require_manual_review_for_fake.id_for_label }}">
+                                    Require Manual Review for Fake News
+                                </label>
+                            </div>
+                            <div class="help-text">
+                                Posts marked as fake will need admin review before deletion
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <div class="checkbox-group">
+                                {{ form.notify_admin_on_submission }}
+                                <label for="{{ form.notify_admin_on_submission.id_for_label }}">
+                                    Notify Admin on News Submission
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <div class="checkbox-group">
+                                {{ form.notify_user_on_approval }}
+                                <label for="{{ form.notify_user_on_approval.id_for_label }}">
+                                    Notify User on Approval
+                                </label>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- News Fetching Settings Card -->
+            <!-- Trusted Sources Settings -->
             <div class="settings-card">
-                <div class="settings-card-header">
-                    <i class="fas fa-newspaper"></i>
+                <div class="card-header">
+                    <i class="fas fa-check-circle"></i>
+                    <h2>Trusted Sources</h2>
+                </div>
+                <div class="card-body">
+                    <div class="form-group">
+                        <label for="{{ form.trusted_sources.id_for_label }}">
+                            Trusted News Sources (one per line)
+                        </label>
+                        {{ form.trusted_sources }}
+                        <div class="help-text">
+                            <i class="fas fa-info-circle"></i>
+                            Sources that will automatically get higher verification scores
+                        </div>
+                    </div>
+
+                    {% if settings.get_trusted_sources_list %}
+                    <div class="source-tags">
+                        {% for source in settings.get_trusted_sources_list %}
+                        <span class="source-tag trusted">
+                            <i class="fas fa-check-circle"></i> {{ source }}
+                            <i class="fas fa-times remove" onclick="removeSource('trusted', '{{ source }}')"></i>
+                        </span>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Blocked Sources -->
+            <div class="settings-card">
+                <div class="card-header">
+                    <i class="fas fa-ban"></i>
+                    <h2>Blocked Sources</h2>
+                </div>
+                <div class="card-body">
+                    <div class="form-group">
+                        <label for="{{ form.blocked_sources.id_for_label }}">
+                            Blocked Sources (one per line)
+                        </label>
+                        {{ form.blocked_sources }}
+                        <div class="help-text">
+                            <i class="fas fa-info-circle"></i>
+                            Sources that will be marked as unreliable automatically
+                        </div>
+                    </div>
+
+                    {% if settings.get_blocked_sources_list %}
+                    <div class="source-tags">
+                        {% for source in settings.get_blocked_sources_list %}
+                        <span class="source-tag blocked">
+                            <i class="fas fa-ban"></i> {{ source }}
+                            <i class="fas fa-times remove" onclick="removeSource('blocked', '{{ source }}')"></i>
+                        </span>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- News Fetching Settings -->
+            <div class="settings-card">
+                <div class="card-header">
+                    <i class="fas fa-sync-alt"></i>
                     <h2>News Fetching</h2>
                 </div>
-                <div class="settings-card-body">
+                <div class="card-body">
                     <div class="form-group">
                         <div class="checkbox-group">
                             {{ form.enable_auto_fetch }}
@@ -587,551 +625,232 @@
                             </label>
                         </div>
                         <div class="help-text">
-                            <i class="fas fa-info-circle"></i>
                             Automatically fetch news from RSS feeds
                         </div>
                     </div>
 
-                    <div id="fetchSettings" style="display: {% if form.instance.enable_auto_fetch %}block{% else %}none{% endif %};">
+                    <div id="fetchSettings" style="display: {% if settings.enable_auto_fetch %}block{% else %}none{% endif %};">
                         <div class="form-row">
                             <div class="form-group">
-                                <label for="{{ form.fetch_schedule.id_for_label }}">
-                                    <i class="fas fa-clock"></i> Fetch Schedule
-                                </label>
-                                {{ form.fetch_schedule }}
+                                <label for="{{ form.fetch_interval.id_for_label }}">Fetch Interval (minutes)</label>
+                                {{ form.fetch_interval }}
                             </div>
                             <div class="form-group">
-                                <label for="{{ form.max_news_per_fetch.id_for_label }}">
-                                    <i class="fas fa-list"></i> Max Per Fetch
-                                </label>
+                                <label for="{{ form.max_news_per_fetch.id_for_label }}">Max Per Fetch</label>
                                 {{ form.max_news_per_fetch }}
                             </div>
                         </div>
 
                         <div class="form-group">
-                            <label for="{{ form.trusted_sources.id_for_label }}">
-                                <i class="fas fa-check-circle"></i> Trusted Sources
-                            </label>
-                            {{ form.trusted_sources }}
+                            <label for="{{ form.rss_feeds.id_for_label }}">RSS Feeds (one per line)</label>
+                            {{ form.rss_feeds }}
                             <div class="help-text">
-                                Comma-separated list of trusted news sources
+                                RSS feed URLs to fetch news from
                             </div>
-                            {% if form.instance.get_trusted_sources_list %}
-                            <div class="source-tags">
-                                {% for source in form.instance.get_trusted_sources_list %}
-                                <span class="source-tag"><i class="fas fa-check"></i> {{ source }}</span>
-                                {% endfor %}
-                            </div>
-                            {% endif %}
-                        </div>
-
-                        <div class="form-group">
-                            <label for="{{ form.blocked_sources.id_for_label }}">
-                                <i class="fas fa-ban"></i> Blocked Sources
-                            </label>
-                            {{ form.blocked_sources }}
-                            <div class="help-text">
-                                Comma-separated list of sources to block
-                            </div>
-                            {% if form.instance.get_blocked_sources_list %}
-                            <div class="source-tags">
-                                {% for source in form.instance.get_blocked_sources_list %}
-                                <span class="source-tag" style="background: #fee2e2; color: #991b1b;">
-                                    <i class="fas fa-ban"></i> {{ source }}
-                                </span>
-                                {% endfor %}
-                            </div>
-                            {% endif %}
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Post & Content Settings Card -->
+            <!-- Post Settings -->
             <div class="settings-card">
-                <div class="settings-card-header">
+                <div class="card-header">
                     <i class="fas fa-file-alt"></i>
-                    <h2>Post & Content Settings</h2>
+                    <h2>Post Settings</h2>
                 </div>
-                <div class="settings-card-body">
+                <div class="card-body">
                     <div class="form-row">
                         <div class="form-group">
-                            <div class="checkbox-group">
-                                {{ form.enable_guest_access }}
-                                <label for="{{ form.enable_guest_access.id_for_label }}">
-                                    Guest Access
-                                </label>
-                            </div>
-                        </div>
-                        <div class="form-group">
-                            <div class="checkbox-group">
-                                {{ form.require_post_approval }}
-                                <label for="{{ form.require_post_approval.id_for_label }}">
-                                    Require Approval
-                                </label>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="{{ form.max_posts_per_day.id_for_label }}">
-                                <i class="fas fa-chart-line"></i> Max Posts/Day
-                            </label>
+                            <label for="{{ form.max_posts_per_day.id_for_label }}">Max Posts/Day per User</label>
                             {{ form.max_posts_per_day }}
                         </div>
                         <div class="form-group">
-                            <label for="{{ form.max_post_length.id_for_label }}">
-                                <i class="fas fa-text-width"></i> Max Length
-                            </label>
+                            <label for="{{ form.max_post_length.id_for_label }}">Max Post Length</label>
                             {{ form.max_post_length }}
                         </div>
                     </div>
 
                     <div class="form-row">
                         <div class="form-group">
-                            <label for="{{ form.max_image_size.id_for_label }}">
-                                <i class="fas fa-image"></i> Max Image Size (MB)
-                            </label>
+                            <label for="{{ form.max_image_size.id_for_label }}">Max Image Size (MB)</label>
                             {{ form.max_image_size }}
                         </div>
                         <div class="form-group">
-                            <label for="{{ form.allowed_image_types.id_for_label }}">
-                                <i class="fas fa-file-image"></i> Allowed Types
-                            </label>
+                            <label for="{{ form.allowed_image_types.id_for_label }}">Allowed Image Types</label>
                             {{ form.allowed_image_types }}
                         </div>
+                    </div>
+
+                    <div class="checkbox-group">
+                        {{ form.require_post_approval }}
+                        <label for="{{ form.require_post_approval.id_for_label }}">
+                            Require Post Approval
+                        </label>
+                    </div>
+
+                    <div class="checkbox-group">
+                        {{ form.allow_guest_posting }}
+                        <label for="{{ form.allow_guest_posting.id_for_label }}">
+                            Allow Guest Posting
+                        </label>
                     </div>
                 </div>
             </div>
 
-            <!-- User Settings Card -->
+            <!-- User Settings -->
             <div class="settings-card">
-                <div class="settings-card-header">
+                <div class="card-header">
                     <i class="fas fa-users"></i>
                     <h2>User Settings</h2>
                 </div>
-                <div class="settings-card-body">
-                    <div class="form-row">
-                        <div class="form-group">
-                            <div class="checkbox-group">
-                                {{ form.allow_registrations }}
-                                <label for="{{ form.allow_registrations.id_for_label }}">
-                                    Allow Registrations
-                                </label>
-                            </div>
-                        </div>
-                        <div class="form-group">
-                            <div class="checkbox-group">
-                                {{ form.require_email_verification }}
-                                <label for="{{ form.require_email_verification.id_for_label }}">
-                                    Email Verification
-                                </label>
-                            </div>
-                        </div>
+                <div class="card-body">
+                    <div class="checkbox-group">
+                        {{ form.allow_registrations }}
+                        <label for="{{ form.allow_registrations.id_for_label }}">
+                            Allow New Registrations
+                        </label>
+                    </div>
+
+                    <div class="checkbox-group">
+                        {{ form.require_email_verification }}
+                        <label for="{{ form.require_email_verification.id_for_label }}">
+                            Require Email Verification
+                        </label>
                     </div>
 
                     <div class="form-group">
-                        <label for="{{ form.default_user_role.id_for_label }}">
-                            <i class="fas fa-user-tag"></i> Default User Role
-                        </label>
+                        <label for="{{ form.default_user_role.id_for_label }}">Default User Role</label>
                         {{ form.default_user_role }}
                     </div>
                 </div>
             </div>
 
-            <!-- Advertisement Settings Card -->
+            <!-- Advertisement Settings -->
             <div class="settings-card">
-                <div class="settings-card-header">
+                <div class="card-header">
                     <i class="fas fa-ad"></i>
                     <h2>Advertisement Settings</h2>
                 </div>
-                <div class="settings-card-body">
+                <div class="card-body">
+                    <div class="checkbox-group">
+                        {{ form.ad_approval_required }}
+                        <label for="{{ form.ad_approval_required.id_for_label }}">
+                            Require Ad Approval
+                        </label>
+                    </div>
+
                     <div class="form-row">
                         <div class="form-group">
-                            <div class="checkbox-group">
-                                {{ form.ad_approval_required }}
-                                <label for="{{ form.ad_approval_required.id_for_label }}">
-                                    Require Ad Approval
-                                </label>
-                            </div>
-                        </div>
-                        <div class="form-group">
-                            <label for="{{ form.max_ads_per_business.id_for_label }}">
-                                Max Ads/Business
-                            </label>
+                            <label for="{{ form.max_ads_per_business.id_for_label }}">Max Ads/Business</label>
                             {{ form.max_ads_per_business }}
                         </div>
-                    </div>
-
-                    <div class="form-row">
                         <div class="form-group">
-                            <label for="{{ form.min_ad_budget.id_for_label }}">
-                                <i class="fas fa-money-bill"></i> Min Budget (₦)
-                            </label>
+                            <label for="{{ form.min_ad_budget.id_for_label }}">Min Budget (₦)</label>
                             {{ form.min_ad_budget }}
                         </div>
-                        <div class="form-group">
-                            <label for="{{ form.banner_rotation_interval.id_for_label }}">
-                                <i class="fas fa-sync"></i> Rotation (sec)
-                            </label>
-                            {{ form.banner_rotation_interval }}
-                        </div>
                     </div>
 
                     <div class="form-row">
                         <div class="form-group">
-                            <label for="{{ form.ad_impression_rate.id_for_label }}">
-                                <i class="fas fa-eye"></i> Cost/Impression (₦)
-                            </label>
+                            <label for="{{ form.ad_impression_rate.id_for_label }}">Cost/Impression (₦)</label>
                             {{ form.ad_impression_rate }}
                         </div>
                         <div class="form-group">
-                            <label for="{{ form.ad_click_rate.id_for_label }}">
-                                <i class="fas fa-mouse-pointer"></i> Cost/Click (₦)
-                            </label>
+                            <label for="{{ form.ad_click_rate.id_for_label }}">Cost/Click (₦)</label>
                             {{ form.ad_click_rate }}
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Group Settings Card -->
+            <!-- Maintenance Settings -->
             <div class="settings-card">
-                <div class="settings-card-header">
-                    <i class="fas fa-users-cog"></i>
-                    <h2>Group Settings</h2>
+                <div class="card-header">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <h2>Maintenance</h2>
                 </div>
-                <div class="settings-card-body">
-                    <div class="form-row">
-                        <div class="form-group">
-                            <div class="checkbox-group">
-                                {{ form.allow_group_creation }}
-                                <label for="{{ form.allow_group_creation.id_for_label }}">
-                                    Allow Group Creation
-                                </label>
-                            </div>
-                        </div>
-                        <div class="form-group">
-                            <div class="checkbox-group">
-                                {{ form.require_group_approval }}
-                                <label for="{{ form.require_group_approval.id_for_label }}">
-                                    Require Approval
-                                </label>
-                            </div>
-                        </div>
+                <div class="card-body">
+                    <div class="checkbox-group">
+                        {{ form.maintenance_mode }}
+                        <label for="{{ form.maintenance_mode.id_for_label }}">
+                            Enable Maintenance Mode
+                        </label>
                     </div>
 
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="{{ form.max_groups_per_user.id_for_label }}">
-                                <i class="fas fa-layer-group"></i> Max Groups/User
+                    <div id="maintenanceSettings" style="display: {% if settings.maintenance_mode %}block{% else %}none{% endif %};">
+                        <div class="checkbox-group">
+                            {{ form.allow_admin_during_maintenance }}
+                            <label for="{{ form.allow_admin_during_maintenance.id_for_label }}">
+                                Allow Admin Access
                             </label>
-                            {{ form.max_groups_per_user }}
                         </div>
+
                         <div class="form-group">
-                            <label for="{{ form.min_members_for_public_group.id_for_label }}">
-                                <i class="fas fa-users"></i> Min Members for Public
-                            </label>
-                            {{ form.min_members_for_public_group }}
+                            <label for="{{ form.maintenance_message.id_for_label }}">Maintenance Message</label>
+                            {{ form.maintenance_message }}
+                            <div class="help-text">
+                                Message shown to users during maintenance
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Trending & Analytics Card -->
+            <!-- Performance Settings -->
             <div class="settings-card">
-                <div class="settings-card-header">
-                    <i class="fas fa-chart-line"></i>
-                    <h2>Trending & Analytics</h2>
-                </div>
-                <div class="settings-card-body">
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="{{ form.trending_calculation_interval.id_for_label }}">
-                                <i class="fas fa-clock"></i> Calculation Interval
-                            </label>
-                            {{ form.trending_calculation_interval }}
-                            <div class="help-text">Hours</div>
-                        </div>
-                        <div class="form-group">
-                            <label for="{{ form.trending_time_window.id_for_label }}">
-                                <i class="fas fa-calendar-week"></i> Time Window
-                            </label>
-                            {{ form.trending_time_window }}
-                            <div class="help-text">Hours</div>
-                        </div>
-                    </div>
-
-                    <hr class="settings-divider">
-
-                    <h3 style="font-size: 0.95rem; margin-bottom: 1rem; color: var(--gray-700);">
-                        <i class="fas fa-weight-hanging"></i> Engagement Weights
-                    </h3>
-
-                    <div class="form-row-3">
-                        <div class="form-group">
-                            <label for="{{ form.engagement_weight_like.id_for_label }}">
-                                <i class="fas fa-heart"></i> Like
-                            </label>
-                            {{ form.engagement_weight_like }}
-                        </div>
-                        <div class="form-group">
-                            <label for="{{ form.engagement_weight_comment.id_for_label }}">
-                                <i class="fas fa-comment"></i> Comment
-                            </label>
-                            {{ form.engagement_weight_comment }}
-                        </div>
-                        <div class="form-group">
-                            <label for="{{ form.engagement_weight_share.id_for_label }}">
-                                <i class="fas fa-retweet"></i> Share
-                            </label>
-                            {{ form.engagement_weight_share }}
-                        </div>
-                        <div class="form-group">
-                            <label for="{{ form.engagement_weight_view.id_for_label }}">
-                                <i class="fas fa-eye"></i> View
-                            </label>
-                            {{ form.engagement_weight_view }}
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Performance & SEO Card -->
-            <div class="settings-card">
-                <div class="settings-card-header">
+                <div class="card-header">
                     <i class="fas fa-tachometer-alt"></i>
-                    <h2>Performance & SEO</h2>
+                    <h2>Performance</h2>
                 </div>
-                <div class="settings-card-body">
+                <div class="card-body">
                     <div class="form-row">
                         <div class="form-group">
-                            <label for="{{ form.cache_timeout.id_for_label }}">
-                                <i class="fas fa-database"></i> Cache Timeout (sec)
-                            </label>
+                            <label for="{{ form.cache_timeout.id_for_label }}">Cache Timeout (seconds)</label>
                             {{ form.cache_timeout }}
                         </div>
-                        <div class="form-group">
-                            <div class="checkbox-group">
-                                {{ form.compress_images }}
-                                <label for="{{ form.compress_images.id_for_label }}">
-                                    Compress Images
-                                </label>
-                            </div>
+                        <div class="checkbox-group">
+                            {{ form.compress_images }}
+                            <label for="{{ form.compress_images.id_for_label }}">
+                                Compress Images
+                            </label>
                         </div>
                     </div>
 
                     <div class="form-group">
-                        <label for="{{ form.meta_description.id_for_label }}">
-                            <i class="fas fa-paragraph"></i> Meta Description
-                        </label>
+                        <label for="{{ form.cdn_url.id_for_label }}">CDN URL (optional)</label>
+                        {{ form.cdn_url }}
+                        <div class="help-text">
+                            Content delivery network URL for static files
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SEO Settings -->
+            <div class="settings-card">
+                <div class="card-header">
+                    <i class="fas fa-chart-line"></i>
+                    <h2>SEO & Meta</h2>
+                </div>
+                <div class="card-body">
+                    <div class="form-group">
+                        <label for="{{ form.meta_title.id_for_label }}">Meta Title</label>
+                        {{ form.meta_title }}
+                    </div>
+
+                    <div class="form-group">
+                        <label for="{{ form.meta_description.id_for_label }}">Meta Description</label>
                         {{ form.meta_description }}
                     </div>
 
                     <div class="form-group">
-                        <label for="{{ form.meta_keywords.id_for_label }}">
-                            <i class="fas fa-tags"></i> Meta Keywords
-                        </label>
+                        <label for="{{ form.meta_keywords.id_for_label }}">Meta Keywords</label>
                         {{ form.meta_keywords }}
                     </div>
 
                     <div class="form-group">
-                        <label for="{{ form.robots_txt.id_for_label }}">
-                            <i class="fas fa-robot"></i> robots.txt
-                        </label>
-                        {{ form.robots_txt }}
-                    </div>
-                </div>
-            </div>
-
-            <!-- Social Media Card -->
-            <div class="settings-card">
-                <div class="settings-card-header">
-                    <i class="fas fa-share-alt"></i>
-                    <h2>Social Media & Contact</h2>
-                </div>
-                <div class="settings-card-body">
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="{{ form.facebook_url.id_for_label }}">
-                                <i class="fab fa-facebook"></i> Facebook
-                            </label>
-                            {{ form.facebook_url }}
-                        </div>
-                        <div class="form-group">
-                            <label for="{{ form.twitter_url.id_for_label }}">
-                                <i class="fab fa-twitter"></i> Twitter
-                            </label>
-                            {{ form.twitter_url }}
-                        </div>
-                    </div>
-
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="{{ form.instagram_url.id_for_label }}">
-                                <i class="fab fa-instagram"></i> Instagram
-                            </label>
-                            {{ form.instagram_url }}
-                        </div>
-                        <div class="form-group">
-                            <label for="{{ form.linkedin_url.id_for_label }}">
-                                <i class="fab fa-linkedin"></i> LinkedIn
-                            </label>
-                            {{ form.linkedin_url }}
-                        </div>
-                    </div>
-
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="{{ form.youtube_url.id_for_label }}">
-                                <i class="fab fa-youtube"></i> YouTube
-                            </label>
-                            {{ form.youtube_url }}
-                        </div>
-                        <div class="form-group">
-                            <label for="{{ form.telegram_url.id_for_label }}">
-                                <i class="fab fa-telegram"></i> Telegram
-                            </label>
-                            {{ form.telegram_url }}
-                        </div>
-                    </div>
-
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="{{ form.whatsapp_number.id_for_label }}">
-                                <i class="fab fa-whatsapp"></i> WhatsApp
-                            </label>
-                            {{ form.whatsapp_number }}
-                        </div>
-                    </div>
-
-                    <hr class="settings-divider">
-
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="{{ form.contact_email.id_for_label }}">
-                                <i class="fas fa-envelope"></i> Contact Email
-                            </label>
-                            {{ form.contact_email }}
-                        </div>
-                        <div class="form-group">
-                            <label for="{{ form.support_email.id_for_label }}">
-                                <i class="fas fa-headset"></i> Support Email
-                            </label>
-                            {{ form.support_email }}
-                        </div>
-                    </div>
-
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="{{ form.contact_phone.id_for_label }}">
-                                <i class="fas fa-phone"></i> Contact Phone
-                            </label>
-                            {{ form.contact_phone }}
-                        </div>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="{{ form.address.id_for_label }}">
-                            <i class="fas fa-map-marker-alt"></i> Address
-                        </label>
-                        {{ form.address }}
-                    </div>
-                </div>
-            </div>
-
-            <!-- Notification Settings Card -->
-            <div class="settings-card">
-                <div class="settings-card-header">
-                    <i class="fas fa-bell"></i>
-                    <h2>Notification Settings</h2>
-                </div>
-                <div class="settings-card-body">
-                    <div class="form-row">
-                        <div class="form-group">
-                            <div class="checkbox-group">
-                                {{ form.enable_email_notifications }}
-                                <label for="{{ form.enable_email_notifications.id_for_label }}">
-                                    Email Notifications
-                                </label>
-                            </div>
-                        </div>
-                        <div class="form-group">
-                            <div class="checkbox-group">
-                                {{ form.enable_push_notifications }}
-                                <label for="{{ form.enable_push_notifications.id_for_label }}">
-                                    Push Notifications
-                                </label>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="form-group">
-                        <div class="checkbox-group">
-                            {{ form.notify_admin_on_new_post }}
-                            <label for="{{ form.notify_admin_on_new_post.id_for_label }}">
-                                Notify Admin on New Post
-                            </label>
-                        </div>
-                    </div>
-
-                    <div class="form-group">
-                        <div class="checkbox-group">
-                            {{ form.notify_admin_on_new_user }}
-                            <label for="{{ form.notify_admin_on_new_user.id_for_label }}">
-                                Notify Admin on New User
-                            </label>
-                        </div>
-                    </div>
-
-                    <div class="form-group">
-                        <div class="checkbox-group">
-                            {{ form.notify_admin_on_fake_news }}
-                            <label for="{{ form.notify_admin_on_fake_news.id_for_label }}">
-                                Notify Admin on Fake News Detection
-                            </label>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Maintenance Card -->
-            <div class="settings-card">
-                <div class="settings-card-header">
-                    <i class="fas fa-exclamation-triangle"></i>
-                    <h2>Maintenance</h2>
-                </div>
-                <div class="settings-card-body">
-                    <div class="form-group">
-                        <div class="checkbox-group">
-                            {{ form.maintenance_mode }}
-                            <label for="{{ form.maintenance_mode.id_for_label }}">
-                                Enable Maintenance Mode
-                            </label>
-                        </div>
-                        <div class="help-text">
-                            <i class="fas fa-info-circle"></i>
-                            When enabled, only admins can access the site
-                        </div>
-                    </div>
-
-                    <div id="maintenanceSettings" style="display: {% if form.instance.maintenance_mode %}block{% else %}none{% endif %};">
-                        <div class="form-group">
-                            <div class="checkbox-group">
-                                {{ form.allow_admin_during_maintenance }}
-                                <label for="{{ form.allow_admin_during_maintenance.id_for_label }}">
-                                    Allow Admin Access
-                                </label>
-                            </div>
-                        </div>
-
-                        <div class="form-group">
-                            <label for="{{ form.maintenance_message.id_for_label }}">
-                                <i class="fas fa-comment"></i> Maintenance Message
-                            </label>
-                            {{ form.maintenance_message }}
-                        </div>
+                        <label for="{{ form.google_analytics_id.id_for_label }}">Google Analytics ID</label>
+                        {{ form.google_analytics_id }}
                     </div>
                 </div>
             </div>
@@ -1184,15 +903,6 @@
             });
         }
 
-        // Show/hide custom interval based on schedule selection
-        const scheduleSelect = document.getElementById('{{ form.verification_schedule.id_for_label }}');
-        if (scheduleSelect) {
-            scheduleSelect.addEventListener('change', function() {
-                // This can be extended if you add custom interval option
-                console.log('Schedule changed to:', this.value);
-            });
-        }
-
         // Confirmation before leaving with unsaved changes
         let formChanged = false;
         const form = document.querySelector('form');
@@ -1217,17 +927,14 @@
         form.addEventListener('submit', function() {
             formChanged = false;
         });
-
-        // Preview source tags
-        function updateSourceTags(inputId, containerClass) {
-            const input = document.getElementById(inputId);
-            if (input) {
-                input.addEventListener('keyup', function() {
-                    // This would dynamically update the source tags preview
-                    // Implementation depends on your UI needs
-                });
-            }
-        }
     });
+
+    // Function to remove source tags (would need AJAX implementation)
+    function removeSource(type, source) {
+        if (confirm(`Remove ${source} from ${type} sources?`)) {
+            // This would need AJAX to update the form fields
+            alert('This feature requires AJAX implementation');
+        }
+    }
 </script>
 {% endblock %}

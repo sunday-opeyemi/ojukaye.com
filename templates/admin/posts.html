@@ -3,514 +3,932 @@
 
 {% block title %}Manage Posts - Admin{% endblock %}
 
-{% block content %}
-<div class="admin-posts">
-    <div class="admin-header">
-        <div class="admin-header-left">
-            <h1 class="admin-title">
-                <i class="fas fa-file-alt" style="color: var(--primary);"></i>
-                Manage Posts
-            </h1>
-            <p class="admin-subtitle">Review, verify, and manage all posts on the platform</p>
-        </div>
-        <div class="admin-header-right">
-            <a href="{% url 'fetch_news' %}" class="btn btn-primary">
-                <i class="fas fa-sync-alt"></i> Fetch News
-            </a>
-            <a href="{% url 'admin_dashboard' %}" class="btn btn-outline">
-                <i class="fas fa-arrow-left"></i> Back to Dashboard
-            </a>
-        </div>
-    </div>
-    
-    <!-- Filter Tabs -->
-    <div class="admin-filters">
-        <div class="filter-tabs">
-            <a href="?filter=all" class="filter-tab {% if filter_type == 'all' or not filter_type %}active{% endif %}">
-                All Posts
-            </a>
-            <a href="?filter=pending" class="filter-tab {% if filter_type == 'pending' %}active{% endif %}">
-                Pending Verification
-                {% if stats.pending_verification %}
-                <span class="badge">{{ stats.pending_verification }}</span>
-                {% endif %}
-            </a>
-            <a href="?filter=fake" class="filter-tab {% if filter_type == 'fake' %}active{% endif %}">
-                Fake News
-                {% if stats.fake_news %}
-                <span class="badge danger">{{ stats.fake_news }}</span>
-                {% endif %}
-            </a>
-            <a href="?filter=unverified" class="filter-tab {% if filter_type == 'unverified' %}active{% endif %}">
-                Unverified
-            </a>
-        </div>
-        
-        <div class="filter-search">
-            <form method="GET" class="search-mini">
-                <input type="hidden" name="filter" value="{{ filter_type }}">
-                <input type="text" name="q" placeholder="Search posts..." value="{{ search_query|default:'' }}" class="form-input">
-                <button type="submit" class="btn btn-primary">
-                    <i class="fas fa-search"></i>
-                </button>
-            </form>
-        </div>
-    </div>
-    
-    <!-- Posts Table -->
-    <div class="admin-card">
-        <div class="admin-card-body">
-            <div class="posts-table">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>ID</th>
-                            <th>Title</th>
-                            <th>Author</th>
-                            <th>Type</th>
-                            <th>Category</th>
-                            <th>Status</th>
-                            <th>Verification</th>
-                            <th>Date</th>
-                            <th>Stats</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for post in posts %}
-                        <tr>
-                            <td>#{{ post.id }}</td>
-                            <td>
-                                <div class="post-title-cell">
-                                    <a href="{% url 'post_detail' post.id %}" target="_blank" class="post-title-link">
-                                        {{ post.title|truncatechars:50 }}
-                                    </a>
-                                    {% if post.is_auto_fetched %}
-                                    <span class="badge info">Auto</span>
-                                    {% endif %}
-                                    {% if post.is_sponsored %}
-                                    <span class="badge warning">Sponsored</span>
-                                    {% endif %}
-                                </div>
-                            </td>
-                            <td>
-                                <div class="author-cell">
-                                    <div class="author-avatar-mini">
-                                        {% if post.author.profile.profile_pic %}
-                                        <img src="{{ post.author.profile.profile_pic.url }}" alt="{{ post.author.username }}">
-                                        {% else %}
-                                        <div class="avatar-placeholder">{{ post.author.username|first|upper }}</div>
-                                        {% endif %}
-                                    </div>
-                                    <a href="{% url 'profile_view' username=post.author.username %}" target="_blank">
-                                        @{{ post.author.username }}
-                                    </a>
-                                </div>
-                            </td>
-                            <td>
-                                <span class="badge">{{ post.get_post_type_display }}</span>
-                            </td>
-                            <td>
-                                {% if post.category %}
-                                {{ post.category.name }}
-                                {% else %}
-                                —
-                                {% endif %}
-                            </td>
-                            <td>
-                                <span class="badge {% if post.status == 'published' %}success{% else %}warning{% endif %}">
-                                    {{ post.get_status_display }}
-                                </span>
-                            </td>
-                            <td>
-                                {% if post.verification_status == 'verified' %}
-                                <span class="badge success">
-                                    <i class="fas fa-check-circle"></i> Verified
-                                </span>
-                                {% elif post.verification_status == 'fake' %}
-                                <span class="badge danger">
-                                    <i class="fas fa-exclamation-triangle"></i> Fake
-                                </span>
-                                {% elif post.verification_status == 'pending' %}
-                                <span class="badge warning">
-                                    <i class="fas fa-clock"></i> Pending
-                                </span>
-                                {% else %}
-                                <span class="badge">
-                                    {{ post.get_verification_status_display }}
-                                </span>
-                                {% endif %}
-                                {% if post.verification_score %}
-                                <span class="verification-score">{{ post.verification_score|floatformat:2 }}</span>
-                                {% endif %}
-                            </td>
-                            <td>{{ post.created_at|date:"M d, Y" }}</td>
-                            <td>
-                                <div class="post-stats-mini">
-                                    <span title="Views"><i class="fas fa-eye"></i> {{ post.views }}</span>
-                                    <span title="Likes"><i class="fas fa-heart"></i> {{ post.likes.count }}</span>
-                                    <span title="Comments"><i class="fas fa-comment"></i> {{ post.comments.count }}</span>
-                                </div>
-                            </td>
-                            <td>
-                                <div class="action-buttons">
-                                    <a href="{% url 'post_detail' post.id %}" class="action-btn-icon" target="_blank" title="View">
-                                        <i class="fas fa-eye"></i>
-                                    </a>
-                                    <a href="{% url 'admin:core_post_change' post.id %}" class="action-btn-icon" title="Edit in Admin">
-                                        <i class="fas fa-edit"></i>
-                                    </a>
-                                    
-                                    {% if post.verification_status != 'verified' %}
-                                    <button class="action-btn-icon success" onclick="verifyPost({{ post.id }})" title="Verify">
-                                        <i class="fas fa-check-circle"></i>
-                                    </button>
-                                    {% endif %}
-                                    
-                                    {% if post.verification_status != 'fake' %}
-                                    <button class="action-btn-icon warning" onclick="markAsFake({{ post.id }})" title="Mark as Fake">
-                                        <i class="fas fa-exclamation-triangle"></i>
-                                    </button>
-                                    {% endif %}
-                                    
-                                    <button class="action-btn-icon danger" onclick="deletePost({{ post.id }})" title="Delete">
-                                        <i class="fas fa-trash-alt"></i>
-                                    </button>
-                                    
-                                    <button class="action-btn-icon" onclick="toggleFeature({{ post.id }})" title="{% if post.is_featured %}Unfeature{% else %}Feature{% endif %}">
-                                        <i class="fas fa-star {% if post.is_featured %}featured{% endif %}"></i>
-                                    </button>
-                                </div>
-                            </td>
-                        </tr>
-                        {% empty %}
-                        <tr>
-                            <td colspan="10" class="empty-state">
-                                <div class="empty-state-container">
-                                    <div class="empty-state-icon">
-                                        <i class="fas fa-file-alt"></i>
-                                    </div>
-                                    <h3>No posts found</h3>
-                                    <p>There are no posts matching your criteria.</p>
-                                </div>
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-            
-            <!-- Pagination -->
-            {% if page_obj.has_other_pages %}
-            <div class="admin-pagination">
-                <span class="step-links">
-                    {% if page_obj.has_previous %}
-                    <a href="?page=1&filter={{ filter_type }}&q={{ search_query }}" class="btn btn-outline">
-                        <i class="fas fa-angle-double-left"></i>
-                    </a>
-                    <a href="?page={{ page_obj.previous_page_number }}&filter={{ filter_type }}&q={{ search_query }}" class="btn btn-outline">
-                        <i class="fas fa-angle-left"></i>
-                    </a>
-                    {% endif %}
-                    
-                    <span class="current-page">
-                        Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
-                    </span>
-                    
-                    {% if page_obj.has_next %}
-                    <a href="?page={{ page_obj.next_page_number }}&filter={{ filter_type }}&q={{ search_query }}" class="btn btn-outline">
-                        <i class="fas fa-angle-right"></i>
-                    </a>
-                    <a href="?page={{ page_obj.paginator.num_pages }}&filter={{ filter_type }}&q={{ search_query }}" class="btn btn-outline">
-                        <i class="fas fa-angle-double-right"></i>
-                    </a>
-                    {% endif %}
-                </span>
-            </div>
-            {% endif %}
-        </div>
-    </div>
-</div>
-
-<!-- Delete Confirmation Modal -->
-<div class="modal" id="deletePostModal">
-    <div class="modal-content">
-        <div class="modal-header">
-            <h3>Delete Post</h3>
-            <button class="modal-close">&times;</button>
-        </div>
-        <div class="modal-body">
-            <p>Are you sure you want to delete this post? This action cannot be undone.</p>
-        </div>
-        <div class="modal-footer">
-            <button class="btn btn-outline" onclick="closeModal()">Cancel</button>
-            <button class="btn btn-danger" id="confirmDeleteBtn">Delete</button>
-        </div>
-    </div>
-</div>
-
-<script>
-    let currentPostId = null;
-    
-    function verifyPost(postId) {
-        if (confirm('Verify this post as legitimate news?')) {
-            fetch(`/admin/posts/${postId}/verify/`, {
-                method: 'POST',
-                headers: {
-                    'X-CSRFToken': '{{ csrf_token }}',
-                    'X-Requested-With': 'XMLHttpRequest'
-                }
-            }).then(response => {
-                if (response.ok) {
-                    window.location.reload();
-                }
-            });
-        }
-    }
-    
-    function markAsFake(postId) {
-        if (confirm('Mark this post as fake news?')) {
-            fetch(`/admin/posts/${postId}/fake/`, {
-                method: 'POST',
-                headers: {
-                    'X-CSRFToken': '{{ csrf_token }}',
-                    'X-Requested-With': 'XMLHttpRequest'
-                }
-            }).then(response => {
-                if (response.ok) {
-                    window.location.reload();
-                }
-            });
-        }
-    }
-    
-    function deletePost(postId) {
-        currentPostId = postId;
-        document.getElementById('deletePostModal').classList.add('active');
-    }
-    
-    document.getElementById('confirmDeleteBtn')?.addEventListener('click', function() {
-        if (currentPostId) {
-            fetch(`/post/${currentPostId}/delete/`, {
-                method: 'POST',
-                headers: {
-                    'X-CSRFToken': '{{ csrf_token }}',
-                    'X-Requested-With': 'XMLHttpRequest'
-                }
-            }).then(response => {
-                if (response.ok) {
-                    window.location.reload();
-                }
-            });
-        }
-    });
-    
-    function toggleFeature(postId) {
-        fetch(`/api/feature-post/${postId}/`, {
-            method: 'POST',
-            headers: {
-                'X-CSRFToken': '{{ csrf_token }}',
-                'X-Requested-With': 'XMLHttpRequest'
-            }
-        }).then(response => response.json())
-          .then(data => {
-              showNotification(data.message, 'success');
-              setTimeout(() => window.location.reload(), 1000);
-          });
-    }
-    
-    function closeModal() {
-        document.querySelectorAll('.modal.active').forEach(modal => {
-            modal.classList.remove('active');
-        });
-        currentPostId = null;
-    }
-    
-    document.querySelectorAll('.modal-close').forEach(btn => {
-        btn.addEventListener('click', closeModal);
-    });
-    
-    window.addEventListener('click', function(e) {
-        if (e.target.classList.contains('modal')) {
-            closeModal();
-        }
-    });
-</script>
-
+{% block extra_css %}
 <style>
     .admin-posts {
-        max-width: 1440px;
+        max-width: 1400px;
         margin: 0 auto;
+        padding: 2rem;
     }
-    
-    .admin-filters {
+
+    .admin-header {
         display: flex;
         align-items: center;
         justify-content: space-between;
-        margin-bottom: 1.5rem;
-        background: var(--white);
-        border-radius: var(--radius-lg);
-        border: 1px solid var(--gray-200);
-        padding: 1rem;
+        margin-bottom: 2rem;
+        flex-wrap: wrap;
+        gap: 1rem;
     }
-    
-    .posts-table {
-        overflow-x: auto;
-    }
-    
-    .posts-table table {
-        width: 100%;
-        border-collapse: collapse;
-    }
-    
-    .posts-table th {
-        text-align: left;
-        padding: 1rem 0.75rem;
-        font-size: 0.875rem;
-        font-weight: 600;
-        color: var(--gray-700);
-        border-bottom: 2px solid var(--gray-200);
-        white-space: nowrap;
-    }
-    
-    .posts-table td {
-        padding: 1rem 0.75rem;
-        border-bottom: 1px solid var(--gray-200);
-        vertical-align: middle;
-    }
-    
-    .post-title-cell {
-        display: flex;
-        flex-direction: column;
-        gap: 0.25rem;
-        max-width: 300px;
-    }
-    
-    .post-title-link {
-        font-weight: 600;
-        color: var(--gray-900);
-        text-decoration: none;
-    }
-    
-    .post-title-link:hover {
-        color: var(--primary);
-    }
-    
-    .author-cell {
+
+    .admin-title {
         display: flex;
         align-items: center;
-        gap: 0.5rem;
+        gap: 1rem;
     }
-    
-    .author-avatar-mini {
-        width: 30px;
-        height: 30px;
-        border-radius: 50%;
-        overflow: hidden;
+
+    .admin-title i {
+        font-size: 2rem;
+        color: var(--primary);
+        background: var(--primary-soft);
+        padding: 1rem;
+        border-radius: var(--radius-lg);
     }
-    
-    .author-avatar-mini img,
-    .author-avatar-mini .avatar-placeholder {
-        width: 100%;
-        height: 100%;
+
+    .admin-title h1 {
+        font-size: 2rem;
+        font-weight: 700;
+        color: var(--gray-900);
+        margin-bottom: 0.25rem;
     }
-    
-    .verification-score {
-        display: inline-block;
-        margin-left: 0.5rem;
-        padding: 0.125rem 0.375rem;
-        background: var(--gray-200);
-        border-radius: var(--radius-full);
-        font-size: 0.625rem;
-        font-weight: 600;
-    }
-    
-    .post-stats-mini {
-        display: flex;
-        gap: 0.5rem;
-        font-size: 0.75rem;
+
+    .admin-title p {
         color: var(--gray-600);
-        white-space: nowrap;
     }
-    
-    .post-stats-mini i {
-        margin-right: 0.125rem;
-    }
-    
-    .action-buttons {
+
+    .admin-actions {
         display: flex;
-        gap: 0.25rem;
-        flex-wrap: wrap;
+        gap: 1rem;
     }
-    
-    .action-btn-icon {
-        width: 32px;
-        height: 32px;
+
+    /* Stats Cards */
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1rem;
+        margin-bottom: 2rem;
+    }
+
+    .stat-card {
+        background: var(--white);
+        border-radius: var(--radius-lg);
+        padding: 1.25rem;
+        border: 1px solid var(--gray-200);
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        transition: all 0.2s;
+    }
+
+    .stat-card:hover {
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-md);
+    }
+
+    .stat-icon {
+        width: 48px;
+        height: 48px;
+        border-radius: var(--radius-md);
         display: flex;
         align-items: center;
         justify-content: center;
-        background: var(--gray-100);
-        border: none;
-        border-radius: var(--radius-full);
+        font-size: 1.25rem;
+        color: white;
+    }
+
+    .stat-content {
+        flex: 1;
+    }
+
+    .stat-value {
+        display: block;
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: var(--gray-900);
+        line-height: 1;
+        margin-bottom: 0.125rem;
+    }
+
+    .stat-label {
+        font-size: 0.75rem;
+        color: var(--gray-600);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+
+    /* Filters */
+    .filters-section {
+        background: var(--white);
+        border-radius: var(--radius-lg);
+        border: 1px solid var(--gray-200);
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .filter-row {
+        display: flex;
+        gap: 1rem;
+        margin-bottom: 1rem;
+        flex-wrap: wrap;
+    }
+
+    .filter-row:last-child {
+        margin-bottom: 0;
+    }
+
+    .filter-group {
+        flex: 1;
+        min-width: 200px;
+    }
+
+    .filter-label {
+        display: block;
+        font-size: 0.875rem;
+        font-weight: 600;
         color: var(--gray-700);
+        margin-bottom: 0.375rem;
+    }
+
+    .filter-select,
+    .filter-input {
+        width: 100%;
+        padding: 0.625rem;
+        border: 1px solid var(--gray-300);
+        border-radius: var(--radius-md);
+        font-size: 0.875rem;
+    }
+
+    .filter-actions {
+        display: flex;
+        gap: 0.5rem;
+        align-items: flex-end;
+    }
+
+    .btn {
+        padding: 0.625rem 1.25rem;
+        border-radius: var(--radius-md);
+        font-weight: 600;
+        font-size: 0.875rem;
+        border: none;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        transition: all 0.2s;
+        text-decoration: none;
+    }
+
+    .btn-primary {
+        background: var(--primary);
+        color: white;
+    }
+
+    .btn-primary:hover {
+        background: var(--primary-dark);
+    }
+
+    .btn-outline {
+        background: transparent;
+        border: 1px solid var(--gray-300);
+        color: var(--gray-700);
+    }
+
+    .btn-outline:hover {
+        background: var(--gray-100);
+    }
+
+    .btn-sm {
+        padding: 0.375rem 0.75rem;
+        font-size: 0.75rem;
+    }
+
+    /* Bulk Actions */
+    .bulk-actions {
+        background: var(--gray-100);
+        border-radius: var(--radius-lg);
+        padding: 1rem;
+        margin-bottom: 1rem;
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        flex-wrap: wrap;
+    }
+
+    .bulk-select {
+        padding: 0.5rem;
+        border: 1px solid var(--gray-300);
+        border-radius: var(--radius-md);
+        min-width: 200px;
+    }
+
+    .selected-count {
+        font-size: 0.875rem;
+        color: var(--gray-600);
+    }
+
+    /* Table */
+    .table-container {
+        background: var(--white);
+        border-radius: var(--radius-lg);
+        border: 1px solid var(--gray-200);
+        overflow-x: auto;
+    }
+
+    table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    th {
+        text-align: left;
+        padding: 1rem;
+        background: var(--gray-50);
+        font-weight: 600;
+        color: var(--gray-700);
+        border-bottom: 1px solid var(--gray-200);
+        white-space: nowrap;
+    }
+
+    td {
+        padding: 1rem;
+        border-bottom: 1px solid var(--gray-100);
+        vertical-align: middle;
+    }
+
+    tr:hover {
+        background: var(--gray-50);
+    }
+
+    .post-title {
+        font-weight: 600;
+        color: var(--gray-900);
+        max-width: 300px;
+    }
+
+    .post-title a {
+        color: inherit;
+        text-decoration: none;
+    }
+
+    .post-title a:hover {
+        color: var(--primary);
+    }
+
+    .author-info {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .author-avatar {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        overflow: hidden;
+        background: linear-gradient(145deg, var(--primary), var(--primary-dark));
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-weight: 600;
+        font-size: 0.875rem;
+    }
+
+    .author-avatar img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    .badge {
+        display: inline-flex;
+        align-items: center;
+        padding: 0.25rem 0.75rem;
+        border-radius: 9999px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        white-space: nowrap;
+    }
+
+    .badge-primary {
+        background: var(--primary-soft);
+        color: var(--primary-dark);
+    }
+
+    .badge-success {
+        background: #dcfce7;
+        color: #166534;
+    }
+
+    .badge-warning {
+        background: #fef3c7;
+        color: #92400e;
+    }
+
+    .badge-danger {
+        background: #fee2e2;
+        color: #991b1b;
+    }
+
+    .badge-info {
+        background: #dbeafe;
+        color: #1e40af;
+    }
+
+    .badge-gray {
+        background: #f3f4f6;
+        color: #4b5563;
+    }
+
+    .verification-score {
+        display: inline-block;
+        padding: 0.25rem 0.5rem;
+        border-radius: 9999px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        background: #f3f4f6;
+        color: #4b5563;
+        margin-left: 0.5rem;
+    }
+
+    .score-high {
+        background: #dcfce7;
+        color: #166534;
+    }
+
+    .score-medium {
+        background: #fef3c7;
+        color: #92400e;
+    }
+
+    .score-low {
+        background: #fee2e2;
+        color: #991b1b;
+    }
+
+    .post-stats-mini {
+        display: flex;
+        gap: 0.75rem;
+        font-size: 0.75rem;
+        color: var(--gray-600);
+    }
+
+    .post-stats-mini i {
+        margin-right: 0.25rem;
+        color: var(--gray-500);
+    }
+
+    .action-buttons {
+        display: flex;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+    }
+
+    .btn-icon {
+        width: 32px;
+        height: 32px;
+        border-radius: 9999px;
+        background: var(--white);
+        border: 1px solid var(--gray-200);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--gray-600);
         cursor: pointer;
         transition: all 0.2s;
         text-decoration: none;
     }
-    
-    .action-btn-icon:hover {
+
+    .btn-icon:hover {
         background: var(--primary);
         color: white;
+        border-color: var(--primary);
     }
-    
-    .action-btn-icon.success:hover {
+
+    .btn-icon.approve:hover {
         background: #10b981;
     }
-    
-    .action-btn-icon.warning:hover {
-        background: #f59e0b;
-    }
-    
-    .action-btn-icon.danger:hover {
+
+    .btn-icon.reject:hover {
         background: #ef4444;
     }
-    
-    .fa-star.featured {
-        color: #f59e0b;
+
+    .btn-icon.warning:hover {
+        background: #f59e0b;
     }
-    
-    .admin-pagination {
-        margin-top: 2rem;
-        text-align: center;
+
+    .btn-icon.danger:hover {
+        background: #ef4444;
     }
-    
-    .step-links {
+
+    /* Pagination */
+    .pagination {
         display: flex;
         align-items: center;
         justify-content: center;
         gap: 0.5rem;
+        margin-top: 2rem;
     }
-    
-    .current-page {
-        padding: 0 1rem;
-        font-weight: 600;
+
+    .pagination-link {
+        padding: 0.5rem 1rem;
+        border: 1px solid var(--gray-200);
+        border-radius: var(--radius-md);
         color: var(--gray-700);
+        text-decoration: none;
+        transition: all 0.2s;
     }
-    
-    @media (max-width: 1200px) {
-        .admin-filters {
-            flex-direction: column;
-            gap: 1rem;
-            align-items: stretch;
+
+    .pagination-link:hover {
+        background: var(--primary);
+        color: white;
+    }
+
+    .pagination-current {
+        padding: 0.5rem 1rem;
+        font-weight: 600;
+        color: var(--gray-800);
+    }
+
+    /* Empty State */
+    .empty-state {
+        text-align: center;
+        padding: 3rem;
+    }
+
+    .empty-state i {
+        font-size: 3rem;
+        color: var(--gray-400);
+        margin-bottom: 1rem;
+    }
+
+    .empty-state h3 {
+        font-size: 1.25rem;
+        font-weight: 600;
+        color: var(--gray-800);
+        margin-bottom: 0.5rem;
+    }
+
+    .empty-state p {
+        color: var(--gray-600);
+        margin-bottom: 1.5rem;
+    }
+
+    /* Responsive */
+    @media (max-width: 992px) {
+        .admin-posts {
+            padding: 1rem;
         }
         
-        .filter-search {
+        .filter-row {
+            flex-direction: column;
+        }
+        
+        .filter-group {
             width: 100%;
         }
         
-        .search-mini {
+        .filter-actions {
+            flex-direction: column;
+            width: 100%;
+        }
+        
+        .filter-actions .btn {
+            width: 100%;
+        }
+        
+        .bulk-actions {
+            flex-direction: column;
+            align-items: stretch;
+        }
+        
+        .bulk-select {
             width: 100%;
         }
     }
 </style>
+{% endblock %}
+
+{% block content %}
+<div class="admin-posts">
+    <!-- Header -->
+    <div class="admin-header">
+        <div class="admin-title">
+            <i class="fas fa-file-alt"></i>
+            <div>
+                <h1>Manage Posts</h1>
+                <p>Review, verify, and manage all posts on the platform</p>
+            </div>
+        </div>
+        <div class="admin-actions">
+            <a href="{% url 'fetch_news' %}" class="btn btn-primary">
+                <i class="fas fa-sync-alt"></i> Fetch News
+            </a>
+            <a href="{% url 'admin_dashboard' %}" class="btn btn-outline">
+                <i class="fas fa-arrow-left"></i> Dashboard
+            </a>
+        </div>
+    </div>
+
+    <!-- Statistics -->
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-icon" style="background: linear-gradient(145deg, #3b82f6, #2563eb);">
+                <i class="fas fa-file-alt"></i>
+            </div>
+            <div class="stat-content">
+                <span class="stat-value">{{ stats.total_posts|default:"0" }}</span>
+                <span class="stat-label">Total Posts</span>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon" style="background: linear-gradient(145deg, #10b981, #059669);">
+                <i class="fas fa-check-circle"></i>
+            </div>
+            <div class="stat-content">
+                <span class="stat-value">{{ stats.verified_posts|default:"0" }}</span>
+                <span class="stat-label">Verified</span>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon" style="background: linear-gradient(145deg, #f59e0b, #d97706);">
+                <i class="fas fa-clock"></i>
+            </div>
+            <div class="stat-content">
+                <span class="stat-value">{{ stats.pending_verification|default:"0" }}</span>
+                <span class="stat-label">Pending AI</span>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon" style="background: linear-gradient(145deg, #ef4444, #dc2626);">
+                <i class="fas fa-exclamation-triangle"></i>
+            </div>
+            <div class="stat-content">
+                <span class="stat-value">{{ stats.fake_posts|default:"0" }}</span>
+                <span class="stat-label">Fake News</span>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon" style="background: linear-gradient(145deg, #8b5cf6, #7c3aed);">
+                <i class="fas fa-newspaper"></i>
+            </div>
+            <div class="stat-content">
+                <span class="stat-value">{{ stats.news_posts|default:"0" }}</span>
+                <span class="stat-label">News Posts</span>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon" style="background: linear-gradient(145deg, #6b7280, #4b5563);">
+                <i class="fas fa-star"></i>
+            </div>
+            <div class="stat-content">
+                <span class="stat-value">{{ stats.featured_posts|default:"0" }}</span>
+                <span class="stat-label">Featured</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="filters-section">
+        <form method="GET" id="filterForm">
+            <div class="filter-row">
+                <div class="filter-group">
+                    <label class="filter-label">Filter by</label>
+                    <select name="filter" class="filter-select" onchange="this.form.submit()">
+                        <option value="all" {% if filter_type == 'all' %}selected{% endif %}>All Posts</option>
+                        <option value="pending" {% if filter_type == 'pending' %}selected{% endif %}>Pending Verification</option>
+                        <option value="verified" {% if filter_type == 'verified' %}selected{% endif %}>Verified</option>
+                        <option value="fake" {% if filter_type == 'fake' %}selected{% endif %}>Fake News</option>
+                        <option value="news" {% if filter_type == 'news' %}selected{% endif %}>News</option>
+                        <option value="discussion" {% if filter_type == 'discussion' %}selected{% endif %}>Discussions</option>
+                        <option value="profile" {% if filter_type == 'profile' %}selected{% endif %}>Profile Posts</option>
+                        <option value="featured" {% if filter_type == 'featured' %}selected{% endif %}>Featured</option>
+                        <option value="sponsored" {% if filter_type == 'sponsored' %}selected{% endif %}>Sponsored</option>
+                        <option value="banner" {% if filter_type == 'banner' %}selected{% endif %}>Banner</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label class="filter-label">Category</label>
+                    <select name="category" class="filter-select" onchange="this.form.submit()">
+                        <option value="">All Categories</option>
+                        {% for category in categories %}
+                        <option value="{{ category.id }}" {% if selected_category == category.id|stringformat:"s" %}selected{% endif %}>
+                            {{ category.name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label class="filter-label">Post Type</label>
+                    <select name="type" class="filter-select" onchange="this.form.submit()">
+                        <option value="">All Types</option>
+                        <option value="discussion" {% if post_type == 'discussion' %}selected{% endif %}>Discussion</option>
+                        <option value="user_news" {% if post_type == 'user_news' %}selected{% endif %}>User News</option>
+                        <option value="profile_post" {% if post_type == 'profile_post' %}selected{% endif %}>Profile Post</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label class="filter-label">Verification</label>
+                    <select name="verification" class="filter-select" onchange="this.form.submit()">
+                        <option value="">All</option>
+                        <option value="verified" {% if verification == 'verified' %}selected{% endif %}>Verified</option>
+                        <option value="fake" {% if verification == 'fake' %}selected{% endif %}>Fake</option>
+                        <option value="pending" {% if verification == 'pending' %}selected{% endif %}>Pending</option>
+                        <option value="questionable" {% if verification == 'questionable' %}selected{% endif %}>Questionable</option>
+                    </select>
+                </div>
+                <div class="filter-actions">
+                    <button type="submit" class="btn btn-primary">Apply Filters</button>
+                    <a href="{% url 'admin_posts' %}" class="btn btn-outline">Clear</a>
+                </div>
+            </div>
+            <div class="filter-row">
+                <div class="filter-group">
+                    <label class="filter-label">Search</label>
+                    <input type="text" name="q" class="filter-input" placeholder="Search by title, author, source..." value="{{ search_query }}">
+                </div>
+                <div class="filter-group">
+                    <label class="filter-label">Date Range</label>
+                    <div style="display: flex; gap: 0.5rem;">
+                        <input type="date" name="date_from" class="filter-input" value="{{ date_from }}" placeholder="From">
+                        <input type="date" name="date_to" class="filter-input" value="{{ date_to }}" placeholder="To">
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <!-- Bulk Actions -->
+    <form method="POST" action="{% url 'admin_bulk_news_action' %}" id="bulkActionForm">
+        {% csrf_token %}
+        <div class="bulk-actions">
+            <select name="bulk_action" class="bulk-select" id="bulkActionSelect">
+                <option value="">Select bulk action</option>
+                <option value="approve">Approve selected</option>
+                <option value="reject">Reject selected</option>
+                <option value="verify">Mark as verified</option>
+                <option value="fake">Mark as fake</option>
+                <option value="feature">Feature selected</option>
+                <option value="sponsor">Mark as sponsored</option>
+                <option value="banner">Mark as banner</option>
+                <option value="delete">Delete selected</option>
+                <option value="run_ai">Run AI verification</option>
+            </select>
+            <button type="button" class="btn btn-primary" onclick="confirmBulkAction()">
+                Apply to selected
+            </button>
+            <span class="selected-count" id="selectedCount">0 selected</span>
+        </div>
+
+        <!-- Posts Table -->
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th><input type="checkbox" id="selectAll" class="select-all"></th>
+                        <th>Title</th>
+                        <th>Author</th>
+                        <th>Type</th>
+                        <th>Category</th>
+                        <th>Status</th>
+                        <th>Verification</th>
+                        <th>Score</th>
+                        <th>Stats</th>
+                        <th>Date</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for post in posts %}
+                    <tr>
+                        <td><input type="checkbox" name="post_ids" value="{{ post.id }}" class="post-checkbox"></td>
+                        <td>
+                            <div class="post-title">
+                                <a href="{% url 'post_detail' post.id %}" target="_blank">{{ post.title|truncatechars:50 }}</a>
+                                {% if post.is_auto_fetched %}
+                                <span class="badge badge-info" style="margin-left: 0.5rem;">Auto</span>
+                                {% endif %}
+                                {% if post.is_sponsored %}
+                                <span class="badge badge-warning">Sponsored</span>
+                                {% endif %}
+                                {% if post.is_featured %}
+                                <span class="badge badge-primary">Featured</span>
+                                {% endif %}
+                            </div>
+                        </td>
+                        <td>
+                            <div class="author-info">
+                                <div class="author-avatar">
+                                    {% if post.author.profile.profile_pic %}
+                                    <img src="{{ post.author.profile.profile_pic.url }}" alt="{{ post.author.username }}">
+                                    {% else %}
+                                    {{ post.author.username|first|upper }}
+                                    {% endif %}
+                                </div>
+                                <a href="{% url 'profile_view' username=post.author.username %}" target="_blank">
+                                    @{{ post.author.username }}
+                                </a>
+                            </div>
+                        </td>
+                        <td>
+                            <span class="badge badge-gray">{{ post.get_post_type_display }}</span>
+                        </td>
+                        <td>
+                            {% if post.category %}
+                            <span class="badge badge-primary">{{ post.category.name }}</span>
+                            {% else %}
+                            <span class="text-muted">—</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if post.status == 'published' %}
+                            <span class="badge badge-success">Published</span>
+                            {% elif post.status == 'draft' %}
+                            <span class="badge badge-warning">Draft</span>
+                            {% elif post.status == 'archived' %}
+                            <span class="badge badge-gray">Archived</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if post.verification_status == 'verified' %}
+                            <span class="badge badge-success">
+                                <i class="fas fa-check-circle"></i> Verified
+                            </span>
+                            {% elif post.verification_status == 'fake' %}
+                            <span class="badge badge-danger">
+                                <i class="fas fa-exclamation-triangle"></i> Fake
+                            </span>
+                            {% elif post.verification_status == 'pending' %}
+                            <span class="badge badge-warning">
+                                <i class="fas fa-clock"></i> Pending
+                            </span>
+                            {% elif post.verification_status == 'questionable' %}
+                            <span class="badge badge-warning">
+                                <i class="fas fa-question-circle"></i> Questionable
+                            </span>
+                            {% else %}
+                            <span class="badge badge-gray">Unverified</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if post.verification_score %}
+                            <span class="verification-score 
+                                {% if post.verification_score >= 0.8 %}score-high
+                                {% elif post.verification_score >= 0.6 %}score-medium
+                                {% else %}score-low{% endif %}">
+                                {{ post.verification_score|floatformat:2 }}
+                            </span>
+                            {% else %}
+                            —
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div class="post-stats-mini">
+                                <span title="Views"><i class="fas fa-eye"></i> {{ post.views }}</span>
+                                <span title="Likes"><i class="fas fa-heart"></i> {{ post.likes.count }}</span>
+                                <span title="Comments"><i class="fas fa-comment"></i> {{ post.comments.count }}</span>
+                            </div>
+                        </td>
+                        <td>{{ post.created_at|date:"M d, Y" }}</td>
+                        <td>
+                            <div class="action-buttons">
+                                <a href="{% url 'post_detail' post.id %}" class="btn-icon" target="_blank" title="View">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+                                <a href="{% url 'admin:core_post_change' post.id %}" class="btn-icon" title="Edit">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                {% if post.verification_status != 'verified' %}
+                                <form method="POST" action="{% url 'admin_news_detail' post.id %}" style="display: inline;">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="action" value="approve">
+                                    <button type="submit" class="btn-icon approve" title="Approve" onclick="return confirm('Approve this post?')">
+                                        <i class="fas fa-check"></i>
+                                    </button>
+                                </form>
+                                {% endif %}
+                                {% if post.verification_status != 'fake' %}
+                                <form method="POST" action="{% url 'admin_news_detail' post.id %}" style="display: inline;">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="action" value="reject">
+                                    <input type="hidden" name="rejection_reason" value="Marked as fake">
+                                    <button type="submit" class="btn-icon reject" title="Mark Fake" onclick="return confirm('Mark as fake news?')">
+                                        <i class="fas fa-exclamation-triangle"></i>
+                                    </button>
+                                </form>
+                                {% endif %}
+                                <button class="btn-icon warning" onclick="runVerification({{ post.id }})" title="Run AI">
+                                    <i class="fas fa-robot"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="11" class="empty-state">
+                            <i class="fas fa-file-alt"></i>
+                            <h3>No posts found</h3>
+                            <p>There are no posts matching your criteria.</p>
+                            <a href="{% url 'fetch_news' %}" class="btn btn-primary">
+                                <i class="fas fa-sync-alt"></i> Fetch News
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </form>
+
+    <!-- Pagination -->
+    {% if page_obj.has_other_pages %}
+    <div class="pagination">
+        {% if page_obj.has_previous %}
+        <a href="?page=1&filter={{ filter_type }}&q={{ search_query }}&category={{ selected_category }}&type={{ post_type }}&verification={{ verification }}" class="pagination-link">
+            <i class="fas fa-angle-double-left"></i>
+        </a>
+        <a href="?page={{ page_obj.previous_page_number }}&filter={{ filter_type }}&q={{ search_query }}&category={{ selected_category }}&type={{ post_type }}&verification={{ verification }}" class="pagination-link">
+            <i class="fas fa-angle-left"></i>
+        </a>
+        {% endif %}
+
+        <span class="pagination-current">
+            Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+        </span>
+
+        {% if page_obj.has_next %}
+        <a href="?page={{ page_obj.next_page_number }}&filter={{ filter_type }}&q={{ search_query }}&category={{ selected_category }}&type={{ post_type }}&verification={{ verification }}" class="pagination-link">
+            <i class="fas fa-angle-right"></i>
+        </a>
+        <a href="?page={{ page_obj.paginator.num_pages }}&filter={{ filter_type }}&q={{ search_query }}&category={{ selected_category }}&type={{ post_type }}&verification={{ verification }}" class="pagination-link">
+            <i class="fas fa-angle-double-right"></i>
+        </a>
+        {% endif %}
+    </div>
+    {% endif %}
+</div>
+
+<script>
+    // Select All functionality
+    const selectAllCheckbox = document.getElementById('selectAll');
+    const postCheckboxes = document.querySelectorAll('.post-checkbox');
+    const selectedCountSpan = document.getElementById('selectedCount');
+
+    function updateSelectedCount() {
+        const checked = document.querySelectorAll('.post-checkbox:checked').length;
+        selectedCountSpan.textContent = checked + ' selected';
+    }
+
+    if (selectAllCheckbox) {
+        selectAllCheckbox.addEventListener('change', function() {
+            postCheckboxes.forEach(checkbox => {
+                checkbox.checked = this.checked;
+            });
+            updateSelectedCount();
+        });
+    }
+
+    postCheckboxes.forEach(checkbox => {
+        checkbox.addEventListener('change', updateSelectedCount);
+    });
+
+    // Bulk action confirmation
+    function confirmBulkAction() {
+        const action = document.getElementById('bulkActionSelect').value;
+        const checked = document.querySelectorAll('.post-checkbox:checked').length;
+        
+        if (checked === 0) {
+            alert('Please select at least one post');
+            return;
+        }
+        
+        if (!action) {
+            alert('Please select an action');
+            return;
+        }
+        
+        let message = '';
+        if (action === 'approve') {
+            message = `Approve ${checked} selected posts?`;
+        } else if (action === 'reject') {
+            message = `Reject ${checked} selected posts?`;
+        } else if (action === 'verify') {
+            message = `Mark ${checked} selected posts as verified?`;
+        } else if (action === 'fake') {
+            message = `Mark ${checked} selected posts as fake?`;
+        } else if (action === 'delete') {
+            message = `Delete ${checked} selected posts? This cannot be undone.`;
+        } else if (action === 'run_ai') {
+            message = `Run AI verification on ${checked} selected posts?`;
+        }
+        
+        if (confirm(message)) {
+            document.getElementById('bulkActionForm').submit();
+        }
+    }
+
+    // Run verification for single post
+    function runVerification(postId) {
+        if (confirm('Run AI verification on this post?')) {
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = `/admin/news/${postId}/`;
+            form.innerHTML = `
+                {% csrf_token %}
+                <input type="hidden" name="action" value="run_ai">
+            `;
+            document.body.appendChild(form);
+            form.submit();
+        }
+    }
+</script>
 {% endblock %}
