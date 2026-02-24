@@ -1141,3 +1141,81 @@ observer.observe(document.body, {
     childList: true,
     subtree: true
 });
+// Add to your existing main.js file
+document.addEventListener('DOMContentLoaded', function() {
+    // Fix mobile menu
+    const mobileMenuBtn = document.querySelector('.mobile-menu-btn');
+    const mobileMenu = document.querySelector('.mobile-menu');
+    
+    if (mobileMenuBtn && mobileMenu) {
+        mobileMenuBtn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            mobileMenu.classList.toggle('active');
+            
+            const icon = this.querySelector('i');
+            icon.classList.toggle('fa-bars');
+            icon.classList.toggle('fa-times');
+        });
+        
+        // Close menu when clicking outside
+        document.addEventListener('click', function(e) {
+            if (!mobileMenuBtn.contains(e.target) && !mobileMenu.contains(e.target)) {
+                mobileMenu.classList.remove('active');
+                const icon = mobileMenuBtn.querySelector('i');
+                icon.classList.add('fa-bars');
+                icon.classList.remove('fa-times');
+            }
+        });
+    }
+    
+    // Fix banner slider touch
+    const bannerSliders = document.querySelectorAll('.banner-slider');
+    bannerSliders.forEach(slider => {
+        let touchStartX = 0;
+        let touchEndX = 0;
+        
+        slider.addEventListener('touchstart', e => {
+            touchStartX = e.changedTouches[0].screenX;
+        }, { passive: true });
+        
+        slider.addEventListener('touchend', e => {
+            touchEndX = e.changedTouches[0].screenX;
+            handleSwipe();
+        }, { passive: true });
+        
+        function handleSwipe() {
+            const swipeThreshold = 50;
+            const diff = touchStartX - touchEndX;
+            
+            if (Math.abs(diff) > swipeThreshold) {
+                const nextBtn = slider.querySelector('.slider-next');
+                const prevBtn = slider.querySelector('.slider-prev');
+                
+                if (diff > 0 && nextBtn) {
+                    nextBtn.click();
+                } else if (diff < 0 && prevBtn) {
+                    prevBtn.click();
+                }
+            }
+        }
+    });
+    
+    // Fix responsive font sizes
+    function adjustFontSizes() {
+        const width = window.innerWidth;
+        const root = document.documentElement;
+        
+        if (width <= 360) {
+            root.style.fontSize = '14px';
+        } else if (width <= 400) {
+            root.style.fontSize = '15px';
+        } else if (width <= 576) {
+            root.style.fontSize = '16px';
+        } else {
+            root.style.fontSize = '16px';
+        }
+    }
+    
+    window.addEventListener('resize', adjustFontSizes);
+    adjustFontSizes();
+});

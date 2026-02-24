@@ -682,290 +682,587 @@
 
 {% block extra_js %}
 <script>
-// Manual news fetch function for staff
-function manualFetchNews() {
-    const fetchButton = document.getElementById('fetchButton');
-    const fetchProgress = document.getElementById('fetchProgress');
+// ==================== GLOBAL VARIABLES ====================
+const CSRF_TOKEN = getCookie('csrftoken');
+const IS_AUTHENTICATED = {% if user.is_authenticated %}true{% else %}false{% endif %};
+
+// ==================== INITIALIZATION ====================
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('DOM fully loaded - initializing buttons');
     
-    if (!fetchButton || !fetchProgress) return;
+    // Initialize all buttons
+    initAllButtons();
     
-    fetchButton.disabled = true;
-    fetchButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Fetching...';
-    fetchProgress.style.display = 'block';
-    fetchProgress.innerHTML = 'Starting news fetch...\n';
+    // Set up mutation observer to handle dynamically loaded content
+    setupMutationObserver();
+});
+
+// ==================== MAIN INITIALIZATION ====================
+function initAllButtons() {
+    initLikeButtons();
+    initBookmarkButtons();
+    initShareButtons();
+    initFollowButtons();
+}
+
+// ==================== LIKE BUTTONS - FIXED VERSION ====================
+function initLikeButtons() {
+    console.log('Initializing like buttons');
     
-    // Use EventSource for real-time updates if supported
-    if (typeof EventSource !== 'undefined') {
-        const eventSource = new EventSource("{% url 'fetch_news' %}?stream=true&source=all&days=7");
+    // Select all possible like button variations
+    const likeButtons = document.querySelectorAll(
+        '.like-btn, ' +
+        '.post-action-btn.like-btn, ' +
+        'button[class*="like"], ' +
+        '.post-actions button:has(i.fa-heart), ' +
+        '[data-action="like"]'
+    );
+    
+    console.log(`Found ${likeButtons.length} like buttons`);
+    
+    likeButtons.forEach(btn => {
+        // Remove existing listeners to prevent duplicates
+        btn.removeEventListener('click', handleLikeClick);
+        btn.addEventListener('click', handleLikeClick);
         
-        eventSource.onmessage = function(e) {
-            fetchProgress.innerHTML += e.data + '\n';
-            fetchProgress.scrollTop = fetchProgress.scrollHeight;
-        };
-        
-        eventSource.addEventListener('close', function() {
-            eventSource.close();
-            fetchButton.disabled = false;
-            fetchButton.innerHTML = '<i class="fas fa-sync-alt"></i> Fetch News Now';
-            
-            // Refresh the page after a short delay
-            setTimeout(() => {
-                window.location.reload();
-            }, 2000);
-        });
-        
-        eventSource.onerror = function() {
-            eventSource.close();
-            fetchButton.disabled = false;
-            fetchButton.innerHTML = '<i class="fas fa-sync-alt"></i> Fetch News Now';
-            fetchProgress.innerHTML += 'Error: Connection lost\n';
-        };
-    } else {
-        // Fallback to regular AJAX
-        fetch("{% url 'api_fetch_news' %}", {
+        // Make sure button has post ID
+        if (!btn.dataset.postId) {
+            // Try to find post ID from parent elements
+            const postCard = btn.closest('[data-post-id]');
+            if (postCard) {
+                btn.dataset.postId = postCard.dataset.postId;
+            }
+        }
+    });
+}
+
+async function handleLikeClick(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    const btn = e.currentTarget;
+    const postId = btn.dataset.postId;
+    
+    console.log('Like button clicked for post:', postId);
+    
+    if (!postId) {
+        console.error('No post ID found on button');
+        showNotification('Error: Could not identify post', 'error');
+        return;
+    }
+    
+    if (!IS_AUTHENTICATED) {
+        showNotification('Please login to like posts', 'warning');
+        setTimeout(() => {
+            window.location.href = '/login/?next=' + encodeURIComponent(window.location.pathname);
+        }, 1500);
+        return;
+    }
+    
+    // Visual feedback
+    btn.disabled = true;
+    btn.classList.add('processing');
+    
+    try {
+        const response = await fetch(`/like/${postId}/`, {
             method: 'POST',
             headers: {
-                'X-CSRFToken': getCookie('csrftoken'),
+                'X-CSRFToken': CSRF_TOKEN,
+                'X-Requested-With': 'XMLHttpRequest',
                 'Content-Type': 'application/json',
             },
-            credentials: 'same-origin'
-        })
-        .then(response => response.json())
-        .then(data => {
-            fetchProgress.innerHTML += `Completed! Fetched ${data.count} new articles\n`;
-            fetchButton.disabled = false;
-            fetchButton.innerHTML = '<i class="fas fa-sync-alt"></i> Fetch News Now';
-            
-            // Refresh the page
-            setTimeout(() => {
-                window.location.reload();
-            }, 2000);
-        })
-        .catch(error => {
-            fetchProgress.innerHTML += `Error: ${error}\n`;
-            fetchButton.disabled = false;
-            fetchButton.innerHTML = '<i class="fas fa-sync-alt"></i> Fetch News Now';
+            credentials: 'same-origin',
+            body: JSON.stringify({ post_id: postId })
         });
+        
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        console.log('Like response:', data);
+        
+        // Update UI
+        updateLikeUI(postId, data.liked, data.like_count);
+        
+        showNotification(
+            data.liked ? 'Post liked!' : 'Post unliked',
+            'success'
+        );
+        
+    } catch (error) {
+        console.error('Error liking post:', error);
+        showNotification('Error processing your request. Please try again.', 'error');
+    } finally {
+        btn.disabled = false;
+        btn.classList.remove('processing');
     }
 }
 
-// Like post functionality
-document.querySelectorAll('.like-btn').forEach(btn => {
-    btn.addEventListener('click', function(e) {
-        e.preventDefault();
-        const postId = this.dataset.postId;
-        const btn = this;
+function updateLikeUI(postId, liked, count) {
+    // Update all like buttons for this post
+    document.querySelectorAll(`[data-post-id="${postId}"] .like-btn, [data-post-id="${postId}"] button[class*="like"]`).forEach(btn => {
+        const icon = btn.querySelector('i');
+        const countSpan = btn.querySelector('.like-count, span:not(.fa-heart)');
         
-        fetch(`/like/${postId}/`, {
-            method: 'POST',
-            headers: {
-                'X-CSRFToken': getCookie('csrftoken'),
-                'X-Requested-With': 'XMLHttpRequest',
-            },
-            credentials: 'same-origin'
-        })
-        .then(response => response.json())
-        .then(data => {
-            const icon = btn.querySelector('i');
-            const countSpan = btn.querySelector('.like-count');
-            
-            if (data.liked) {
+        if (icon) {
+            if (liked) {
                 icon.classList.remove('far');
                 icon.classList.add('fas');
                 btn.classList.add('liked');
+                btn.classList.add('active');
             } else {
                 icon.classList.remove('fas');
                 icon.classList.add('far');
                 btn.classList.remove('liked');
+                btn.classList.remove('active');
             }
-            
-            countSpan.textContent = data.like_count;
-        })
-        .catch(error => console.error('Error:', error));
-    });
-});
-
-// Bookmark functionality
-document.querySelectorAll('.bookmark-btn').forEach(btn => {
-    btn.addEventListener('click', function(e) {
-        e.preventDefault();
-        const postId = this.dataset.postId;
-        const btn = this;
+        }
         
-        fetch(`/bookmark/${postId}/`, {
+        if (countSpan) {
+            countSpan.textContent = count;
+        }
+    });
+    
+    // Update any standalone like counts
+    document.querySelectorAll(`.like-count[data-post-id="${postId}"], [data-post-id="${postId}"] .like-count`).forEach(el => {
+        el.textContent = count;
+    });
+}
+
+// ==================== BOOKMARK BUTTONS - FIXED VERSION ====================
+function initBookmarkButtons() {
+    console.log('Initializing bookmark buttons');
+    
+    const bookmarkButtons = document.querySelectorAll(
+        '.bookmark-btn, ' +
+        '.post-action-btn.bookmark-btn, ' +
+        'button[class*="bookmark"], ' +
+        '[data-action="bookmark"]'
+    );
+    
+    console.log(`Found ${bookmarkButtons.length} bookmark buttons`);
+    
+    bookmarkButtons.forEach(btn => {
+        btn.removeEventListener('click', handleBookmarkClick);
+        btn.addEventListener('click', handleBookmarkClick);
+        
+        if (!btn.dataset.postId) {
+            const postCard = btn.closest('[data-post-id]');
+            if (postCard) {
+                btn.dataset.postId = postCard.dataset.postId;
+            }
+        }
+    });
+}
+
+async function handleBookmarkClick(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    const btn = e.currentTarget;
+    const postId = btn.dataset.postId;
+    
+    console.log('Bookmark button clicked for post:', postId);
+    
+    if (!postId) {
+        console.error('No post ID found on button');
+        showNotification('Error: Could not identify post', 'error');
+        return;
+    }
+    
+    if (!IS_AUTHENTICATED) {
+        showNotification('Please login to bookmark posts', 'warning');
+        setTimeout(() => {
+            window.location.href = '/login/?next=' + encodeURIComponent(window.location.pathname);
+        }, 1500);
+        return;
+    }
+    
+    btn.disabled = true;
+    btn.classList.add('processing');
+    
+    try {
+        const response = await fetch(`/bookmark/${postId}/`, {
             method: 'POST',
             headers: {
-                'X-CSRFToken': getCookie('csrftoken'),
+                'X-CSRFToken': CSRF_TOKEN,
                 'X-Requested-With': 'XMLHttpRequest',
+                'Content-Type': 'application/json',
             },
-            credentials: 'same-origin'
-        })
-        .then(response => response.json())
-        .then(data => {
-            const icon = btn.querySelector('i');
-            
-            if (data.bookmarked) {
+            credentials: 'same-origin',
+            body: JSON.stringify({ post_id: postId })
+        });
+        
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        console.log('Bookmark response:', data);
+        
+        updateBookmarkUI(postId, data.bookmarked);
+        
+        showNotification(
+            data.bookmarked ? 'Saved to bookmarks!' : 'Removed from bookmarks',
+            'success'
+        );
+        
+    } catch (error) {
+        console.error('Error bookmarking post:', error);
+        showNotification('Error saving bookmark. Please try again.', 'error');
+    } finally {
+        btn.disabled = false;
+        btn.classList.remove('processing');
+    }
+}
+
+function updateBookmarkUI(postId, bookmarked) {
+    document.querySelectorAll(`[data-post-id="${postId}"] .bookmark-btn, [data-post-id="${postId}"] button[class*="bookmark"]`).forEach(btn => {
+        const icon = btn.querySelector('i');
+        
+        if (icon) {
+            if (bookmarked) {
                 icon.classList.remove('far');
                 icon.classList.add('fas');
                 btn.classList.add('bookmarked');
-                showNotification('Added to bookmarks', 'success');
+                btn.classList.add('active');
             } else {
                 icon.classList.remove('fas');
                 icon.classList.add('far');
                 btn.classList.remove('bookmarked');
-                showNotification('Removed from bookmarks', 'info');
+                btn.classList.remove('active');
             }
-        })
-        .catch(error => console.error('Error:', error));
-    });
-});
-
-// Share functionality
-document.querySelectorAll('.share-btn').forEach(btn => {
-    btn.addEventListener('click', function(e) {
-        e.preventDefault();
-        const title = this.dataset.title;
-        const url = window.location.origin + this.dataset.url;
-        
-        if (navigator.share) {
-            navigator.share({
-                title: title,
-                url: url
-            }).catch(console.error);
-        } else {
-            // Fallback - copy to clipboard
-            navigator.clipboard.writeText(url).then(() => {
-                showNotification('Link copied to clipboard!', 'success');
-            }).catch(() => {
-                showNotification('Failed to copy link', 'error');
-            });
         }
     });
-});
-
-// Banner slider functionality
-function initBannerSlider() {
-    const slides = document.querySelectorAll('.banner-slide');
-    const prevBtn = document.querySelector('.slider-prev');
-    const nextBtn = document.querySelector('.slider-next');
-    const dotsContainer = document.querySelector('.slider-dots');
-    
-    if (!slides.length) return;
-    
-    let currentSlide = 0;
-    
-    // Create dots
-    slides.forEach((_, index) => {
-        const dot = document.createElement('span');
-        dot.classList.add('dot');
-        dot.addEventListener('click', () => goToSlide(index));
-        dotsContainer.appendChild(dot);
-    });
-    
-    const dots = document.querySelectorAll('.dot');
-    
-    function showSlide(index) {
-        slides.forEach(slide => slide.classList.remove('active'));
-        dots.forEach(dot => dot.classList.remove('active'));
-        
-        slides[index].classList.add('active');
-        dots[index].classList.add('active');
-        currentSlide = index;
-    }
-    
-    function nextSlide() {
-        let next = (currentSlide + 1) % slides.length;
-        showSlide(next);
-    }
-    
-    function prevSlide() {
-        let prev = (currentSlide - 1 + slides.length) % slides.length;
-        showSlide(prev);
-    }
-    
-    function goToSlide(index) {
-        showSlide(index);
-    }
-    
-    // Auto advance every 5 seconds
-    let interval = setInterval(nextSlide, 5000);
-    
-    // Pause on hover
-    const slider = document.querySelector('.banner-slider');
-    slider.addEventListener('mouseenter', () => clearInterval(interval));
-    slider.addEventListener('mouseleave', () => {
-        interval = setInterval(nextSlide, 5000);
-    });
-    
-    // Event listeners
-    if (prevBtn) prevBtn.addEventListener('click', prevSlide);
-    if (nextBtn) nextBtn.addEventListener('click', nextSlide);
-    
-    // Show first slide
-    showSlide(0);
 }
 
-// Ad tracking
-function trackAdClick(adId) {
-    fetch(`/api/track-ad-click/${adId}/`, {
-        method: 'POST',
-        headers: {
-            'X-CSRFToken': getCookie('csrftoken'),
-        },
-        credentials: 'same-origin'
-    }).catch(console.error);
-}
-
-// Track ad impressions
-function trackAdImpressions() {
-    document.querySelectorAll('[data-ad-id]').forEach(el => {
-        const adId = el.dataset.adId;
+// ==================== SHARE BUTTONS - FIXED VERSION ====================
+function initShareButtons() {
+    console.log('Initializing share buttons');
+    
+    const shareButtons = document.querySelectorAll(
+        '.share-btn, ' +
+        '.post-action-btn.share-btn, ' +
+        'button[class*="share"], ' +
+        '[data-action="share"]'
+    );
+    
+    console.log(`Found ${shareButtons.length} share buttons`);
+    
+    shareButtons.forEach(btn => {
+        btn.removeEventListener('click', handleShareClick);
+        btn.addEventListener('click', handleShareClick);
         
-        // Simple visibility check
-        const observer = new IntersectionObserver((entries) => {
-            entries.forEach(entry => {
-                if (entry.isIntersecting) {
-                    fetch(`/api/track-ad-impression/${adId}/`, {
-                        method: 'POST',
-                        headers: {
-                            'X-CSRFToken': getCookie('csrftoken'),
-                        },
-                        credentials: 'same-origin'
-                    }).catch(console.error);
-                    
-                    observer.unobserve(entry.target);
-                }
-            });
-        }, { threshold: 0.5 });
+        if (!btn.dataset.postId) {
+            const postCard = btn.closest('[data-post-id]');
+            if (postCard) {
+                btn.dataset.postId = postCard.dataset.postId;
+            }
+        }
         
-        observer.observe(el);
+        if (!btn.dataset.title) {
+            const postTitle = btn.closest('[data-post-id]')?.querySelector('.post-title, h3')?.textContent;
+            if (postTitle) {
+                btn.dataset.title = postTitle.trim();
+            }
+        }
     });
 }
 
-// Show notification
-function showNotification(message, type = 'info') {
+function handleShareClick(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    const btn = e.currentTarget;
+    const postId = btn.dataset.postId;
+    const title = btn.dataset.title || document.title;
+    const url = btn.dataset.url ? window.location.origin + btn.dataset.url : window.location.href;
+    
+    console.log('Share button clicked:', { title, url, postId });
+    
+    // Track share if post ID exists
+    if (postId) {
+        trackShare(postId);
+    }
+    
+    // Use Web Share API if available
+    if (navigator.share) {
+        navigator.share({
+            title: title,
+            text: `Check out this article: ${title}`,
+            url: url
+        })
+        .then(() => {
+            console.log('Shared successfully');
+            showNotification('Thanks for sharing!', 'success');
+        })
+        .catch(error => {
+            console.log('Share cancelled or failed:', error);
+            showShareModal(title, url);
+        });
+    } else {
+        // Fallback - copy link
+        copyToClipboard(url);
+        showNotification('Link copied to clipboard!', 'success');
+    }
+}
+
+function trackShare(postId) {
+    if (postId) {
+        fetch(`/api/track-share/${postId}/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': CSRF_TOKEN,
+                'Content-Type': 'application/json'
+            },
+            credentials: 'same-origin',
+            body: JSON.stringify({ post_id: postId })
+        }).catch(console.error);
+    }
+}
+
+function showShareModal(title, url) {
+    // Create simple modal for sharing options
+    const modalHtml = `
+        <div class="modal" id="shareModal" style="display: block; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 9999;">
+            <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 20px; border-radius: 10px; max-width: 400px; width: 90%;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <h3 style="margin: 0;"><i class="fas fa-share-alt"></i> Share</h3>
+                    <button onclick="closeShareModal()" style="background: none; border: none; font-size: 24px; cursor: pointer;">&times;</button>
+                </div>
+                <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px;">
+                    <button onclick="shareToFacebook('${encodeURIComponent(url)}')" style="padding: 10px; background: #1877f2; color: white; border: none; border-radius: 5px; cursor: pointer;">
+                        <i class="fab fa-facebook-f"></i> Facebook
+                    </button>
+                    <button onclick="shareToTwitter('${encodeURIComponent(title)}', '${encodeURIComponent(url)}')" style="padding: 10px; background: #1da1f2; color: white; border: none; border-radius: 5px; cursor: pointer;">
+                        <i class="fab fa-twitter"></i> Twitter
+                    </button>
+                    <button onclick="shareToWhatsApp('${encodeURIComponent(title)}', '${encodeURIComponent(url)}')" style="padding: 10px; background: #25d366; color: white; border: none; border-radius: 5px; cursor: pointer;">
+                        <i class="fab fa-whatsapp"></i> WhatsApp
+                    </button>
+                    <button onclick="copyToClipboard('${url}')" style="padding: 10px; background: #6c757d; color: white; border: none; border-radius: 5px; cursor: pointer;">
+                        <i class="fas fa-link"></i> Copy Link
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    // Remove existing modal if any
+    const existingModal = document.getElementById('shareModal');
+    if (existingModal) existingModal.remove();
+    
+    // Add new modal
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+}
+
+// Share functions
+function shareToFacebook(url) {
+    window.open(`https://www.facebook.com/sharer/sharer.php?u=${url}`, '_blank', 'width=600,height=400');
+    closeShareModal();
+}
+
+function shareToTwitter(text, url) {
+    window.open(`https://twitter.com/intent/tweet?text=${text}&url=${url}`, '_blank', 'width=600,height=400');
+    closeShareModal();
+}
+
+function shareToWhatsApp(text, url) {
+    window.open(`https://wa.me/?text=${text}%20${url}`, '_blank');
+    closeShareModal();
+}
+
+function copyToClipboard(text) {
+    navigator.clipboard.writeText(decodeURIComponent(text)).then(() => {
+        showNotification('Link copied to clipboard!', 'success');
+        closeShareModal();
+    }).catch(() => {
+        showNotification('Failed to copy link', 'error');
+    });
+}
+
+function closeShareModal() {
+    const modal = document.getElementById('shareModal');
+    if (modal) modal.remove();
+}
+
+// Make share functions globally available
+window.shareToFacebook = shareToFacebook;
+window.shareToTwitter = shareToTwitter;
+window.shareToWhatsApp = shareToWhatsApp;
+window.copyToClipboard = copyToClipboard;
+window.closeShareModal = closeShareModal;
+
+// ==================== FOLLOW BUTTONS ====================
+function initFollowButtons() {
+    console.log('Initializing follow buttons');
+    
+    const followButtons = document.querySelectorAll(
+        '.btn-follow, ' +
+        '.follow-btn, ' +
+        '.user-item-follow-btn, ' +
+        '[data-action="follow"]'
+    );
+    
+    console.log(`Found ${followButtons.length} follow buttons`);
+    
+    followButtons.forEach(btn => {
+        btn.removeEventListener('click', handleFollowClick);
+        btn.addEventListener('click', handleFollowClick);
+    });
+}
+
+async function handleFollowClick(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    const btn = e.currentTarget;
+    const username = btn.dataset.username;
+    
+    console.log('Follow button clicked for user:', username);
+    
+    if (!username) {
+        console.error('No username found on button');
+        return;
+    }
+    
+    if (!IS_AUTHENTICATED) {
+        showNotification('Please login to follow users', 'warning');
+        setTimeout(() => {
+            window.location.href = '/login/?next=' + encodeURIComponent(window.location.pathname);
+        }, 1500);
+        return;
+    }
+    
+    btn.disabled = true;
+    btn.classList.add('processing');
+    
+    try {
+        const response = await fetch(`/follow/${username}/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': CSRF_TOKEN,
+                'X-Requested-With': 'XMLHttpRequest',
+                'Content-Type': 'application/json',
+            },
+            credentials: 'same-origin',
+            body: JSON.stringify({ username: username })
+        });
+        
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        console.log('Follow response:', data);
+        
+        if (data.followed) {
+            btn.innerHTML = '<i class="fas fa-check"></i> Following';
+            btn.classList.add('following');
+        } else {
+            btn.innerHTML = '<i class="fas fa-plus"></i> Follow';
+            btn.classList.remove('following');
+        }
+        
+        showNotification(data.message, 'success');
+        
+    } catch (error) {
+        console.error('Error following user:', error);
+        showNotification('Error following user. Please try again.', 'error');
+    } finally {
+        btn.disabled = false;
+        btn.classList.remove('processing');
+    }
+}
+
+// ==================== MUTATION OBSERVER ====================
+function setupMutationObserver() {
+    const observer = new MutationObserver(function(mutations) {
+        let shouldReinit = false;
+        
+        mutations.forEach(function(mutation) {
+            if (mutation.addedNodes.length > 0) {
+                shouldReinit = true;
+            }
+        });
+        
+        if (shouldReinit) {
+            console.log('New content detected, reinitializing buttons');
+            initAllButtons();
+        }
+    });
+    
+    observer.observe(document.body, {
+        childList: true,
+        subtree: true
+    });
+}
+
+// ==================== NOTIFICATION SYSTEM ====================
+function showNotification(message, type = 'success', duration = 3000) {
+    // Remove existing notifications
+    const existingNotifications = document.querySelectorAll('.notification');
+    existingNotifications.forEach(notif => notif.remove());
+    
+    // Create notification
     const notification = document.createElement('div');
     notification.className = `notification notification-${type}`;
+    notification.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        padding: 15px 20px;
+        background: ${type === 'success' ? '#4caf50' : type === 'error' ? '#f44336' : '#ff9800'};
+        color: white;
+        border-radius: 5px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+        z-index: 10000;
+        animation: slideIn 0.3s ease;
+    `;
+    
     notification.innerHTML = `
-        <div class="notification-content">
-            <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-circle' : 'info-circle'}"></i>
+        <div style="display: flex; align-items: center; gap: 10px;">
+            <i class="fas ${type === 'success' ? 'fa-check-circle' : type === 'error' ? 'fa-exclamation-circle' : 'fa-info-circle'}"></i>
             <span>${message}</span>
         </div>
     `;
     
     document.body.appendChild(notification);
     
+    // Auto remove
     setTimeout(() => {
-        notification.classList.add('show');
-    }, 10);
-    
-    setTimeout(() => {
-        notification.classList.remove('show');
+        notification.style.animation = 'slideOut 0.3s ease';
         setTimeout(() => notification.remove(), 300);
-    }, 3000);
+    }, duration);
 }
 
-// Get CSRF token
+// Add animation styles
+const style = document.createElement('style');
+style.textContent = `
+    @keyframes slideIn {
+        from { transform: translateX(100%); opacity: 0; }
+        to { transform: translateX(0); opacity: 1; }
+    }
+    
+    @keyframes slideOut {
+        from { transform: translateX(0); opacity: 1; }
+        to { transform: translateX(100%); opacity: 0; }
+    }
+    
+    .processing {
+        opacity: 0.7;
+        pointer-events: none;
+    }
+    
+    .notification {
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    }
+`;
+document.head.appendChild(style);
+
+// ==================== UTILITY FUNCTIONS ====================
 function getCookie(name) {
     let cookieValue = null;
     if (document.cookie && document.cookie !== '') {
@@ -981,47 +1278,9 @@ function getCookie(name) {
     return cookieValue;
 }
 
-// Search with debounce
-let searchTimeout;
-document.getElementById('searchInput')?.addEventListener('input', function() {
-    clearTimeout(searchTimeout);
-    const query = this.value;
-    
-    searchTimeout = setTimeout(() => {
-        if (query.length >= 2 || query.length === 0) {
-            document.getElementById('searchForm').submit();
-        }
-    }, 500);
-});
+// Make showNotification globally available
+window.showNotification = showNotification;
 
-// Initialize on page load
-document.addEventListener('DOMContentLoaded', function() {
-    initBannerSlider();
-    trackAdImpressions();
-    
-    // Check for new news periodically
-    setInterval(checkNewNews, 60000); // Every minute
-});
-
-// Check for new news
-function checkNewNews() {
-    fetch("{% url 'check_new_news' %}?last_check=" + encodeURIComponent(new Date().toISOString()))
-        .then(response => response.json())
-        .then(data => {
-            if (data.has_new) {
-                // Show notification
-                showNotification(`${data.count} new articles available. Refresh to see them.`, 'info');
-                
-                // Update favicon or something
-                updateFavicon(true);
-            }
-        })
-        .catch(console.error);
-}
-
-// Update favicon to indicate new content
-function updateFavicon(hasNew) {
-    // Optional: Change favicon to indicate new content
-}
+console.log('All button handlers initialized');
 </script>
 {% endblock %}

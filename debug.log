@@ -7887,3 +7887,412 @@ django.urls.exceptions.NoReverseMatch: Reverse for 'business_registration' not f
 "GET / HTTP/1.1" 200 62630
 Not Found: /.well-known/appspecific/com.chrome.devtools.json
 "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 19148
+"GET /online-news/ HTTP/1.1" 200 224789
+"GET /post/1124/ HTTP/1.1" 200 84281
+"GET /online-news/ HTTP/1.1" 200 224789
+"GET /media/profile_pics/46e42bbb-a980-4f35-a206-7eee4e8314b1_4XCRozz.jpg HTTP/1.1" 304 0
+"GET / HTTP/1.1" 200 62639
+"GET /media/cover_photos/Purple_and_Black_Modern_Success_Quote_LinkedIn_Post.png HTTP/1.1" 304 0
+"GET /online-news/ HTTP/1.1" 200 224805
+"GET /media/profile_pics/46e42bbb-a980-4f35-a206-7eee4e8314b1_4XCRozz.jpg HTTP/1.1" 304 0
+"GET /online-news/?has_media=audio&filter=latest&category=all HTTP/1.1" 200 66807
+"GET /online-news/?has_media=video&filter=latest&category=all HTTP/1.1" 200 254144
+"GET /online-news/?verification=verified&filter=latest&category=all HTTP/1.1" 200 222392
+Not Found: /like/1124/
+"POST /like/1124/ HTTP/1.1" 404 19035
+"GET /post/1124/ HTTP/1.1" 200 84281
+"GET / HTTP/1.1" 200 62641
+"GET /media/cover_photos/Purple_and_Black_Modern_Success_Quote_LinkedIn_Post.png HTTP/1.1" 304 0
+"GET /post/create/ HTTP/1.1" 200 46939
+"GET /dashboard/admin/ HTTP/1.1" 200 37833
+"GET / HTTP/1.1" 200 62637
+"GET / HTTP/1.1" 200 62649
+Watching for file changes with StatReloader
+"GET / HTTP/1.1" 302 0
+"GET /login/ HTTP/1.1" 200 12481
+"GET /static/css/styles.css HTTP/1.1" 200 242559
+"GET /static/images/logo.jpeg HTTP/1.1" 200 3824
+"GET /static/js/main.js HTTP/1.1" 200 43508
+"GET /favicon.ico HTTP/1.1" 302 0
+"GET /login/ HTTP/1.1" 200 12481
+"POST /login/ HTTP/1.1" 302 0
+"GET /dashboard/admin/ HTTP/1.1" 200 38313
+"GET /media/profile_pics/46e42bbb-a980-4f35-a206-7eee4e8314b1_4XCRozz.jpg HTTP/1.1" 200 24614
+Not Found: /favicon.ico
+"GET /favicon.ico HTTP/1.1" 404 19037
+"GET /online-news/ HTTP/1.1" 200 265361
+Not Found: /api/track-page-view/
+"POST /api/track-page-view/ HTTP/1.1" 404 19065
+"GET / HTTP/1.1" 200 62635
+"GET /media/cover_photos/Purple_and_Black_Modern_Success_Quote_LinkedIn_Post.png HTTP/1.1" 200 195470
+"GET /online-news/ HTTP/1.1" 200 265361
+Not Found: /api/track-page-view/
+"POST /api/track-page-view/ HTTP/1.1" 404 19065
+Not Found: /like/1124/
+"POST /like/1124/ HTTP/1.1" 404 19035
+"GET /post/1124/ HTTP/1.1" 200 84266
+"GET / HTTP/1.1" 200 62635
+Watching for file changes with StatReloader
+C:\Users\DELL\Desktop\NewsBlog\ojukaye\core\views.py changed, reloading.
+Watching for file changes with StatReloader
+"GET / HTTP/1.1" 200 62662
+"GET /static/css/styles.css HTTP/1.1" 200 220260
+"GET /media/profile_pics/46e42bbb-a980-4f35-a206-7eee4e8314b1_4XCRozz.jpg HTTP/1.1" 200 24614
+"GET /static/images/logo.jpeg HTTP/1.1" 200 3824
+"GET /media/cover_photos/Purple_and_Black_Modern_Success_Quote_LinkedIn_Post.png HTTP/1.1" 200 195470
+"GET /static/js/main.js HTTP/1.1" 200 43508
+"GET / HTTP/1.1" 200 62662
+"GET /static/css/styles.css HTTP/1.1" 200 220260
+"GET /static/images/logo.jpeg HTTP/1.1" 200 3824
+"GET /media/profile_pics/46e42bbb-a980-4f35-a206-7eee4e8314b1_4XCRozz.jpg HTTP/1.1" 200 24614
+"GET /media/cover_photos/Purple_and_Black_Modern_Success_Quote_LinkedIn_Post.png HTTP/1.1" 200 195470
+"GET /static/js/main.js HTTP/1.1" 200 43508
+"GET / HTTP/1.1" 200 62662
+"GET /static/css/styles.css HTTP/1.1" 200 220260
+"GET /static/images/logo.jpeg HTTP/1.1" 200 3824
+"GET /media/profile_pics/46e42bbb-a980-4f35-a206-7eee4e8314b1_4XCRozz.jpg HTTP/1.1" 200 24614
+"GET /media/cover_photos/Purple_and_Black_Modern_Success_Quote_LinkedIn_Post.png HTTP/1.1" 200 195470
+"GET /static/js/main.js HTTP/1.1" 200 43508
+"GET / HTTP/1.1" 200 62662
+"GET /static/images/logo.jpeg HTTP/1.1" 200 3824
+"GET /media/profile_pics/46e42bbb-a980-4f35-a206-7eee4e8314b1_4XCRozz.jpg HTTP/1.1" 200 24614
+"GET /static/css/styles.css HTTP/1.1" 200 220260
+"GET / HTTP/1.1" 200 62662
+"GET /static/js/main.js HTTP/1.1" 200 43508
+- Broken pipe from ('127.0.0.1', 63036)
+"GET /static/images/logo.jpeg HTTP/1.1" 200 3824
+"GET /media/profile_pics/46e42bbb-a980-4f35-a206-7eee4e8314b1_4XCRozz.jpg HTTP/1.1" 200 24614
+"GET /static/css/styles.css HTTP/1.1" 200 220260
+"GET /static/js/main.js HTTP/1.1" 200 43508
+"GET /media/cover_photos/Purple_and_Black_Modern_Success_Quote_LinkedIn_Post.png HTTP/1.1" 200 195470
+C:\Users\DELL\Desktop\NewsBlog\ojukaye\core\models.py changed, reloading.
+Watching for file changes with StatReloader
+"GET / HTTP/1.1" 200 62662
+"GET /static/css/styles.css HTTP/1.1" 304 0
+Not Found: /favicon.ico
+"GET /favicon.ico HTTP/1.1" 404 19037
+"POST /post/1165/like/ HTTP/1.1" 200 32
+"POST /post/1165/like/ HTTP/1.1" 200 32
+"POST /post/1165/like/ HTTP/1.1" 200 33
+"POST /post/1165/like/ HTTP/1.1" 200 32
+"POST /post/1165/bookmark/ HTTP/1.1" 200 41
+"POST /post/1165/bookmark/ HTTP/1.1" 200 41
+"POST /post/1165/bookmark/ HTTP/1.1" 200 42
+"POST /post/1165/bookmark/ HTTP/1.1" 200 41
+"GET / HTTP/1.1" 200 69083
+"GET /static/css/styles.css HTTP/1.1" 200 220249
+"GET / HTTP/1.1" 200 69083
+"GET /static/css/styles.css HTTP/1.1" 200 189322
+Watching for file changes with StatReloader
+"GET /online-news/ HTTP/1.1" 200 265386
+"GET /static/css/styles.css HTTP/1.1" 304 0
+Not Found: /api/track-page-view/
+"POST /api/track-page-view/ HTTP/1.1" 404 19065
+Not Found: /like/1141/
+"POST /like/1141/ HTTP/1.1" 404 19035
+Not Found: /like/1141/
+"POST /like/1141/ HTTP/1.1" 404 19035
+Not Found: /check-new-news/
+"GET /check-new-news/?last_check=2026-02-24T10%3A14%3A38.837Z HTTP/1.1" 404 19089
+Not Found: /like/1103/
+"POST /like/1103/ HTTP/1.1" 404 19035
+"GET /post/1103/ HTTP/1.1" 200 80708
+Not Found: /like/1103/
+"POST /like/1103/ HTTP/1.1" 404 19035
+Not Found: /like/1103/
+"POST /like/1103/ HTTP/1.1" 404 19035
+Not Found: /like/1103/
+"POST /like/1103/ HTTP/1.1" 404 19035
+Not Found: /like/1103/
+"POST /like/1103/ HTTP/1.1" 404 19035
+"POST /post/1103/ HTTP/1.1" 302 0
+"GET /post/1103/ HTTP/1.1" 200 84223
+Not Found: /profile/news_bot/follow/
+"POST /profile/news_bot/follow/ HTTP/1.1" 404 19077
+Not Found: /profile/news_bot/follow/
+"POST /profile/news_bot/follow/ HTTP/1.1" 404 19077
+Internal Server Error: /profile/news_bot/
+Traceback (most recent call last):
+  File "C:\Users\DELL\Desktop\NewsBlog\newsenv\Lib\site-packages\django\template\backends\django.py", line 107, in render
+    return self.template.render(context)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\DELL\Desktop\NewsBlog\newsenv\Lib\site-packages\django\template\base.py", line 174, in render
+    return self._render(context)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\DELL\Desktop\NewsBlog\newsenv\Lib\site-packages\django\template\base.py", line 166, in _render
+    return self.nodelist.render(context)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\DELL\Desktop\NewsBlog\newsenv\Lib\site-packages\django\template\base.py", line 1091, in render
+    return SafeString("".join([node.render_annotated(context) for node in self]))
+                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\DELL\Desktop\NewsBlog\newsenv\Lib\site-packages\django\template\base.py", line 1052, in render_annotated
+    return self.render(context)
+           ^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\DELL\Desktop\NewsBlog\newsenv\Lib\site-packages\django\template\loader_tags.py", line 160, in render
+    return compiled_parent._render(context)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\DELL\Desktop\NewsBlog\newsenv\Lib\site-packages\django\template\base.py", line 166, in _render
+    return self.nodelist.render(context)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\DELL\Desktop\NewsBlog\newsenv\Lib\site-packages\django\template\base.py", line 1091, in render
+    return SafeString("".join([node.render_annotated(context) for node in self]))
+                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\DELL\Desktop\NewsBlog\newsenv\Lib\site-packages\django\template\base.py", line 1052, in render_annotated
+    return self.render(context)
+           ^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\DELL\Desktop\NewsBlog\newsenv\Lib\site-packages\django\template\loader_tags.py", line 66, in render
+    result = block.nodelist.render(context)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\DELL\Desktop\NewsBlog\newsenv\Lib\site-packages\django\template\base.py", line 1091, in render
+    return SafeString("".join([node.render_annotated(context) for node in self]))
+                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\DELL\Desktop\NewsBlog\newsenv\Lib\site-packages\django\template\base.py", line 1052, in render_annotated
+    return self.render(context)
+           ^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\DELL\Desktop\NewsBlog\newsenv\Lib\site-packages\django\template\defaulttags.py", line 333, in render
+    return nodelist.render(context)
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\DELL\Desktop\NewsBlog\newsenv\Lib\site-packages\django\template\base.py", line 1091, in render
+    return SafeString("".join([node.render_annotated(context) for node in self]))
+                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\DELL\Desktop\NewsBlog\newsenv\Lib\site-packages\django\template\base.py", line 1052, in render_annotated
+    return self.render(context)
+           ^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\DELL\Desktop\NewsBlog\newsenv\Lib\site-packages\django\template\defaulttags.py", line 249, in render
+    nodelist.append(node.render_annotated(context))
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\DELL\Desktop\NewsBlog\newsenv\Lib\site-packages\django\template\base.py", line 1052, in render_annotated
+    return self.render(context)
+           ^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\DELL\Desktop\NewsBlog\newsenv\Lib\site-packages\django\template\defaulttags.py", line 333, in render
+    return nodelist.render(context)
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\DELL\Desktop\NewsBlog\newsenv\Lib\site-packages\django\template\base.py", line 1091, in render
+    return SafeString("".join([node.render_annotated(context) for node in self]))
+                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\DELL\Desktop\NewsBlog\newsenv\Lib\site-packages\django\template\base.py", line 1052, in render_annotated
+    return self.render(context)
+           ^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\DELL\Desktop\NewsBlog\newsenv\Lib\site-packages\django\template\loader_tags.py", line 200, in render
+    template = context.template.engine.select_template(template_name)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\DELL\Desktop\NewsBlog\newsenv\Lib\site-packages\django\template\engine.py", line 234, in select_template
+    raise TemplateDoesNotExist(", ".join(not_found))
+django.template.exceptions.TemplateDoesNotExist: includes/post_card.html
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "C:\Users\DELL\Desktop\NewsBlog\newsenv\Lib\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+               ^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\DELL\Desktop\NewsBlog\newsenv\Lib\site-packages\django\core\handlers\base.py", line 198, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\DELL\Desktop\NewsBlog\ojukaye\core\views.py", line 2519, in profile_view
+    return render(request, 'profile/profile.html', context)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\DELL\Desktop\NewsBlog\newsenv\Lib\site-packages\django\shortcuts.py", line 25, in render
+    content = loader.render_to_string(template_name, context, request, using=using)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\DELL\Desktop\NewsBlog\newsenv\Lib\site-packages\django\template\loader.py", line 62, in render_to_string
+    return template.render(context, request)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\DELL\Desktop\NewsBlog\newsenv\Lib\site-packages\django\template\backends\django.py", line 109, in render
+    reraise(exc, self.backend)
+  File "C:\Users\DELL\Desktop\NewsBlog\newsenv\Lib\site-packages\django\template\backends\django.py", line 130, in reraise
+    raise new from exc
+django.template.exceptions.TemplateDoesNotExist: includes/post_card.html
+"GET /profile/news_bot/ HTTP/1.1" 500 279162
+Internal Server Error: /profile/news_bot/
+Traceback (most recent call last):
+  File "C:\Users\DELL\Desktop\NewsBlog\newsenv\Lib\site-packages\django\template\backends\django.py", line 107, in render
+    return self.template.render(context)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\DELL\Desktop\NewsBlog\newsenv\Lib\site-packages\django\template\base.py", line 174, in render
+    return self._render(context)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\DELL\Desktop\NewsBlog\newsenv\Lib\site-packages\django\template\base.py", line 166, in _render
+    return self.nodelist.render(context)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\DELL\Desktop\NewsBlog\newsenv\Lib\site-packages\django\template\base.py", line 1091, in render
+    return SafeString("".join([node.render_annotated(context) for node in self]))
+                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\DELL\Desktop\NewsBlog\newsenv\Lib\site-packages\django\template\base.py", line 1052, in render_annotated
+    return self.render(context)
+           ^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\DELL\Desktop\NewsBlog\newsenv\Lib\site-packages\django\template\loader_tags.py", line 160, in render
+    return compiled_parent._render(context)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\DELL\Desktop\NewsBlog\newsenv\Lib\site-packages\django\template\base.py", line 166, in _render
+    return self.nodelist.render(context)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\DELL\Desktop\NewsBlog\newsenv\Lib\site-packages\django\template\base.py", line 1091, in render
+    return SafeString("".join([node.render_annotated(context) for node in self]))
+                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\DELL\Desktop\NewsBlog\newsenv\Lib\site-packages\django\template\base.py", line 1052, in render_annotated
+    return self.render(context)
+           ^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\DELL\Desktop\NewsBlog\newsenv\Lib\site-packages\django\template\loader_tags.py", line 66, in render
+    result = block.nodelist.render(context)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\DELL\Desktop\NewsBlog\newsenv\Lib\site-packages\django\template\base.py", line 1091, in render
+    return SafeString("".join([node.render_annotated(context) for node in self]))
+                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\DELL\Desktop\NewsBlog\newsenv\Lib\site-packages\django\template\base.py", line 1052, in render_annotated
+    return self.render(context)
+           ^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\DELL\Desktop\NewsBlog\newsenv\Lib\site-packages\django\template\defaulttags.py", line 333, in render
+    return nodelist.render(context)
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\DELL\Desktop\NewsBlog\newsenv\Lib\site-packages\django\template\base.py", line 1091, in render
+    return SafeString("".join([node.render_annotated(context) for node in self]))
+                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\DELL\Desktop\NewsBlog\newsenv\Lib\site-packages\django\template\base.py", line 1052, in render_annotated
+    return self.render(context)
+           ^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\DELL\Desktop\NewsBlog\newsenv\Lib\site-packages\django\template\defaulttags.py", line 249, in render
+    nodelist.append(node.render_annotated(context))
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\DELL\Desktop\NewsBlog\newsenv\Lib\site-packages\django\template\base.py", line 1052, in render_annotated
+    return self.render(context)
+           ^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\DELL\Desktop\NewsBlog\newsenv\Lib\site-packages\django\template\defaulttags.py", line 333, in render
+    return nodelist.render(context)
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\DELL\Desktop\NewsBlog\newsenv\Lib\site-packages\django\template\base.py", line 1091, in render
+    return SafeString("".join([node.render_annotated(context) for node in self]))
+                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\DELL\Desktop\NewsBlog\newsenv\Lib\site-packages\django\template\base.py", line 1052, in render_annotated
+    return self.render(context)
+           ^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\DELL\Desktop\NewsBlog\newsenv\Lib\site-packages\django\template\loader_tags.py", line 200, in render
+    template = context.template.engine.select_template(template_name)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\DELL\Desktop\NewsBlog\newsenv\Lib\site-packages\django\template\engine.py", line 234, in select_template
+    raise TemplateDoesNotExist(", ".join(not_found))
+django.template.exceptions.TemplateDoesNotExist: includes/post_card.html
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "C:\Users\DELL\Desktop\NewsBlog\newsenv\Lib\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+               ^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\DELL\Desktop\NewsBlog\newsenv\Lib\site-packages\django\core\handlers\base.py", line 198, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\DELL\Desktop\NewsBlog\ojukaye\core\views.py", line 2519, in profile_view
+    return render(request, 'profile/profile.html', context)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\DELL\Desktop\NewsBlog\newsenv\Lib\site-packages\django\shortcuts.py", line 25, in render
+    content = loader.render_to_string(template_name, context, request, using=using)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\DELL\Desktop\NewsBlog\newsenv\Lib\site-packages\django\template\loader.py", line 62, in render_to_string
+    return template.render(context, request)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\DELL\Desktop\NewsBlog\newsenv\Lib\site-packages\django\template\backends\django.py", line 109, in render
+    reraise(exc, self.backend)
+  File "C:\Users\DELL\Desktop\NewsBlog\newsenv\Lib\site-packages\django\template\backends\django.py", line 130, in reraise
+    raise new from exc
+django.template.exceptions.TemplateDoesNotExist: includes/post_card.html
+"GET /profile/news_bot/ HTTP/1.1" 500 279162
+"GET / HTTP/1.1" 200 73464
+"GET /static/css/styles.css HTTP/1.1" 304 0
+"GET /online-news/ HTTP/1.1" 200 265386
+Not Found: /api/track-page-view/
+"POST /api/track-page-view/ HTTP/1.1" 404 19065
+"GET /post/1124/ HTTP/1.1" 200 84263
+Internal Server Error: /profile/news_bot/
+Traceback (most recent call last):
+  File "C:\Users\DELL\Desktop\NewsBlog\newsenv\Lib\site-packages\django\template\backends\django.py", line 107, in render
+    return self.template.render(context)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\DELL\Desktop\NewsBlog\newsenv\Lib\site-packages\django\template\base.py", line 174, in render
+    return self._render(context)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\DELL\Desktop\NewsBlog\newsenv\Lib\site-packages\django\template\base.py", line 166, in _render
+    return self.nodelist.render(context)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\DELL\Desktop\NewsBlog\newsenv\Lib\site-packages\django\template\base.py", line 1091, in render
+    return SafeString("".join([node.render_annotated(context) for node in self]))
+                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\DELL\Desktop\NewsBlog\newsenv\Lib\site-packages\django\template\base.py", line 1052, in render_annotated
+    return self.render(context)
+           ^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\DELL\Desktop\NewsBlog\newsenv\Lib\site-packages\django\template\loader_tags.py", line 160, in render
+    return compiled_parent._render(context)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\DELL\Desktop\NewsBlog\newsenv\Lib\site-packages\django\template\base.py", line 166, in _render
+    return self.nodelist.render(context)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\DELL\Desktop\NewsBlog\newsenv\Lib\site-packages\django\template\base.py", line 1091, in render
+    return SafeString("".join([node.render_annotated(context) for node in self]))
+                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\DELL\Desktop\NewsBlog\newsenv\Lib\site-packages\django\template\base.py", line 1052, in render_annotated
+    return self.render(context)
+           ^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\DELL\Desktop\NewsBlog\newsenv\Lib\site-packages\django\template\loader_tags.py", line 66, in render
+    result = block.nodelist.render(context)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\DELL\Desktop\NewsBlog\newsenv\Lib\site-packages\django\template\base.py", line 1091, in render
+    return SafeString("".join([node.render_annotated(context) for node in self]))
+                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\DELL\Desktop\NewsBlog\newsenv\Lib\site-packages\django\template\base.py", line 1052, in render_annotated
+    return self.render(context)
+           ^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\DELL\Desktop\NewsBlog\newsenv\Lib\site-packages\django\template\defaulttags.py", line 333, in render
+    return nodelist.render(context)
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\DELL\Desktop\NewsBlog\newsenv\Lib\site-packages\django\template\base.py", line 1091, in render
+    return SafeString("".join([node.render_annotated(context) for node in self]))
+                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\DELL\Desktop\NewsBlog\newsenv\Lib\site-packages\django\template\base.py", line 1052, in render_annotated
+    return self.render(context)
+           ^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\DELL\Desktop\NewsBlog\newsenv\Lib\site-packages\django\template\defaulttags.py", line 249, in render
+    nodelist.append(node.render_annotated(context))
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\DELL\Desktop\NewsBlog\newsenv\Lib\site-packages\django\template\base.py", line 1052, in render_annotated
+    return self.render(context)
+           ^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\DELL\Desktop\NewsBlog\newsenv\Lib\site-packages\django\template\defaulttags.py", line 333, in render
+    return nodelist.render(context)
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\DELL\Desktop\NewsBlog\newsenv\Lib\site-packages\django\template\base.py", line 1091, in render
+    return SafeString("".join([node.render_annotated(context) for node in self]))
+                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\DELL\Desktop\NewsBlog\newsenv\Lib\site-packages\django\template\base.py", line 1052, in render_annotated
+    return self.render(context)
+           ^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\DELL\Desktop\NewsBlog\newsenv\Lib\site-packages\django\template\loader_tags.py", line 200, in render
+    template = context.template.engine.select_template(template_name)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\DELL\Desktop\NewsBlog\newsenv\Lib\site-packages\django\template\engine.py", line 234, in select_template
+    raise TemplateDoesNotExist(", ".join(not_found))
+django.template.exceptions.TemplateDoesNotExist: includes/post_card.html
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "C:\Users\DELL\Desktop\NewsBlog\newsenv\Lib\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+               ^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\DELL\Desktop\NewsBlog\newsenv\Lib\site-packages\django\core\handlers\base.py", line 198, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\DELL\Desktop\NewsBlog\ojukaye\core\views.py", line 2519, in profile_view
+    return render(request, 'profile/profile.html', context)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\DELL\Desktop\NewsBlog\newsenv\Lib\site-packages\django\shortcuts.py", line 25, in render
+    content = loader.render_to_string(template_name, context, request, using=using)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\DELL\Desktop\NewsBlog\newsenv\Lib\site-packages\django\template\loader.py", line 62, in render_to_string
+    return template.render(context, request)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\DELL\Desktop\NewsBlog\newsenv\Lib\site-packages\django\template\backends\django.py", line 109, in render
+    reraise(exc, self.backend)
+  File "C:\Users\DELL\Desktop\NewsBlog\newsenv\Lib\site-packages\django\template\backends\django.py", line 130, in reraise
+    raise new from exc
+django.template.exceptions.TemplateDoesNotExist: includes/post_card.html
+"GET /profile/news_bot/ HTTP/1.1" 500 279162
