@@ -5,32 +5,39 @@
 
 {% block extra_css %}
 <style>
+    /* Main Container - Medium Width */
     .profile-container {
-        max-width: 1280px;
-        margin: 0 auto;
-        padding: 1.5rem;
+        max-width: 1800px;  /* Perfect medium width */
+        width: 100%;
+        margin: 2rem auto;
+        padding: 0 1.5rem;
     }
 
     /* Cover Section */
     .profile-cover-wrapper {
         position: relative;
-        height: 320px;
-        background: linear-gradient(145deg, var(--primary), var(--primary-dark));
+        height: 300px;
+        background: linear-gradient(145deg, #3b82f6, #1d4ed8);
         overflow: hidden;
-        border-radius: 24px 24px 0 0;
+        border-radius: 20px 20px 0 0;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
     }
 
     .profile-cover-img {
         width: 100%;
         height: 100%;
         object-fit: cover;
-        transition: transform 0.3s ease;
+        transition: transform 0.5s ease;
+    }
+
+    .profile-cover-wrapper:hover .profile-cover-img {
+        transform: scale(1.02);
     }
 
     .profile-cover-gradient {
         width: 100%;
         height: 100%;
-        background: linear-gradient(145deg, var(--primary), var(--primary-dark));
+        background: linear-gradient(145deg, #3b82f6, #1d4ed8);
         position: relative;
     }
 
@@ -46,8 +53,8 @@
 
     .cover-actions {
         position: absolute;
-        bottom: 1.5rem;
-        right: 1.5rem;
+        bottom: 1.25rem;
+        right: 1.25rem;
         z-index: 10;
     }
 
@@ -59,18 +66,20 @@
         background: rgba(255, 255, 255, 0.95);
         border: none;
         border-radius: 9999px;
-        color: var(--gray-900);
+        color: #111827;
         font-weight: 600;
         font-size: 0.875rem;
         cursor: pointer;
         transition: all 0.2s ease;
         backdrop-filter: blur(4px);
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        text-decoration: none;
     }
 
     .btn-cover-edit:hover {
         background: white;
         transform: translateY(-2px);
+        box-shadow: 0 6px 15px rgba(0, 0, 0, 0.2);
     }
 
     /* Avatar Section */
@@ -78,7 +87,7 @@
         display: flex;
         gap: 2rem;
         padding: 0 2rem;
-        margin-top: -80px;
+        margin-top: -70px;
         margin-bottom: 1.5rem;
         position: relative;
         z-index: 20;
@@ -90,41 +99,45 @@
     }
 
     .profile-avatar-large {
-        width: 140px;
-        height: 140px;
+        width: 130px;
+        height: 130px;
         border-radius: 50%;
-        border: 5px solid white;
+        border: 4px solid white;
         box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
         object-fit: cover;
         transition: transform 0.2s ease;
     }
 
+    .profile-avatar-large:hover {
+        transform: scale(1.02);
+    }
+
     .profile-avatar-placeholder-large {
-        width: 140px;
-        height: 140px;
+        width: 130px;
+        height: 130px;
         border-radius: 50%;
-        background: linear-gradient(145deg, var(--primary), var(--primary-dark));
+        background: linear-gradient(145deg, #3b82f6, #1d4ed8);
         color: white;
         display: flex;
         align-items: center;
         justify-content: center;
-        font-size: 3.5rem;
+        font-size: 3rem;
         font-weight: 600;
-        border: 5px solid white;
+        border: 4px solid white;
         box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
     }
 
     .avatar-actions {
         position: absolute;
-        bottom: 8px;
-        right: 8px;
+        bottom: 5px;
+        right: 5px;
     }
 
     .btn-avatar-edit {
-        width: 40px;
-        height: 40px;
-        background: var(--primary);
-        border: 3px solid white;
+        width: 36px;
+        height: 36px;
+        background: #3b82f6;
+        border: 2px solid white;
         border-radius: 50%;
         color: white;
         display: flex;
@@ -133,11 +146,12 @@
         cursor: pointer;
         transition: all 0.2s ease;
         box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+        text-decoration: none;
     }
 
     .btn-avatar-edit:hover {
-        background: var(--primary-dark);
-        transform: scale(1.1) rotate(10deg);
+        background: #1d4ed8;
+        transform: scale(1.1);
     }
 
     /* Profile Header Info */
@@ -151,6 +165,7 @@
         align-items: center;
         gap: 0.75rem;
         margin-bottom: 0.25rem;
+        flex-wrap: wrap;
     }
 
     .profile-header-name {
@@ -159,18 +174,20 @@
         color: white;
         text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
         margin: 0;
+        line-height: 1.2;
     }
 
     .verified-badge-large {
-        color: var(--primary);
+        color: #3b82f6;
         font-size: 1.5rem;
         background: white;
         border-radius: 50%;
         line-height: 1;
+        padding: 0.1rem;
     }
 
     .profile-header-username {
-        font-size: 1.125rem;
+        font-size: 1rem;
         color: rgba(255, 255, 255, 0.9);
         margin-bottom: 0.75rem;
     }
@@ -189,40 +206,44 @@
         gap: 1.5rem;
         margin-bottom: 1rem;
         color: rgba(255, 255, 255, 0.9);
-        font-size: 0.95rem;
+        font-size: 0.9rem;
     }
 
     .profile-header-meta i {
         margin-right: 0.5rem;
+        width: 16px;
     }
 
     .profile-header-meta a {
         color: white;
         text-decoration: none;
+        border-bottom: 1px dotted rgba(255,255,255,0.3);
     }
 
     .profile-header-meta a:hover {
-        text-decoration: underline;
+        border-bottom-color: white;
     }
 
     .profile-header-actions {
         display: flex;
-        gap: 1rem;
+        gap: 0.75rem;
+        flex-wrap: wrap;
     }
 
     /* Stats Bar */
     .profile-stats-bar {
         background: white;
-        border-radius: 0 0 24px 24px;
-        padding: 1.5rem 2rem;
+        border-radius: 16px;
+        padding: 1.25rem 1.5rem;
         box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
         margin-bottom: 2rem;
+        border: 1px solid #e5e7eb;
     }
 
     .stats-container {
         display: flex;
         justify-content: space-around;
-        max-width: 800px;
+        max-width: 700px;
         margin: 0 auto;
     }
 
@@ -231,527 +252,71 @@
         cursor: pointer;
         padding: 0.5rem 1rem;
         border-radius: 12px;
-        transition: background 0.2s ease;
+        transition: all 0.2s ease;
         text-decoration: none;
         color: inherit;
     }
 
     .stat-item-large:hover {
         background: #f3f4f6;
+        transform: translateY(-2px);
     }
 
     .stat-value {
         display: block;
-        font-size: 1.75rem;
+        font-size: 1.5rem;
         font-weight: 700;
-        color: var(--gray-900);
+        color: #111827;
         line-height: 1.2;
     }
 
     .stat-label {
-        font-size: 0.875rem;
-        color: var(--gray-600);
+        font-size: 0.8rem;
+        color: #6b7280;
         text-transform: uppercase;
         letter-spacing: 0.05em;
-    }
-
-    /* News Submission Status */
-    .news-status-badge {
-        display: inline-flex;
-        align-items: center;
-        padding: 0.5rem 1rem;
-        border-radius: var(--radius-full);
-        font-size: 0.875rem;
-        font-weight: 600;
-        margin-bottom: 1rem;
-    }
-
-    .news-status-pending {
-        background: #fef3c7;
-        color: #92400e;
-    }
-
-    .news-status-approved {
-        background: #dcfce7;
-        color: #166534;
-    }
-
-    .news-status-rejected {
-        background: #fee2e2;
-        color: #991b1b;
-    }
-
-    /* Profile Content Grid */
-    .profile-content-grid {
-        display: grid;
-        grid-template-columns: 360px 1fr;
-        gap: 2rem;
-    }
-
-    /* Profile Cards */
-    .profile-card {
-        background: white;
-        border-radius: 20px;
-        padding: 1.5rem;
-        margin-bottom: 1.5rem;
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-    }
-
-    .card-header {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        margin-bottom: 1.25rem;
-    }
-
-    .card-header h3 {
-        font-size: 1.125rem;
-        font-weight: 600;
-        color: var(--gray-900);
-        margin: 0;
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-    }
-
-    .card-header h3 i {
-        color: var(--primary);
-    }
-
-    .btn-icon {
-        width: 36px;
-        height: 36px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        border-radius: 50%;
-        color: var(--gray-600);
-        transition: all 0.2s ease;
-        text-decoration: none;
-    }
-
-    .btn-icon:hover {
-        background: #f3f4f6;
-        color: var(--primary);
-    }
-
-    /* About Section */
-    .about-bio {
-        font-size: 1rem;
-        line-height: 1.6;
-        color: var(--gray-700);
-        margin-bottom: 1.5rem;
-    }
-
-    .about-details {
-        display: flex;
-        flex-direction: column;
-        gap: 0.75rem;
-    }
-
-    .detail-item {
-        display: flex;
-        align-items: center;
-        gap: 0.75rem;
-        color: var(--gray-700);
-    }
-
-    .detail-item i {
-        width: 1.25rem;
-        color: var(--gray-600);
-    }
-
-    .detail-item a {
-        color: var(--primary);
-        text-decoration: none;
-    }
-
-    .detail-item a:hover {
-        text-decoration: underline;
-    }
-
-    /* Social Links */
-    .social-links {
-        display: flex;
-        flex-direction: column;
-        gap: 0.75rem;
-    }
-
-    .social-link-item {
-        display: flex;
-        align-items: center;
-        gap: 0.75rem;
-        padding: 0.75rem;
-        border-radius: 12px;
-        text-decoration: none;
-        color: var(--gray-800);
-        transition: all 0.2s ease;
-    }
-
-    .social-link-item:hover {
-        background: #f9fafb;
-        transform: translateX(4px);
-    }
-
-    .social-link-item.twitter i {
-        color: #1da1f2;
-    }
-
-    .social-link-item.facebook i {
-        color: #1877f2;
-    }
-
-    .social-link-item.instagram i {
-        color: #e4405f;
-    }
-
-    .social-link-item.linkedin i {
-        color: #0077b5;
-    }
-
-    .social-link-item.disabled {
-        opacity: 0.6;
-        cursor: default;
-    }
-
-    .social-link-item.disabled:hover {
-        background: none;
-        transform: none;
-    }
-
-    /* Interests Tags */
-    .interests-tags {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 0.5rem;
-    }
-
-    .interest-tag {
-        background: #eff6ff;
-        color: var(--primary-dark);
-        padding: 0.375rem 1rem;
-        border-radius: 9999px;
-        font-size: 0.875rem;
-        font-weight: 500;
-    }
-
-    /* Profile Tabs */
-    .profile-tabs {
-        display: flex;
-        gap: 0.5rem;
-        background: white;
-        border-radius: 20px;
-        padding: 0.5rem;
-        margin-bottom: 2rem;
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-        flex-wrap: wrap;
-    }
-
-    .profile-tab {
-        flex: 1;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 0.5rem;
-        padding: 0.75rem;
-        border-radius: 16px;
-        font-size: 0.95rem;
-        font-weight: 600;
-        color: var(--gray-600);
-        text-decoration: none;
-        transition: all 0.2s ease;
-        min-width: 120px;
-    }
-
-    .profile-tab i {
-        font-size: 1rem;
-    }
-
-    .profile-tab:hover {
-        background: #f9fafb;
-        color: var(--gray-800);
-    }
-
-    .profile-tab.active {
-        background: var(--primary);
-        color: white;
-    }
-
-    .profile-tab.active i {
-        color: white;
-    }
-
-    /* Posts Container */
-    .posts-container {
-        display: flex;
-        flex-direction: column;
-        gap: 1.5rem;
-    }
-
-    /* Post Card */
-    .post-card {
-        background: white;
-        border-radius: 20px;
-        border: 1px solid var(--gray-200);
-        overflow: hidden;
-        transition: all 0.3s ease;
-    }
-
-    .post-card:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
-    }
-
-    .post-header {
-        padding: 1.5rem 1.5rem 0.5rem;
-        display: flex;
-        align-items: flex-start;
-        justify-content: space-between;
-    }
-
-    .post-author {
-        display: flex;
-        gap: 1rem;
-        flex: 1;
-    }
-
-    .author-avatar {
-        width: 48px;
-        height: 48px;
-        border-radius: 50%;
-        overflow: hidden;
-        flex-shrink: 0;
-        background: linear-gradient(145deg, var(--primary), var(--primary-dark));
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        color: white;
-        font-weight: 600;
-        font-size: 1.25rem;
-    }
-
-    .author-avatar img {
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
-    }
-
-    .author-info {
-        flex: 1;
-    }
-
-    .author-name-wrapper {
-        display: flex;
-        align-items: center;
-        flex-wrap: wrap;
-        gap: 0.5rem;
-        margin-bottom: 0.25rem;
-    }
-
-    .author-name {
-        font-weight: 700;
-        color: var(--gray-900);
-        text-decoration: none;
-        font-size: 1rem;
-    }
-
-    .author-name:hover {
-        color: var(--primary);
-    }
-
-    .verified-badge {
-        color: var(--primary);
-        font-size: 0.875rem;
-    }
-
-    .post-badge {
-        background: var(--primary-soft);
-        color: var(--primary-dark);
-        padding: 0.25rem 0.75rem;
-        border-radius: 9999px;
-        font-size: 0.75rem;
-        font-weight: 600;
-    }
-
-    .post-meta {
-        display: flex;
-        align-items: center;
-        gap: 1rem;
-        font-size: 0.75rem;
-        color: var(--gray-600);
-    }
-
-    .post-meta i {
-        margin-right: 0.25rem;
-    }
-
-    .post-content {
-        padding: 0.5rem 1.5rem 1rem;
-    }
-
-    .post-link {
-        text-decoration: none;
-    }
-
-    .post-title {
-        font-size: 1.25rem;
-        font-weight: 700;
-        color: var(--gray-900);
-        margin-bottom: 0.75rem;
-        line-height: 1.4;
-        transition: color 0.2s;
-    }
-
-    .post-link:hover .post-title {
-        color: var(--primary);
-    }
-
-    .post-text {
-        color: var(--gray-700);
-        line-height: 1.6;
-        margin-bottom: 1rem;
-    }
-
-    .post-image {
-        margin: 1rem 0;
-        border-radius: 16px;
-        overflow: hidden;
-        max-height: 400px;
-    }
-
-    .post-image img {
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
-    }
-
-    .post-stats {
-        display: flex;
-        align-items: center;
-        gap: 1.5rem;
-        padding: 0.75rem 1.5rem;
-        border-top: 1px solid var(--gray-200);
-        border-bottom: 1px solid var(--gray-200);
-        background: #f9fafb;
-    }
-
-    .stat-item {
-        display: flex;
-        align-items: center;
-        gap: 0.375rem;
-        font-size: 0.875rem;
-        color: var(--gray-600);
-    }
-
-    .stat-item i {
-        color: var(--gray-500);
-    }
-
-    .post-actions {
-        display: flex;
-        align-items: center;
-        padding: 1rem 1.5rem 1.5rem;
-        gap: 0.75rem;
-    }
-
-    .post-action-btn {
-        flex: 1;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        gap: 0.5rem;
-        padding: 0.625rem 1rem;
-        border: 1px solid var(--gray-200);
-        border-radius: 9999px;
-        background: white;
-        color: var(--gray-600);
-        font-size: 0.875rem;
-        font-weight: 500;
-        cursor: pointer;
-        transition: all 0.2s;
-        text-decoration: none;
-    }
-
-    .post-action-btn:hover {
-        background: #f9fafb;
-        border-color: var(--primary);
-        color: var(--primary);
-    }
-
-    .post-action-btn.liked {
-        background: #fee2e2;
-        border-color: #ef4444;
-        color: #ef4444;
-    }
-
-    .post-action-btn.bookmarked {
-        background: #eff6ff;
-        border-color: var(--primary);
-        color: var(--primary);
-    }
-
-    /* Empty State */
-    .empty-state-container {
-        text-align: center;
-        padding: 4rem 2rem;
-        background: white;
-        border-radius: 20px;
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-    }
-
-    .empty-state-icon {
-        width: 80px;
-        height: 80px;
-        background: #eff6ff;
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        margin: 0 auto 1.5rem;
-    }
-
-    .empty-state-icon i {
-        font-size: 2rem;
-        color: var(--primary);
-    }
-
-    .empty-state-container h3 {
-        font-size: 1.25rem;
-        font-weight: 600;
-        color: var(--gray-900);
-        margin-bottom: 0.5rem;
-    }
-
-    .empty-state-container p {
-        color: var(--gray-600);
-        margin-bottom: 1.5rem;
     }
 
     /* News Submission Card */
     .news-submission-card {
         background: #f9fafb;
-        border: 1px solid var(--gray-200);
+        border: 1px solid #e5e7eb;
         border-radius: 16px;
         padding: 1.5rem;
-        margin-bottom: 1.5rem;
+        margin-bottom: 2rem;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
     }
 
     .submission-header {
         display: flex;
         align-items: center;
         gap: 0.75rem;
-        margin-bottom: 1rem;
+        margin-bottom: 1.25rem;
+        flex-wrap: wrap;
     }
 
     .submission-header i {
         font-size: 1.5rem;
-        color: var(--primary);
+        color: #3b82f6;
     }
 
     .submission-header h3 {
-        font-size: 1rem;
+        font-size: 1.1rem;
         font-weight: 600;
-        color: var(--gray-800);
+        color: #111827;
+        margin: 0;
+    }
+
+    .submission-header .btn-primary {
+        margin-left: auto;
+        padding: 0.5rem 1rem;
+        font-size: 0.875rem;
+    }
+
+    .submissions-list {
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
     }
 
     .submission-item {
@@ -761,12 +326,13 @@
         padding: 1rem;
         background: white;
         border-radius: 12px;
-        border: 1px solid var(--gray-200);
-        margin-bottom: 0.75rem;
+        border: 1px solid #e5e7eb;
+        transition: all 0.2s;
     }
 
-    .submission-item:last-child {
-        margin-bottom: 0;
+    .submission-item:hover {
+        border-color: #3b82f6;
+        box-shadow: 0 2px 8px rgba(59,130,246,0.1);
     }
 
     .submission-info {
@@ -775,19 +341,22 @@
 
     .submission-title {
         font-weight: 600;
-        color: var(--gray-900);
+        color: #111827;
         margin-bottom: 0.25rem;
         display: block;
         text-decoration: none;
     }
 
     .submission-title:hover {
-        color: var(--primary);
+        color: #3b82f6;
     }
 
     .submission-meta {
         font-size: 0.75rem;
-        color: var(--gray-600);
+        color: #6b7280;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
     }
 
     .submission-status {
@@ -816,67 +385,692 @@
         padding: 0.25rem 0.5rem;
         background: #f3f4f6;
         border-radius: 9999px;
-        font-size: 0.75rem;
+        font-size: 0.7rem;
         font-weight: 600;
-        margin-left: 0.5rem;
     }
 
-    /* Responsive */
+    /* Profile Content Grid */
+    .profile-content-grid {
+        display: grid;
+        grid-template-columns: 300px 1fr;
+        gap: 1.5rem;
+    }
+
+    /* Profile Cards (Left Column) */
+    .profile-card {
+        background: white;
+        border-radius: 16px;
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        border: 1px solid #e5e7eb;
+        transition: all 0.2s;
+    }
+
+    .profile-card:hover {
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+
+    .card-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 1.25rem;
+    }
+
+    .card-header h3 {
+        font-size: 1rem;
+        font-weight: 600;
+        color: #111827;
+        margin: 0;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        text-transform: uppercase;
+        letter-spacing: 0.3px;
+    }
+
+    .card-header h3 i {
+        color: #3b82f6;
+        font-size: 1rem;
+    }
+
+    .btn-icon {
+        width: 32px;
+        height: 32px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 50%;
+        color: #6b7280;
+        transition: all 0.2s ease;
+        text-decoration: none;
+        background: transparent;
+    }
+
+    .btn-icon:hover {
+        background: #f3f4f6;
+        color: #3b82f6;
+        transform: rotate(10deg);
+    }
+
+    /* About Section */
+    .about-bio {
+        font-size: 0.95rem;
+        line-height: 1.6;
+        color: #374151;
+        margin-bottom: 1.25rem;
+        padding-bottom: 1.25rem;
+        border-bottom: 1px solid #e5e7eb;
+    }
+
+    .about-details {
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+    }
+
+    .detail-item {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        color: #4b5563;
+        font-size: 0.9rem;
+    }
+
+    .detail-item i {
+        width: 1.25rem;
+        color: #9ca3af;
+        font-size: 0.9rem;
+    }
+
+    .detail-item a {
+        color: #3b82f6;
+        text-decoration: none;
+    }
+
+    .detail-item a:hover {
+        text-decoration: underline;
+    }
+
+    /* Social Links */
+    .social-links {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    .social-link-item {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        padding: 0.625rem 0.75rem;
+        border-radius: 10px;
+        text-decoration: none;
+        color: #374151;
+        transition: all 0.2s ease;
+        font-size: 0.9rem;
+    }
+
+    .social-link-item:hover {
+        background: #f9fafb;
+        transform: translateX(4px);
+    }
+
+    .social-link-item.twitter i {
+        color: #1da1f2;
+    }
+
+    .social-link-item.facebook i {
+        color: #1877f2;
+    }
+
+    .social-link-item.instagram i {
+        color: #e4405f;
+    }
+
+    .social-link-item.linkedin i {
+        color: #0077b5;
+    }
+
+    .social-link-item.disabled {
+        opacity: 0.5;
+        cursor: default;
+    }
+
+    .social-link-item.disabled:hover {
+        background: none;
+        transform: none;
+    }
+
+    /* Interests Tags */
+    .interests-tags {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+    }
+
+    .interest-tag {
+        background: #eff6ff;
+        color: #1e40af;
+        padding: 0.375rem 1rem;
+        border-radius: 9999px;
+        font-size: 0.8rem;
+        font-weight: 500;
+        transition: all 0.2s;
+    }
+
+    .interest-tag:hover {
+        background: #dbeafe;
+        transform: translateY(-1px);
+    }
+
+    /* Profile Tabs */
+    .profile-tabs {
+        display: flex;
+        gap: 0.5rem;
+        background: white;
+        border-radius: 14px;
+        padding: 0.5rem;
+        margin-bottom: 1.5rem;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        border: 1px solid #e5e7eb;
+        flex-wrap: wrap;
+    }
+
+    .profile-tab {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        padding: 0.625rem 0.5rem;
+        border-radius: 10px;
+        font-size: 0.9rem;
+        font-weight: 600;
+        color: #6b7280;
+        text-decoration: none;
+        transition: all 0.2s ease;
+        min-width: 90px;
+        white-space: nowrap;
+    }
+
+    .profile-tab i {
+        font-size: 0.9rem;
+    }
+
+    .profile-tab:hover {
+        background: #f9fafb;
+        color: #374151;
+    }
+
+    .profile-tab.active {
+        background: #3b82f6;
+        color: white;
+    }
+
+    .profile-tab.active i {
+        color: white;
+    }
+
+    /* Posts Container */
+    .posts-container {
+        display: flex;
+        flex-direction: column;
+        gap: 1.25rem;
+    }
+
+    /* Comments Container */
+    .comments-container {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+    }
+
+    .comment-card {
+        background: white;
+        border-radius: 14px;
+        border: 1px solid #e5e7eb;
+        padding: 1.25rem;
+        transition: all 0.2s;
+    }
+
+    .comment-card:hover {
+        box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        border-color: #d1d5db;
+    }
+
+    .comment-header {
+        margin-bottom: 0.75rem;
+    }
+
+    .comment-meta {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        font-size: 0.8rem;
+        color: #6b7280;
+        flex-wrap: wrap;
+    }
+
+    .comment-post-title {
+        display: flex;
+        align-items: center;
+        gap: 0.375rem;
+    }
+
+    .comment-post-title i {
+        font-size: 0.7rem;
+        color: #9ca3af;
+    }
+
+    .comment-post-title a {
+        color: #3b82f6;
+        text-decoration: none;
+        font-weight: 500;
+    }
+
+    .comment-post-title a:hover {
+        text-decoration: underline;
+    }
+
+    .comment-body {
+        margin-bottom: 0.75rem;
+    }
+
+    .comment-body p {
+        font-size: 0.95rem;
+        line-height: 1.6;
+        color: #374151;
+        margin: 0;
+    }
+
+    .comment-footer {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding-top: 0.75rem;
+        border-top: 1px solid #e5e7eb;
+    }
+
+    .comment-likes {
+        display: flex;
+        align-items: center;
+        gap: 0.375rem;
+        font-size: 0.8rem;
+        color: #6b7280;
+    }
+
+    .comment-likes i {
+        color: #ef4444;
+    }
+
+    .comment-link {
+        color: #3b82f6;
+        text-decoration: none;
+        font-size: 0.8rem;
+        font-weight: 500;
+        display: flex;
+        align-items: center;
+        gap: 0.375rem;
+    }
+
+    .comment-link:hover {
+        gap: 0.5rem;
+    }
+
+    /* Empty State */
+    .empty-state-container {
+        text-align: center;
+        padding: 3rem 2rem;
+        background: white;
+        border-radius: 16px;
+        border: 1px solid #e5e7eb;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    }
+
+    .empty-state-icon {
+        width: 70px;
+        height: 70px;
+        background: #eff6ff;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 1.25rem;
+    }
+
+    .empty-state-icon i {
+        font-size: 1.75rem;
+        color: #3b82f6;
+    }
+
+    .empty-state-container h3 {
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: #111827;
+        margin-bottom: 0.5rem;
+    }
+
+    .empty-state-container p {
+        color: #6b7280;
+        margin-bottom: 1.5rem;
+        font-size: 0.9rem;
+    }
+
+    /* Modal Styles */
+    .modal {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.5);
+        align-items: center;
+        justify-content: center;
+        z-index: 1000;
+        backdrop-filter: blur(4px);
+    }
+
+    .modal-content {
+        background: white;
+        border-radius: 20px;
+        width: 90%;
+        max-width: 500px;
+        max-height: 80vh;
+        overflow: hidden;
+        box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+    }
+
+    .modal-header {
+        padding: 1.25rem 1.5rem;
+        border-bottom: 1px solid #e5e7eb;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+
+    .modal-header h3 {
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: #111827;
+        margin: 0;
+    }
+
+    .modal-close {
+        background: none;
+        border: none;
+        font-size: 1.5rem;
+        cursor: pointer;
+        color: #6b7280;
+        width: 32px;
+        height: 32px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 50%;
+        transition: all 0.2s;
+    }
+
+    .modal-close:hover {
+        background: #f3f4f6;
+        color: #111827;
+    }
+
+    .modal-body {
+        padding: 1.5rem;
+        max-height: calc(80vh - 80px);
+        overflow-y: auto;
+    }
+
+    .follow-item {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        padding: 0.75rem;
+        border-radius: 12px;
+        text-decoration: none;
+        color: inherit;
+        transition: all 0.2s;
+        border: 1px solid transparent;
+    }
+
+    .follow-item:hover {
+        background: #f9fafb;
+        border-color: #e5e7eb;
+        transform: translateX(4px);
+    }
+
+    .follow-avatar {
+        width: 48px;
+        height: 48px;
+        border-radius: 50%;
+        overflow: hidden;
+        flex-shrink: 0;
+        background: linear-gradient(145deg, #3b82f6, #1d4ed8);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-weight: 600;
+    }
+
+    .follow-avatar img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    .follow-info {
+        flex: 1;
+    }
+
+    .follow-name {
+        display: block;
+        font-weight: 600;
+        color: #111827;
+        margin-bottom: 0.125rem;
+    }
+
+    .follow-username {
+        font-size: 0.8rem;
+        color: #6b7280;
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 2rem;
+    }
+
+    .empty-state i {
+        font-size: 3rem;
+        color: #d1d5db;
+        margin-bottom: 1rem;
+    }
+
+    .empty-state p {
+        color: #6b7280;
+        margin: 0;
+    }
+
+    /* Buttons */
+    .btn {
+        padding: 0.625rem 1.25rem;
+        border-radius: 9999px;
+        font-weight: 600;
+        font-size: 0.875rem;
+        border: none;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        transition: all 0.2s ease;
+        text-decoration: none;
+    }
+
+    .btn-primary {
+        background: #3b82f6;
+        color: white;
+    }
+
+    .btn-primary:hover {
+        background: #2563eb;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+    }
+
+    .btn-outline {
+        background: transparent;
+        border: 1.5px solid #e5e7eb;
+        color: #374151;
+    }
+
+    .btn-outline:hover {
+        border-color: #3b82f6;
+        color: #3b82f6;
+        background: #eff6ff;
+        transform: translateY(-2px);
+    }
+
+    .btn-sm {
+        padding: 0.375rem 1rem;
+        font-size: 0.8rem;
+    }
+
+    .btn-block {
+        width: 100%;
+        justify-content: center;
+    }
+
+    /* Responsive Design */
     @media (max-width: 992px) {
+        .profile-container {
+            padding: 0 1rem;
+        }
+
         .profile-content-grid {
             grid-template-columns: 1fr;
+            gap: 1rem;
         }
         
         .profile-avatar-section {
             flex-direction: column;
             align-items: center;
             text-align: center;
-            margin-top: -60px;
+            margin-top: -50px;
+            padding: 0 1rem;
         }
         
         .profile-header-name {
             font-size: 1.75rem;
+            justify-content: center;
         }
-        
+
+        .profile-header-meta {
+            justify-content: center;
+        }
+
+        .profile-header-actions {
+            justify-content: center;
+        }
+
         .profile-tabs {
             flex-wrap: wrap;
         }
         
         .profile-tab {
-            flex: 1 0 calc(50% - 0.5rem);
+            flex: 1 0 calc(33.333% - 0.5rem);
+            white-space: normal;
         }
     }
 
     @media (max-width: 768px) {
         .profile-cover-wrapper {
-            height: 250px;
+            height: 200px;
         }
         
         .profile-avatar-large,
         .profile-avatar-placeholder-large {
-            width: 120px;
-            height: 120px;
+            width: 100px;
+            height: 100px;
             font-size: 2.5rem;
         }
         
         .stats-container {
             flex-wrap: wrap;
+            gap: 0.5rem;
         }
         
         .stat-item-large {
             flex: 1 0 calc(50% - 1rem);
         }
-        
+
+        .profile-header-name {
+            font-size: 1.5rem;
+        }
+
+        .profile-tab {
+            flex: 1 0 calc(50% - 0.5rem);
+            font-size: 0.8rem;
+        }
+
+        .submission-header {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+
+        .submission-header .btn-primary {
+            margin-left: 0;
+        }
+
+        .submission-item {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 0.5rem;
+        }
+
+        .submission-status {
+            align-self: flex-start;
+        }
+    }
+
+    @media (max-width: 480px) {
+        .profile-container {
+            padding: 0 0.75rem;
+        }
+
+        .profile-header-meta {
+            gap: 0.75rem;
+            font-size: 0.8rem;
+        }
+
         .profile-header-actions {
             flex-direction: column;
+            width: 100%;
         }
-        
-        .post-actions {
-            flex-wrap: wrap;
+
+        .profile-header-actions .btn {
+            width: 100%;
+            justify-content: center;
         }
-        
-        .post-action-btn {
-            flex: 1 0 calc(50% - 0.375rem);
+
+        .profile-tab {
+            flex: 1 0 100%;
+        }
+
+        .stat-value {
+            font-size: 1.25rem;
+        }
+
+        .stat-label {
+            font-size: 0.7rem;
+        }
+
+        .comment-meta {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 0.25rem;
         }
     }
 </style>
@@ -893,10 +1087,9 @@
             <div class="profile-cover-gradient" id="profileCoverPlaceholder"></div>
             {% endif %}
             
-            <!-- Cover Photo Camera Button (Visible only to own profile) -->
             {% if is_own_profile %}
             <div class="cover-actions">
-                <a href="{% url 'edit_profile' %}" class="btn-cover-edit" title="Edit Profile">
+                <a href="{% url 'edit_profile' %}" class="btn-cover-edit">
                     <i class="fas fa-camera"></i>
                     <span>Edit Cover</span>
                 </a>
@@ -904,25 +1097,24 @@
             {% endif %}
         </div>
         
-        <!-- Avatar Section -->
-        <div class="profile-avatar-large-wrapper">
-            {% if profile.profile_pic %}
-            <img src="{{ profile.profile_pic.url }}" alt="{{ profile_user.username }}" class="profile-avatar-large" id="profileAvatarImg">
-            {% else %}
-            <div class="profile-avatar-placeholder-large" id="profileAvatarPlaceholder">
-                {{ profile_user.username|first|upper }}
+        <div class="profile-avatar-section">
+            <div class="profile-avatar-large-wrapper">
+                {% if profile.profile_pic %}
+                <img src="{{ profile.profile_pic.url }}" alt="{{ profile_user.username }}" class="profile-avatar-large" id="profileAvatarImg">
+                {% else %}
+                <div class="profile-avatar-placeholder-large" id="profileAvatarPlaceholder">
+                    {{ profile_user.username|first|upper }}
+                </div>
+                {% endif %}
+                
+                {% if is_own_profile %}
+                <div class="avatar-actions">
+                    <a href="{% url 'edit_profile' %}" class="btn-avatar-edit">
+                        <i class="fas fa-camera"></i>
+                    </a>
+                </div>
+                {% endif %}
             </div>
-            {% endif %}
-            
-            <!-- Avatar Camera Button (Visible only to own profile) - Links to Edit Profile -->
-            {% if is_own_profile %}
-            <div class="avatar-actions">
-                <a href="{% url 'edit_profile' %}" class="btn-avatar-edit" title="Edit Profile">
-                    <i class="fas fa-camera"></i>
-                </a>
-            </div>
-            {% endif %}
-        </div>
             
             <div class="profile-header-info">
                 <div class="profile-header-name-wrapper">
@@ -930,7 +1122,7 @@
                         {{ profile_user.get_full_name|default:profile_user.username }}
                     </h1>
                     {% if profile.is_verified_business %}
-                    <span class="verified-badge-large" title="Verified Business">
+                    <span class="verified-badge-large">
                         <i class="fas fa-check-circle"></i>
                     </span>
                     {% endif %}
@@ -1008,7 +1200,7 @@
         <div class="submission-header">
             <i class="fas fa-newspaper"></i>
             <h3>Your News Submissions</h3>
-            <a href="{% url 'create_post' %}?type=user_news" class="btn btn-sm btn-primary" style="margin-left: auto;">
+            <a href="{% url 'create_post' %}?type=user_news" class="btn btn-primary btn-sm">
                 <i class="fas fa-plus"></i> Submit News
             </a>
         </div>
@@ -1017,11 +1209,11 @@
             {% for post in user_news_submissions|slice:":3" %}
             <div class="submission-item">
                 <div class="submission-info">
-                    <span class="submission-title">{{ post.title|truncatechars:50 }}</span>
+                    <a href="{% url 'post_detail' post.id %}" class="submission-title">{{ post.title|truncatechars:50 }}</a>
                     <div class="submission-meta">
-                        <span>Submitted {{ post.created_at|timesince }} ago</span>
+                        <span><i class="far fa-clock"></i> {{ post.created_at|timesince }} ago</span>
                         {% if post.verification_score %}
-                        <span class="submission-score">{{ post.verification_score|floatformat:2 }}</span>
+                        <span class="submission-score"><i class="fas fa-robot"></i> {{ post.verification_score|floatformat:2 }}</span>
                         {% endif %}
                     </div>
                 </div>
@@ -1037,7 +1229,7 @@
             
             {% if user_news_submissions.count > 3 %}
             <a href="{% url 'profile_view' username=user.username %}?tab=news" class="btn btn-outline btn-sm btn-block" style="margin-top: 1rem;">
-                View All Submissions
+                View All Submissions ({{ user_news_submissions.count }})
             </a>
             {% endif %}
         </div>
@@ -1063,10 +1255,10 @@
                     <p class="about-bio">{{ profile.bio }}</p>
                     {% else %}
                         {% if is_own_profile %}
-                        <p class="text-muted">Add a bio to tell people about yourself.</p>
-                        <a href="{% url 'edit_profile' %}" class="btn btn-sm btn-outline">Add Bio</a>
+                        <p class="text-muted" style="color: #6b7280; margin-bottom: 1rem;">Add a bio to tell people about yourself.</p>
+                        <a href="{% url 'edit_profile' %}" class="btn btn-outline btn-sm">Add Bio</a>
                         {% else %}
-                        <p class="text-muted">No bio yet.</p>
+                        <p class="text-muted" style="color: #6b7280;">No bio yet.</p>
                         {% endif %}
                     {% endif %}
                     
@@ -1088,7 +1280,7 @@
                         {% if profile.website %}
                         <div class="detail-item">
                             <i class="fas fa-link"></i>
-                            <a href="{{ profile.website }}" target="_blank" rel="nofollow">{{ profile.website }}</a>
+                            <a href="{{ profile.website }}" target="_blank" rel="nofollow">{{ profile.website|cut:"https://"|cut:"http://" }}</a>
                         </div>
                         {% endif %}
                         
@@ -1184,8 +1376,8 @@
                         {% endfor %}
                     </div>
                     {% else %}
-                    <p class="text-muted">No interests added yet.</p>
-                    <a href="{% url 'edit_profile' %}" class="btn btn-sm btn-outline">Add Interests</a>
+                    <p class="text-muted" style="color: #6b7280; margin-bottom: 1rem;">No interests added yet.</p>
+                    <a href="{% url 'edit_profile' %}" class="btn btn-outline btn-sm">Add Interests</a>
                     {% endif %}
                 </div>
             </div>
@@ -1251,7 +1443,7 @@
                                         <i class="fas fa-reply"></i> Replied to 
                                         <a href="{% url 'post_detail' comment.post.id %}">{{ comment.post.title|truncatechars:50 }}</a>
                                     </span>
-                                    <span class="comment-time">{{ comment.created_at|timesince }} ago</span>
+                                    <span class="comment-time"><i class="far fa-clock"></i> {{ comment.created_at|timesince }} ago</span>
                                 </div>
                             </div>
                             <div class="comment-body">
@@ -1354,7 +1546,7 @@
                                 </span>
                                 {% if post.verification_score %}
                                 <span class="stat-item">
-                                    <i class="fas fa-robot"></i> AI Score: {{ post.verification_score|floatformat:2 }}
+                                    <i class="fas fa-robot"></i> Score: {{ post.verification_score|floatformat:2 }}
                                 </span>
                                 {% endif %}
                             </div>
@@ -1388,7 +1580,7 @@
 <div id="followers-modal" class="modal">
     <div class="modal-content">
         <div class="modal-header">
-            <h3>Followers ({{ followers_count }})</h3>
+            <h3><i class="fas fa-users"></i> Followers ({{ followers_count }})</h3>
             <button class="modal-close">&times;</button>
         </div>
         <div class="modal-body">
@@ -1420,7 +1612,7 @@
 <div id="following-modal" class="modal">
     <div class="modal-content">
         <div class="modal-header">
-            <h3>Following ({{ following_count }})</h3>
+            <h3><i class="fas fa-user-friends"></i> Following ({{ following_count }})</h3>
             <button class="modal-close">&times;</button>
         </div>
         <div class="modal-body">
@@ -1453,55 +1645,6 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.12/cropper.min.js"></script>
 
 <script>
-// Image cropper and upload functions
-let cropper = null;
-
-function uploadAvatarPhoto(input) {
-    if (input.files && input.files[0]) {
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            // Show crop modal (implement your crop modal logic here)
-            alert('Image cropping would appear here');
-            
-            // For now, auto-upload
-            uploadImage(input.files[0], 'avatar');
-        };
-        reader.readAsDataURL(input.files[0]);
-    }
-}
-
-function uploadCoverPhoto(input) {
-    if (input.files && input.files[0]) {
-        uploadImage(input.files[0], 'cover');
-    }
-}
-
-function uploadImage(file, type) {
-    const formData = new FormData();
-    formData.append(type + '_photo', file);
-    
-    const url = type === 'avatar' ? "{% url 'update_profile_pic' %}" : "{% url 'update_cover_photo' %}";
-    
-    fetch(url, {
-        method: 'POST',
-        body: formData,
-        headers: {
-            'X-CSRFToken': '{{ csrf_token }}'
-        }
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            if (type === 'avatar') {
-                document.getElementById('profileAvatarImg').src = data.image_url + '?t=' + new Date().getTime();
-            } else {
-                document.getElementById('profileCoverImg').src = data.image_url + '?t=' + new Date().getTime();
-            }
-            showNotification('Photo updated successfully!', 'success');
-        }
-    });
-}
-
 // Modal functions
 function showFollowersModal() {
     document.getElementById('followers-modal').style.display = 'flex';
@@ -1531,32 +1674,136 @@ document.querySelector('.follow-btn')?.addEventListener('click', function() {
     fetch('/follow/' + username + '/', {
         method: 'POST',
         headers: {
+            'X-CSRFToken': '{{ csrf_token }}',
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            if (data.followed) {
+                this.classList.remove('btn-primary');
+                this.classList.add('btn-outline');
+                this.innerHTML = '<i class="fas fa-user-check"></i> Following';
+            } else {
+                this.classList.remove('btn-outline');
+                this.classList.add('btn-primary');
+                this.innerHTML = '<i class="fas fa-user-plus"></i> Follow';
+            }
+            
+            // Update follower count
+            const followerStat = document.querySelector('.stat-item-large:first-child .stat-value');
+            if (followerStat) {
+                followerStat.textContent = data.followers_count;
+            }
+        }
+    })
+    .catch(error => console.error('Error:', error));
+});
+
+function showMessageDialog(username) {
+    // Implement message dialog
+    alert('Messaging feature coming soon!');
+}
+
+// Image upload functions (if needed)
+function uploadAvatarPhoto(input) {
+    if (input.files && input.files[0]) {
+        const file = input.files[0];
+        if (file.size > 2 * 1024 * 1024) {
+            alert('File is too large. Maximum size is 2MB.');
+            return;
+        }
+        uploadImage(file, 'avatar');
+    }
+}
+
+function uploadCoverPhoto(input) {
+    if (input.files && input.files[0]) {
+        const file = input.files[0];
+        if (file.size > 5 * 1024 * 1024) {
+            alert('File is too large. Maximum size is 5MB.');
+            return;
+        }
+        uploadImage(file, 'cover');
+    }
+}
+
+function uploadImage(file, type) {
+    const formData = new FormData();
+    formData.append(type + '_photo', file);
+    
+    const url = type === 'avatar' ? "{% url 'update_profile_pic' %}" : "{% url 'update_cover_photo' %}";
+    
+    fetch(url, {
+        method: 'POST',
+        body: formData,
+        headers: {
             'X-CSRFToken': '{{ csrf_token }}'
         }
     })
     .then(response => response.json())
     .then(data => {
-        if (data.followed) {
-            this.classList.remove('btn-primary');
-            this.classList.add('btn-outline');
-            this.innerHTML = '<i class="fas fa-user-check"></i> Following';
-            
-            // Update follower count
-            document.querySelector('.stat-value').textContent = data.followers_count;
-        } else {
-            this.classList.remove('btn-outline');
-            this.classList.add('btn-primary');
-            this.innerHTML = '<i class="fas fa-user-plus"></i> Follow';
-            
-            // Update follower count
-            document.querySelector('.stat-value').textContent = data.followers_count;
+        if (data.success) {
+            if (type === 'avatar') {
+                const avatarImg = document.getElementById('profileAvatarImg');
+                if (avatarImg) {
+                    avatarImg.src = data.image_url + '?t=' + new Date().getTime();
+                }
+            } else {
+                const coverImg = document.getElementById('profileCoverImg');
+                if (coverImg) {
+                    coverImg.src = data.image_url + '?t=' + new Date().getTime();
+                }
+            }
+            showNotification('Photo updated successfully!', 'success');
         }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showNotification('Error uploading photo', 'error');
     });
-});
-
-function showNotification(message, type) {
-    // Implement notification
-    alert(message);
 }
+
+function showNotification(message, type = 'success') {
+    const notification = document.createElement('div');
+    notification.textContent = message;
+    notification.style.cssText = `
+        position: fixed;
+        bottom: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: ${type === 'success' ? '#10b981' : '#ef4444'};
+        color: white;
+        padding: 0.75rem 1.5rem;
+        border-radius: 9999px;
+        font-size: 0.875rem;
+        z-index: 9999;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        animation: slideUp 0.3s ease;
+    `;
+    
+    document.body.appendChild(notification);
+    
+    setTimeout(() => {
+        notification.remove();
+    }, 3000);
+}
+
+// Add animation style
+const style = document.createElement('style');
+style.textContent = `
+    @keyframes slideUp {
+        from {
+            opacity: 0;
+            transform: translate(-50%, 20px);
+        }
+        to {
+            opacity: 1;
+            transform: translate(-50%, 0);
+        }
+    }
+`;
+document.head.appendChild(style);
 </script>
 {% endblock %}

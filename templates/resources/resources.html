@@ -1,0 +1,425 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Resources - Ojukaye{% endblock %}
+
+{% block content %}
+<div class="resources-page">
+    <div class="page-header">
+        <div class="header-content">
+            <h1><i class="fas fa-book-open" style="color: var(--primary);"></i> Resources</h1>
+            <p>Helpful guides, tools, and resources for the Ojukaye community</p>
+        </div>
+    </div>
+
+    <div class="resources-grid">
+        <!-- Resource Categories -->
+        <div class="resources-main">
+            <!-- Getting Started -->
+            <section class="resource-section">
+                <h2 class="section-title">
+                    <i class="fas fa-rocket"></i> Getting Started
+                </h2>
+                <div class="resource-cards">
+                    <a href="{% url 'help_center' %}?article=welcome" class="resource-card">
+                        <div class="resource-icon">
+                            <i class="fas fa-hand-wave"></i>
+                        </div>
+                        <div class="resource-content">
+                            <h3>Welcome to Ojukaye</h3>
+                            <p>New here? Start with this quick introduction to our platform</p>
+                            <span class="resource-link">Read more <i class="fas fa-arrow-right"></i></span>
+                        </div>
+                    </a>
+
+                    <a href="{% url 'help_center' %}?article=create-account" class="resource-card">
+                        <div class="resource-icon">
+                            <i class="fas fa-user-plus"></i>
+                        </div>
+                        <div class="resource-content">
+                            <h3>Creating Your Account</h3>
+                            <p>Step-by-step guide to setting up your profile</p>
+                            <span class="resource-link">Read more <i class="fas fa-arrow-right"></i></span>
+                        </div>
+                    </a>
+
+                    <a href="{% url 'help_center' %}?article=first-post" class="resource-card">
+                        <div class="resource-icon">
+                            <i class="fas fa-pen"></i>
+                        </div>
+                        <div class="resource-content">
+                            <h3>Making Your First Post</h3>
+                            <p>Learn how to share your thoughts with the community</p>
+                            <span class="resource-link">Read more <i class="fas fa-arrow-right"></i></span>
+                        </div>
+                    </a>
+                </div>
+            </section>
+
+            <!-- Community Guidelines -->
+            <section class="resource-section">
+                <h2 class="section-title">
+                    <i class="fas fa-scale-balanced"></i> Community Guidelines
+                </h2>
+                <div class="resource-cards">
+                    <a href="{% url 'terms' %}" class="resource-card">
+                        <div class="resource-icon">
+                            <i class="fas fa-file-contract"></i>
+                        </div>
+                        <div class="resource-content">
+                            <h3>Terms of Service</h3>
+                            <p>Our platform rules and user agreement</p>
+                            <span class="resource-link">Read terms <i class="fas fa-arrow-right"></i></span>
+                        </div>
+                    </a>
+
+                    <a href="{% url 'privacy' %}" class="resource-card">
+                        <div class="resource-icon">
+                            <i class="fas fa-shield"></i>
+                        </div>
+                        <div class="resource-content">
+                            <h3>Privacy Policy</h3>
+                            <p>How we protect and handle your data</p>
+                            <span class="resource-link">Read policy <i class="fas fa-arrow-right"></i></span>
+                        </div>
+                    </a>
+
+                    <a href="{% url 'help_center' %}?article=reporting" class="resource-card">
+                        <div class="resource-icon">
+                            <i class="fas fa-flag"></i>
+                        </div>
+                        <div class="resource-content">
+                            <h3>Reporting Content</h3>
+                            <p>How to report inappropriate content or behavior</p>
+                            <span class="resource-link">Learn more <i class="fas fa-arrow-right"></i></span>
+                        </div>
+                    </a>
+                </div>
+            </section>
+
+            <!-- For Creators -->
+            <section class="resource-section">
+                <h2 class="section-title">
+                    <i class="fas fa-star"></i> For Creators
+                </h2>
+                <div class="resource-cards">
+                    <a href="{% url 'help_center' %}?article=content-strategy" class="resource-card">
+                        <div class="resource-icon">
+                            <i class="fas fa-chart-line"></i>
+                        </div>
+                        <div class="resource-content">
+                            <h3>Content Strategy Guide</h3>
+                            <p>Tips for creating engaging content</p>
+                            <span class="resource-link">Read guide <i class="fas fa-arrow-right"></i></span>
+                        </div>
+                    </a>
+
+                    <a href="{% url 'help_center' %}?article=grow-audience" class="resource-card">
+                        <div class="resource-icon">
+                            <i class="fas fa-users"></i>
+                        </div>
+                        <div class="resource-content">
+                            <h3>Growing Your Audience</h3>
+                            <p>Strategies to increase your reach and engagement</p>
+                            <span class="resource-link">Learn more <i class="fas fa-arrow-right"></i></span>
+                        </div>
+                    </a>
+
+                    <a href="{% url 'help_center' %}?article=monetization" class="resource-card">
+                        <div class="resource-icon">
+                            <i class="fas fa-money-bill"></i>
+                        </div>
+                        <div class="resource-content">
+                            <h3>Monetization Options</h3>
+                            <p>Learn about earning opportunities on Ojukaye</p>
+                            <span class="resource-link">Explore <i class="fas fa-arrow-right"></i></span>
+                        </div>
+                    </a>
+                </div>
+            </section>
+
+            <!-- Technical Resources -->
+            <section class="resource-section">
+                <h2 class="section-title">
+                    <i class="fas fa-code"></i> Technical Resources
+                </h2>
+                <div class="resource-cards">
+                    <a href="{% url 'help_center' %}?article=api" class="resource-card">
+                        <div class="resource-icon">
+                            <i class="fas fa-cloud"></i>
+                        </div>
+                        <div class="resource-content">
+                            <h3>API Documentation</h3>
+                            <p>Build with our platform using the Ojukaye API</p>
+                            <span class="resource-link">View docs <i class="fas fa-arrow-right"></i></span>
+                        </div>
+                    </a>
+
+                    <a href="{% url 'help_center' %}?article=embed" class="resource-card">
+                        <div class="resource-icon">
+                            <i class="fas fa-code"></i>
+                        </div>
+                        <div class="resource-content">
+                            <h3>Embed Codes</h3>
+                            <p>How to embed Ojukaye content on your website</p>
+                            <span class="resource-link">Learn more <i class="fas fa-arrow-right"></i></span>
+                        </div>
+                    </a>
+
+                    <a href="{% url 'help_center' %}?article=integration" class="resource-card">
+                        <div class="resource-icon">
+                            <i class="fas fa-plug"></i>
+                        </div>
+                        <div class="resource-content">
+                            <h3>Third-party Integrations</h3>
+                            <p>Connect Ojukaye with your favorite tools</p>
+                            <span class="resource-link">View integrations <i class="fas fa-arrow-right"></i></span>
+                        </div>
+                    </a>
+                </div>
+            </section>
+        </div>
+
+        <!-- Sidebar -->
+        <aside class="resources-sidebar">
+            <!-- Quick Links -->
+            <div class="sidebar-card">
+                <div class="card-header">
+                    <h3><i class="fas fa-link"></i> Quick Links</h3>
+                </div>
+                <div class="quick-links">
+                    <a href="{% url 'help_center' %}" class="quick-link">
+                        <i class="fas fa-question-circle"></i> Help Center
+                    </a>
+                    <a href="{% url 'about' %}" class="quick-link">
+                        <i class="fas fa-info-circle"></i> About Us
+                    </a>
+                    <a href="{% url 'contact' %}" class="quick-link">
+                        <i class="fas fa-envelope"></i> Contact
+                    </a>
+                    <a href="{% url 'faq' %}" class="quick-link">
+                        <i class="fas fa-comments"></i> FAQ
+                    </a>
+                </div>
+            </div>
+
+            <!-- Popular Articles -->
+            <div class="sidebar-card">
+                <div class="card-header">
+                    <h3><i class="fas fa-fire"></i> Popular Articles</h3>
+                </div>
+                <div class="popular-articles">
+                    <a href="#" class="article-link">
+                        <span>How to write engaging posts</span>
+                        <span class="views"><i class="fas fa-eye"></i> 12k</span>
+                    </a>
+                    <a href="#" class="article-link">
+                        <span>Understanding privacy settings</span>
+                        <span class="views"><i class="fas fa-eye"></i> 8.5k</span>
+                    </a>
+                    <a href="#" class="article-link">
+                        <span>Business account benefits</span>
+                        <span class="views"><i class="fas fa-eye"></i> 6.2k</span>
+                    </a>
+                    <a href="#" class="article-link">
+                        <span>News verification process</span>
+                        <span class="views"><i class="fas fa-eye"></i> 5.1k</span>
+                    </a>
+                </div>
+            </div>
+
+            <!-- Need Help? -->
+            <div class="sidebar-card help-card">
+                <i class="fas fa-headset"></i>
+                <h3>Need Help?</h3>
+                <p>Can't find what you're looking for?</p>
+                <a href="{% url 'contact' %}" class="btn btn-primary btn-block">
+                    Contact Support
+                </a>
+            </div>
+        </aside>
+    </div>
+</div>
+
+<style>
+.resources-page {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 2rem 1rem;
+}
+
+.page-header {
+    text-align: center;
+    margin-bottom: 3rem;
+    padding: 2rem;
+    background: linear-gradient(135deg, var(--primary-light), rgba(37, 99, 235, 0.05));
+    border-radius: var(--radius-lg);
+}
+
+.page-header h1 {
+    font-size: 2.5rem;
+    font-weight: 800;
+    margin-bottom: 0.5rem;
+    background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.resources-grid {
+    display: grid;
+    grid-template-columns: 1fr 300px;
+    gap: 2rem;
+}
+
+.resource-section {
+    margin-bottom: 3rem;
+}
+
+.resource-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 1rem;
+}
+
+.resource-card {
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    padding: 1.5rem;
+    display: flex;
+    gap: 1rem;
+    text-decoration: none;
+    color: var(--text-primary);
+    transition: all 0.3s;
+}
+
+.resource-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+    border-color: var(--primary);
+}
+
+.resource-icon {
+    width: 48px;
+    height: 48px;
+    background: linear-gradient(135deg, var(--primary-light), var(--primary));
+    border-radius: var(--radius-lg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 1.5rem;
+    flex-shrink: 0;
+}
+
+.resource-content h3 {
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin-bottom: 0.25rem;
+}
+
+.resource-content p {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    margin-bottom: 0.5rem;
+}
+
+.resource-link {
+    font-size: 0.875rem;
+    color: var(--primary);
+    font-weight: 500;
+}
+
+.quick-links {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.quick-link {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem;
+    border-radius: var(--radius);
+    text-decoration: none;
+    color: var(--text-primary);
+    transition: all 0.2s;
+}
+
+.quick-link:hover {
+    background: var(--hover-bg);
+    color: var(--primary);
+    padding-left: 1rem;
+}
+
+.popular-articles {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.article-link {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem;
+    border-radius: var(--radius);
+    text-decoration: none;
+    color: var(--text-primary);
+    transition: all 0.2s;
+}
+
+.article-link:hover {
+    background: var(--hover-bg);
+    color: var(--primary);
+}
+
+.views {
+    font-size: 0.75rem;
+    color: var(--text-tertiary);
+}
+
+.help-card {
+    text-align: center;
+    padding: 2rem 1.5rem;
+    background: linear-gradient(135deg, var(--primary-light), var(--primary));
+    color: white;
+}
+
+.help-card i {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+}
+
+.help-card h3 {
+    margin-bottom: 0.5rem;
+}
+
+.help-card p {
+    margin-bottom: 1.5rem;
+    opacity: 0.9;
+}
+
+.help-card .btn {
+    background: white;
+    color: var(--primary);
+    border: none;
+}
+
+.help-card .btn:hover {
+    background: var(--gray-100);
+    transform: translateY(-2px);
+}
+
+@media (max-width: 768px) {
+    .resources-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .resource-cards {
+        grid-template-columns: 1fr;
+    }
+}
+</style>
+{% endblock %}

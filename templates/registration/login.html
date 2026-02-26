@@ -124,4 +124,222 @@
         </div>
     </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Password toggle functionality
+    const toggleButtons = document.querySelectorAll('.password-toggle');
+    
+    toggleButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            const passwordWrapper = this.closest('.password-wrapper');
+            const passwordInput = passwordWrapper.querySelector('input[type="password"], input[type="text"]');
+            const icon = this.querySelector('i');
+            
+            if (passwordInput.type === 'password') {
+                passwordInput.type = 'text';
+                icon.classList.remove('fa-eye');
+                icon.classList.add('fa-eye-slash');
+            } else {
+                passwordInput.type = 'password';
+                icon.classList.remove('fa-eye-slash');
+                icon.classList.add('fa-eye');
+            }
+        });
+    });
+
+    // Form validation and submission handling
+    const loginForm = document.querySelector('form[action*="login"]');
+    if (loginForm) {
+        loginForm.addEventListener('submit', function(e) {
+            const username = document.getElementById('id_username');
+            const password = document.getElementById('id_password');
+            
+            if (!username.value.trim()) {
+                e.preventDefault();
+                showNotification('Please enter your username', 'error');
+                username.focus();
+                return false;
+            }
+            
+            if (!password.value.trim()) {
+                e.preventDefault();
+                showNotification('Please enter your password', 'error');
+                password.focus();
+                return false;
+            }
+        });
+    }
+
+    // Registration form handling
+    const registerForm = document.querySelector('form[action*="register"]');
+    if (registerForm) {
+        // Account type toggle for business fields
+        const accountTypeRadios = document.querySelectorAll('input[name="account_type"]');
+        const businessFields = document.querySelector('.business-fields');
+        
+        if (accountTypeRadios.length && businessFields) {
+            function toggleBusinessFields() {
+                const selectedType = document.querySelector('input[name="account_type"]:checked');
+                if (selectedType && selectedType.value === 'business') {
+                    businessFields.style.display = 'block';
+                } else {
+                    businessFields.style.display = 'none';
+                }
+            }
+            
+            accountTypeRadios.forEach(radio => {
+                radio.addEventListener('change', toggleBusinessFields);
+            });
+            
+            // Initial check
+            toggleBusinessFields();
+        }
+        
+        // Registration form validation
+        registerForm.addEventListener('submit', function(e) {
+            const username = document.getElementById('id_username');
+            const email = document.getElementById('id_email');
+            const password1 = document.getElementById('id_password1');
+            const password2 = document.getElementById('id_password2');
+            const agreeTerms = document.getElementById('agree_terms');
+            
+            if (!username.value.trim()) {
+                e.preventDefault();
+                showNotification('Please choose a username', 'error');
+                username.focus();
+                return false;
+            }
+            
+            if (!email.value.trim()) {
+                e.preventDefault();
+                showNotification('Please enter your email address', 'error');
+                email.focus();
+                return false;
+            }
+            
+            if (!validateEmail(email.value)) {
+                e.preventDefault();
+                showNotification('Please enter a valid email address', 'error');
+                email.focus();
+                return false;
+            }
+            
+            if (!password1.value) {
+                e.preventDefault();
+                showNotification('Please enter a password', 'error');
+                password1.focus();
+                return false;
+            }
+            
+            if (password1.value.length < 8) {
+                e.preventDefault();
+                showNotification('Password must be at least 8 characters long', 'error');
+                password1.focus();
+                return false;
+            }
+            
+            if (password1.value !== password2.value) {
+                e.preventDefault();
+                showNotification('Passwords do not match', 'error');
+                password2.focus();
+                return false;
+            }
+            
+            if (!agreeTerms.checked) {
+                e.preventDefault();
+                showNotification('You must agree to the Terms of Service', 'error');
+                agreeTerms.focus();
+                return false;
+            }
+        });
+    }
+
+    // Email validation helper
+    function validateEmail(email) {
+        const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        return re.test(email);
+    }
+
+    // Notification system (if not already present)
+    function showNotification(message, type = 'success', duration = 3000) {
+        // Remove existing notifications
+        const existingNotifications = document.querySelectorAll('.notification');
+        existingNotifications.forEach(notif => notif.remove());
+        
+        // Create notification
+        const notification = document.createElement('div');
+        notification.className = `notification notification-${type}`;
+        notification.style.cssText = `
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 15px 20px;
+            background: ${type === 'success' ? '#4caf50' : type === 'error' ? '#f44336' : '#ff9800'};
+            color: white;
+            border-radius: 5px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+            z-index: 10000;
+            animation: slideIn 0.3s ease;
+        `;
+        
+        notification.innerHTML = `
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <i class="fas ${type === 'success' ? 'fa-check-circle' : type === 'error' ? 'fa-exclamation-circle' : 'fa-info-circle'}"></i>
+                <span>${message}</span>
+            </div>
+        `;
+        
+        document.body.appendChild(notification);
+        
+        // Auto remove
+        setTimeout(() => {
+            notification.style.animation = 'slideOut 0.3s ease';
+            setTimeout(() => notification.remove(), 300);
+        }, duration);
+    }
+
+    // Add animation styles if not present
+    if (!document.getElementById('notification-styles')) {
+        const style = document.createElement('style');
+        style.id = 'notification-styles';
+        style.textContent = `
+            @keyframes slideIn {
+                from { transform: translateX(100%); opacity: 0; }
+                to { transform: translateX(0); opacity: 1; }
+            }
+            
+            @keyframes slideOut {
+                from { transform: translateX(0); opacity: 1; }
+                to { transform: translateX(100%); opacity: 0; }
+            }
+            
+            .password-wrapper {
+                position: relative;
+            }
+            
+            .password-toggle {
+                position: absolute;
+                right: 10px;
+                top: 50%;
+                transform: translateY(-50%);
+                background: none;
+                border: none;
+                cursor: pointer;
+                color: #666;
+                padding: 5px;
+            }
+            
+            .password-toggle:hover {
+                color: #333;
+            }
+            
+            .password-toggle:focus {
+                outline: none;
+            }
+        `;
+        document.head.appendChild(style);
+    }
+});
+</script>
 {% endblock %}

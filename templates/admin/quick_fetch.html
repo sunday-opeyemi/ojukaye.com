@@ -1,0 +1,1171 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Quick News Fetch - Admin{% endblock %}
+
+{% block extra_css %}
+<style>
+    .fetch-container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 2rem;
+    }
+
+    .fetch-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 2rem;
+        flex-wrap: wrap;
+        gap: 1rem;
+    }
+
+    .fetch-title {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }
+
+    .fetch-title i {
+        font-size: 2rem;
+        color: var(--primary);
+        background: var(--primary-soft);
+        padding: 1rem;
+        border-radius: var(--radius-lg);
+    }
+
+    .fetch-title h1 {
+        font-size: 2rem;
+        font-weight: 700;
+        color: var(--gray-900);
+        margin-bottom: 0.25rem;
+    }
+
+    .fetch-title p {
+        color: var(--gray-600);
+    }
+
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1rem;
+        margin-bottom: 2rem;
+    }
+
+    .stat-card {
+        background: var(--white);
+        border-radius: var(--radius-lg);
+        padding: 1.25rem;
+        border: 1px solid var(--gray-200);
+        transition: all 0.2s;
+    }
+
+    .stat-card:hover {
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-md);
+    }
+
+    .stat-value {
+        font-size: 2rem;
+        font-weight: 700;
+        color: var(--gray-900);
+        line-height: 1;
+        margin-bottom: 0.5rem;
+    }
+
+    .stat-label {
+        font-size: 0.875rem;
+        color: var(--gray-600);
+    }
+
+    .tabs {
+        display: flex;
+        gap: 0.5rem;
+        margin-bottom: 1.5rem;
+        border-bottom: 2px solid var(--gray-200);
+        padding-bottom: 0.5rem;
+    }
+
+    .tab {
+        padding: 0.5rem 1.5rem;
+        border-radius: var(--radius-md) var(--radius-md) 0 0;
+        cursor: pointer;
+        font-weight: 600;
+        color: var(--gray-600);
+        transition: all 0.2s;
+    }
+
+    .tab:hover {
+        color: var(--primary);
+        background: var(--gray-100);
+    }
+
+    .tab.active {
+        color: var(--primary);
+        border-bottom: 3px solid var(--primary);
+        margin-bottom: -0.5rem;
+    }
+
+    .tab-content {
+        display: none;
+    }
+
+    .tab-content.active {
+        display: block;
+    }
+
+    .fetch-panel {
+        display: grid;
+        grid-template-columns: 300px 1fr;
+        gap: 1.5rem;
+        background: var(--white);
+        border-radius: var(--radius-lg);
+        border: 1px solid var(--gray-200);
+        overflow: hidden;
+        margin-bottom: 1.5rem;
+    }
+
+    .fetch-sidebar {
+        background: var(--gray-50);
+        padding: 1.5rem;
+        border-right: 1px solid var(--gray-200);
+    }
+
+    .fetch-main {
+        padding: 1.5rem;
+    }
+
+    .form-group {
+        margin-bottom: 1.5rem;
+    }
+
+    .form-label {
+        display: block;
+        font-weight: 600;
+        font-size: 0.875rem;
+        color: var(--gray-700);
+        margin-bottom: 0.5rem;
+    }
+
+    .form-input {
+        width: 100%;
+        padding: 0.625rem;
+        border: 1px solid var(--gray-300);
+        border-radius: var(--radius-md);
+        font-size: 0.875rem;
+        transition: all 0.2s;
+    }
+
+    .form-input:focus {
+        outline: none;
+        border-color: var(--primary);
+        box-shadow: 0 0 0 3px var(--primary-soft);
+    }
+
+    .form-select {
+        width: 100%;
+        padding: 0.625rem;
+        border: 1px solid var(--gray-300);
+        border-radius: var(--radius-md);
+        font-size: 0.875rem;
+        background: white;
+    }
+
+    .radio-group {
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+        padding: 0.5rem;
+        background: var(--gray-100);
+        border-radius: var(--radius-md);
+    }
+
+    .radio-option {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.5rem;
+        border-radius: var(--radius-md);
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+
+    .radio-option:hover {
+        background: var(--gray-200);
+    }
+
+    .radio-option input[type="radio"] {
+        width: 1rem;
+        height: 1rem;
+    }
+
+    .btn {
+        padding: 0.75rem 1.5rem;
+        border-radius: var(--radius-md);
+        font-weight: 600;
+        font-size: 0.875rem;
+        border: none;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        transition: all 0.2s;
+        width: 100%;
+        justify-content: center;
+    }
+
+    .btn-primary {
+        background: var(--primary);
+        color: white;
+    }
+
+    .btn-primary:hover:not(:disabled) {
+        background: var(--primary-dark);
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-md);
+    }
+
+    .btn-primary:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+
+    .btn-success {
+        background: #10b981;
+        color: white;
+    }
+
+    .btn-success:hover {
+        background: #059669;
+    }
+
+    .btn-warning {
+        background: #f59e0b;
+        color: white;
+    }
+
+    .btn-warning:hover {
+        background: #d97706;
+    }
+
+    .btn-outline {
+        background: transparent;
+        border: 1px solid var(--gray-300);
+        color: var(--gray-700);
+    }
+
+    .btn-outline:hover {
+        background: var(--gray-100);
+    }
+
+    .progress-container {
+        margin-top: 1.5rem;
+        background: var(--white);
+        border-radius: var(--radius-lg);
+        border: 1px solid var(--gray-200);
+        overflow: hidden;
+    }
+
+    .progress-header {
+        padding: 1rem 1.5rem;
+        background: var(--gray-50);
+        border-bottom: 1px solid var(--gray-200);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+
+    .progress-title {
+        font-weight: 600;
+        color: var(--gray-800);
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .progress-status {
+        padding: 0.25rem 0.75rem;
+        border-radius: var(--radius-full);
+        font-size: 0.75rem;
+        font-weight: 600;
+    }
+
+    .status-running {
+        background: #fef3c7;
+        color: #92400e;
+    }
+
+    .status-success {
+        background: #dcfce7;
+        color: #166534;
+    }
+
+    .status-error {
+        background: #fee2e2;
+        color: #991b1b;
+    }
+
+    .progress-body {
+        padding: 1.5rem;
+        max-height: 400px;
+        overflow-y: auto;
+        background: #1e1e2e;
+        color: #f8f8f2;
+        font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+        font-size: 0.875rem;
+        line-height: 1.6;
+    }
+
+    .log-line {
+        padding: 0.25rem 0;
+        border-bottom: 1px solid #2d2d3a;
+        color: #f8f8f2;
+    }
+
+    .log-line.success {
+        color: #50fa7b;
+    }
+
+    .log-line.error {
+        color: #ff5555;
+    }
+
+    .log-line.warning {
+        color: #f1fa8c;
+    }
+
+    .log-line.info {
+        color: #8be9fd;
+    }
+
+    .stats-preview {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 0.75rem;
+        margin-top: 1rem;
+        padding: 1rem;
+        background: var(--gray-100);
+        border-radius: var(--radius-lg);
+    }
+
+    .preview-item {
+        text-align: center;
+    }
+
+    .preview-value {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: var(--primary);
+        line-height: 1;
+        margin-bottom: 0.25rem;
+    }
+
+    .preview-label {
+        font-size: 0.75rem;
+        color: var(--gray-600);
+    }
+
+    .toggle-switch {
+        position: relative;
+        display: inline-block;
+        width: 50px;
+        height: 24px;
+    }
+
+    .toggle-switch input {
+        opacity: 0;
+        width: 0;
+        height: 0;
+    }
+
+    .toggle-slider {
+        position: absolute;
+        cursor: pointer;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: var(--gray-300);
+        transition: .2s;
+        border-radius: 24px;
+    }
+
+    .toggle-slider:before {
+        position: absolute;
+        content: "";
+        height: 20px;
+        width: 20px;
+        left: 2px;
+        bottom: 2px;
+        background-color: white;
+        transition: .2s;
+        border-radius: 50%;
+    }
+
+    input:checked + .toggle-slider {
+        background-color: var(--primary);
+    }
+
+    input:checked + .toggle-slider:before {
+        transform: translateX(26px);
+    }
+
+    .toggle-label {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        margin-bottom: 1rem;
+    }
+
+    .auto-fetcher-status {
+        background: var(--white);
+        border-radius: var(--radius-lg);
+        border: 1px solid var(--gray-200);
+        padding: 1.5rem;
+        margin-top: 1.5rem;
+    }
+
+    .status-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.5rem 1rem;
+        border-radius: var(--radius-full);
+        font-weight: 600;
+        font-size: 0.875rem;
+    }
+
+    .badge-active {
+        background: #dcfce7;
+        color: #166534;
+    }
+
+    .badge-inactive {
+        background: #fee2e2;
+        color: #991b1b;
+    }
+
+    .settings-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1rem;
+        margin-top: 1rem;
+    }
+
+    .setting-item {
+        padding: 1rem;
+        background: var(--gray-50);
+        border-radius: var(--radius-md);
+    }
+
+    .setting-label {
+        font-size: 0.75rem;
+        color: var(--gray-600);
+        margin-bottom: 0.25rem;
+    }
+
+    .setting-value {
+        font-size: 1.25rem;
+        font-weight: 600;
+        color: var(--gray-900);
+    }
+
+    .unit-selector {
+        display: flex;
+        gap: 0.5rem;
+        margin-top: 0.5rem;
+    }
+
+    .unit-btn {
+        flex: 1;
+        padding: 0.5rem;
+        border: 1px solid var(--gray-300);
+        background: white;
+        border-radius: var(--radius-md);
+        cursor: pointer;
+        font-size: 0.75rem;
+    }
+
+    .unit-btn.active {
+        background: var(--primary);
+        color: white;
+        border-color: var(--primary);
+    }
+
+    @media (max-width: 768px) {
+        .fetch-panel {
+            grid-template-columns: 1fr;
+        }
+        
+        .fetch-sidebar {
+            border-right: none;
+            border-bottom: 1px solid var(--gray-200);
+        }
+
+        .tabs {
+            flex-wrap: wrap;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="fetch-container">
+    <!-- Header -->
+    <div class="fetch-header">
+        <div class="fetch-title">
+            <i class="fas fa-bolt"></i>
+            <div>
+                <h1>News Fetch Control Center</h1>
+                <p>Full control over manual and automatic news fetching</p>
+            </div>
+        </div>
+        <div>
+            <a href="{% url 'admin_auto_fetched_news' %}" class="btn btn-outline">
+                <i class="fas fa-list"></i> View Fetched News
+            </a>
+        </div>
+    </div>
+
+    <!-- Stats Overview -->
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-value">{{ stats.total_fetched|default:"0" }}</div>
+            <div class="stat-label">Total Fetched</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value">{{ stats.last_24h|default:"0" }}</div>
+            <div class="stat-label">Last 24 Hours</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value">{{ stats.with_video|default:"0" }}</div>
+            <div class="stat-label">With Videos</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value">{{ stats.with_audio|default:"0" }}</div>
+            <div class="stat-label">With Audio</div>
+        </div>
+    </div>
+
+    <!-- Tabs -->
+    <div class="tabs">
+        <div class="tab active" data-tab="manual">🔄 Manual Fetch</div>
+        <div class="tab" data-tab="auto">🤖 Auto-Fetcher Settings</div>
+        <div class="tab" data-tab="scheduler">⏰ Scheduler Control</div>
+    </div>
+
+    <!-- Manual Fetch Tab -->
+    <div class="tab-content active" id="tab-manual">
+        <div class="fetch-panel">
+            <!-- Sidebar - Controls -->
+            <div class="fetch-sidebar">
+                <h3 style="margin-bottom: 1.5rem; font-size: 1rem;">Manual Fetch Configuration</h3>
+                
+                <div class="form-group">
+                    <label class="form-label">Time Range (Days)</label>
+                    <select id="days" class="form-select">
+                        <option value="1">Last 24 hours</option>
+                        <option value="3">Last 3 days</option>
+                        <option value="7" selected>Last 7 days</option>
+                        <option value="14">Last 14 days</option>
+                        <option value="30">Last 30 days</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Articles Limit</label>
+                    <select id="limit" class="form-select">
+                        <option value="20">20 articles (quick)</option>
+                        <option value="50">50 articles</option>
+                        <option value="100" selected>100 articles (balanced)</option>
+                        <option value="200">200 articles (large)</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Worker Threads</label>
+                    <select id="workers" class="form-select">
+                        <option value="2">2 workers (light)</option>
+                        <option value="5" selected>5 workers (balanced)</option>
+                        <option value="10">10 workers (fast)</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Sources</label>
+                    <div class="radio-group">
+                        <label class="radio-option">
+                            <input type="radio" name="sources" value="all" checked>
+                            <span>All Sources</span>
+                        </label>
+                        <label class="radio-option">
+                            <input type="radio" name="sources" value="newsapi">
+                            <span>NewsAPI Only</span>
+                        </label>
+                        <label class="radio-option">
+                            <input type="radio" name="sources" value="rss">
+                            <span>RSS Feeds Only</span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Content Type</label>
+                    <div class="radio-group">
+                        <label class="radio-option">
+                            <input type="radio" name="content_type" value="all" checked>
+                            <span>All Content</span>
+                        </label>
+                        <label class="radio-option">
+                            <input type="radio" name="content_type" value="with_video">
+                            <span>With Videos Only</span>
+                        </label>
+                        <label class="radio-option">
+                            <input type="radio" name="content_type" value="with_audio">
+                            <span>With Audio Only</span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="toggle-label">
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="extract_full" checked>
+                        <span class="toggle-slider"></span>
+                    </label>
+                    <span>Extract Full Content</span>
+                </div>
+
+                <button id="startFetch" class="btn btn-primary" {% if not api_key_exists %}disabled{% endif %}>
+                    <i class="fas fa-play"></i> Start Manual Fetch
+                </button>
+
+                {% if not api_key_exists %}
+                <p style="color: #ef4444; font-size: 0.75rem; margin-top: 0.5rem;">
+                    ⚠️ NEWS_API_KEY not configured in settings
+                </p>
+                {% endif %}
+            </div>
+
+            <!-- Main - Progress -->
+            <div class="fetch-main">
+                <h3 style="margin-bottom: 1rem;">Live Progress</h3>
+                
+                <div id="progressContainer" class="progress-container" style="display: none;">
+                    <div class="progress-header">
+                        <span class="progress-title">
+                            <i class="fas fa-sync-alt fa-spin" id="progressIcon"></i>
+                            <span id="progressStatus">Fetching News...</span>
+                        </span>
+                        <span class="progress-status" id="progressBadge">Running</span>
+                    </div>
+                    <div class="progress-body" id="progressLogs">
+                        <div class="log-line">Ready to fetch news...</div>
+                    </div>
+                </div>
+
+                <div id="statsPreview" class="stats-preview" style="display: none;">
+                    <div class="preview-item">
+                        <div class="preview-value" id="statsSaved">0</div>
+                        <div class="preview-label">Saved</div>
+                    </div>
+                    <div class="preview-item">
+                        <div class="preview-value" id="statsVideos">0</div>
+                        <div class="preview-label">Videos</div>
+                    </div>
+                    <div class="preview-item">
+                        <div class="preview-value" id="statsAudio">0</div>
+                        <div class="preview-label">Audio</div>
+                    </div>
+                    <div class="preview-item">
+                        <div class="preview-value" id="statsImages">0</div>
+                        <div class="preview-label">Images</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Auto-Fetcher Settings Tab -->
+    <div class="tab-content" id="tab-auto">
+        <div class="auto-fetcher-status">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                <h3 style="font-size: 1.25rem;">🤖 Auto-Fetcher Configuration</h3>
+                <span id="autoStatus" class="status-badge {% if auto_fetcher_status.running %}badge-active{% else %}badge-inactive{% endif %}">
+                    <i class="fas {% if auto_fetcher_status.running %}fa-play{% else %}fa-stop{% endif %}"></i>
+                    {% if auto_fetcher_status.running %}Running{% else %}Stopped{% endif %}
+                </span>
+            </div>
+
+            <form id="autoFetcherForm">
+                {% csrf_token %}
+                
+                <!-- Mode Selection -->
+                <div style="margin-bottom: 2rem;">
+                    <label class="form-label">Operation Mode</label>
+                    <div style="display: flex; gap: 2rem;">
+                        <label class="radio-option">
+                            <input type="radio" name="test_mode" value="false" {% if not auto_fetcher_status.test_mode %}checked{% endif %}>
+                            <span>🚀 Production Mode (12 hours default)</span>
+                        </label>
+                        <label class="radio-option">
+                            <input type="radio" name="test_mode" value="true" {% if auto_fetcher_status.test_mode %}checked{% endif %}>
+                            <span>🧪 Test Mode (5 minutes default)</span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Production Settings -->
+                <div style="margin-bottom: 2rem; padding: 1.5rem; background: var(--gray-50); border-radius: var(--radius-lg);">
+                    <h4 style="margin-bottom: 1rem; color: var(--primary);">🚀 Production Settings</h4>
+                    <div class="settings-grid">
+                        <div class="setting-item">
+                            <div class="setting-label">Fetch Interval</div>
+                            <div style="display: flex; gap: 0.5rem; align-items: center;">
+                                <input type="number" id="prod_interval" class="form-input" style="width: 80px;" value="{{ auto_fetcher_status.prod_interval|default:'12' }}" min="1">
+                                <select id="prod_unit" class="form-select" style="width: 100px;">
+                                    <option value="minutes" {% if auto_fetcher_status.prod_unit == 'minutes' %}selected{% endif %}>Minutes</option>
+                                    <option value="hours" {% if auto_fetcher_status.prod_unit == 'hours' %}selected{% endif %} selected>Hours</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="setting-item">
+                            <div class="setting-label">Days to Fetch</div>
+                            <input type="number" id="prod_days" class="form-input" value="{{ auto_fetcher_status.prod_days|default:'1' }}" min="1" max="7">
+                        </div>
+                        <div class="setting-item">
+                            <div class="setting-label">Article Limit</div>
+                            <input type="number" id="prod_limit" class="form-input" value="{{ auto_fetcher_status.prod_limit|default:'100' }}" min="20" max="200">
+                        </div>
+                        <div class="setting-item">
+                            <div class="setting-label">Workers</div>
+                            <input type="number" id="prod_workers" class="form-input" value="{{ auto_fetcher_status.prod_workers|default:'5' }}" min="2" max="15">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Test Settings -->
+                <div style="margin-bottom: 2rem; padding: 1.5rem; background: var(--gray-50); border-radius: var(--radius-lg);">
+                    <h4 style="margin-bottom: 1rem; color: #f59e0b;">🧪 Test Settings</h4>
+                    <div class="settings-grid">
+                        <div class="setting-item">
+                            <div class="setting-label">Fetch Interval</div>
+                            <div style="display: flex; gap: 0.5rem; align-items: center;">
+                                <input type="number" id="test_interval" class="form-input" style="width: 80px;" value="{{ auto_fetcher_status.test_interval|default:'5' }}" min="1">
+                                <select id="test_unit" class="form-select" style="width: 100px;">
+                                    <option value="seconds" {% if auto_fetcher_status.test_unit == 'seconds' %}selected{% endif %}>Seconds</option>
+                                    <option value="minutes" {% if auto_fetcher_status.test_unit == 'minutes' %}selected{% endif %} selected>Minutes</option>
+                                    <option value="hours" {% if auto_fetcher_status.test_unit == 'hours' %}selected{% endif %}>Hours</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="setting-item">
+                            <div class="setting-label">Days to Fetch</div>
+                            <input type="number" id="test_days" class="form-input" value="{{ auto_fetcher_status.test_days|default:'1' }}" min="1" max="7">
+                        </div>
+                        <div class="setting-item">
+                            <div class="setting-label">Article Limit</div>
+                            <input type="number" id="test_limit" class="form-input" value="{{ auto_fetcher_status.test_limit|default:'20' }}" min="5" max="100">
+                        </div>
+                        <div class="setting-item">
+                            <div class="setting-label">Workers</div>
+                            <input type="number" id="test_workers" class="form-input" value="{{ auto_fetcher_status.test_workers|default:'2' }}" min="1" max="5">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Control Buttons -->
+                <div style="display: flex; gap: 1rem;">
+                    <button type="button" id="saveAutoSettings" class="btn btn-success" style="width: auto;">
+                        <i class="fas fa-save"></i> Save Settings
+                    </button>
+                    <button type="button" id="toggleAutoFetcher" class="btn {% if auto_fetcher_status.running %}btn-warning{% else %}btn-primary{% endif %}" style="width: auto;">
+                        <i class="fas {% if auto_fetcher_status.running %}fa-stop{% else %}fa-play{% endif %}"></i>
+                        {% if auto_fetcher_status.running %}Stop Auto-Fetcher{% else %}Start Auto-Fetcher{% endif %}
+                    </button>
+                    <button type="button" id="fetchNow" class="btn btn-primary" style="width: auto;">
+                        <i class="fas fa-bolt"></i> Fetch Now
+                    </button>
+                </div>
+            </form>
+
+            <!-- Current Status -->
+            <div style="margin-top: 2rem; padding: 1rem; background: var(--gray-100); border-radius: var(--radius-lg);">
+                <h4 style="font-size: 0.875rem; margin-bottom: 0.75rem;">📊 Current Auto-Fetcher Status</h4>
+                <div class="settings-grid">
+                    <div class="setting-item">
+                        <div class="setting-label">Mode</div>
+                        <div class="setting-value">{% if auto_fetcher_status.test_mode %}Test{% else %}Production{% endif %}</div>
+                    </div>
+                    <div class="setting-item">
+                        <div class="setting-label">Interval</div>
+                        <div class="setting-value">{{ auto_fetcher_status.interval_display }}</div>
+                    </div>
+                    <div class="setting-item">
+                        <div class="setting-label">Last Fetch</div>
+                        <div class="setting-value">{{ auto_fetcher_status.last_fetch|default:"Never" }}</div>
+                    </div>
+                    <div class="setting-item">
+                        <div class="setting-label">Next Fetch</div>
+                        <div class="setting-value">{{ auto_fetcher_status.next_fetch|default:"Not scheduled" }}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scheduler Control Tab -->
+    <div class="tab-content" id="tab-scheduler">
+        <div class="auto-fetcher-status">
+            <h3 style="margin-bottom: 1.5rem;">⏰ Scheduled Fetch Times</h3>
+            
+            <div style="margin-bottom: 2rem;">
+                <h4>Next 5 Scheduled Fetches</h4>
+                <table style="width: 100%; border-collapse: collapse;">
+                    <thead>
+                        <tr style="background: var(--gray-100);">
+                            <th style="padding: 0.75rem; text-align: left;">#</th>
+                            <th style="padding: 0.75rem; text-align: left;">Scheduled Time</th>
+                            <th style="padding: 0.75rem; text-align: left;">Type</th>
+                            <th style="padding: 0.75rem; text-align: left;">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="scheduleTable">
+                        <!-- Will be populated by JavaScript -->
+                    </tbody>
+                </table>
+            </div>
+
+            <div style="display: flex; gap: 1rem;">
+                <button type="button" id="refreshSchedule" class="btn btn-outline">
+                    <i class="fas fa-sync-alt"></i> Refresh Schedule
+                </button>
+                <button type="button" id="clearSchedule" class="btn btn-warning">
+                    <i class="fas fa-trash"></i> Clear All Scheduled
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Tab switching
+    document.querySelectorAll('.tab').forEach(tab => {
+        tab.addEventListener('click', function() {
+            // Remove active class from all tabs and contents
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            
+            // Add active class to clicked tab
+            this.classList.add('active');
+            
+            // Show corresponding content
+            const tabId = this.dataset.tab;
+            document.getElementById(`tab-${tabId}`).classList.add('active');
+        });
+    });
+
+    // Manual Fetch
+    document.getElementById('startFetch')?.addEventListener('click', function() {
+        const btn = this;
+        const progressContainer = document.getElementById('progressContainer');
+        const statsPreview = document.getElementById('statsPreview');
+        const progressLogs = document.getElementById('progressLogs');
+        const progressIcon = document.getElementById('progressIcon');
+        const progressStatus = document.getElementById('progressStatus');
+        const progressBadge = document.getElementById('progressBadge');
+        
+        // Show progress container
+        progressContainer.style.display = 'block';
+        statsPreview.style.display = 'grid';
+        progressLogs.innerHTML = '<div class="log-line">⏳ Starting fetch process...</div>';
+        
+        // Disable button
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Fetching...';
+        
+        // Update status
+        progressIcon.className = 'fas fa-sync-alt fa-spin';
+        progressStatus.textContent = 'Fetching News...';
+        progressBadge.className = 'progress-status status-running';
+        progressBadge.textContent = 'Running';
+        
+        // Get form values
+        const days = document.getElementById('days').value;
+        const limit = document.getElementById('limit').value;
+        const workers = document.getElementById('workers').value;
+        const sources = document.querySelector('input[name="sources"]:checked').value;
+        const content_type = document.querySelector('input[name="content_type"]:checked').value;
+        const extract_full = document.getElementById('extract_full').checked;
+        
+        // Make fetch request
+        fetch('{% url "quick_fetch_news" %}', {
+            method: 'POST',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            body: new URLSearchParams({
+                'days': days,
+                'limit': limit,
+                'workers': workers,
+                'sources': sources,
+                'content_type': content_type,
+                'extract_full': extract_full
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            // Clear logs
+            progressLogs.innerHTML = '';
+            
+            // Add all log lines
+            if (data.logs && data.logs.length) {
+                data.logs.forEach(log => {
+                    const logLine = document.createElement('div');
+                    logLine.className = 'log-line';
+                    
+                    if (log.includes('✅')) {
+                        logLine.classList.add('success');
+                    } else if (log.includes('❌')) {
+                        logLine.classList.add('error');
+                    } else if (log.includes('⚠️')) {
+                        logLine.classList.add('warning');
+                    } else if (log.includes('📡') || log.includes('📰')) {
+                        logLine.classList.add('info');
+                    }
+                    
+                    logLine.textContent = log;
+                    progressLogs.appendChild(logLine);
+                });
+            }
+            
+            // Update stats
+            if (data.stats) {
+                document.getElementById('statsSaved').textContent = data.stats.saved || 0;
+                document.getElementById('statsVideos').textContent = data.stats.videos || 0;
+                document.getElementById('statsAudio').textContent = data.stats.audio || 0;
+                document.getElementById('statsImages').textContent = data.stats.images || 0;
+            }
+            
+            // Update status based on response
+            if (data.status === 'success') {
+                progressIcon.className = 'fas fa-check-circle';
+                progressStatus.textContent = data.message || 'Fetch completed!';
+                progressBadge.className = 'progress-status status-success';
+                progressBadge.textContent = 'Success';
+                
+                // Add final success message
+                const successLine = document.createElement('div');
+                successLine.className = 'log-line success';
+                successLine.textContent = '✅ ' + (data.message || 'Fetch completed successfully!');
+                progressLogs.appendChild(successLine);
+                
+            } else if (data.status === 'error') {
+                progressIcon.className = 'fas fa-exclamation-circle';
+                progressStatus.textContent = 'Error occurred';
+                progressBadge.className = 'progress-status status-error';
+                progressBadge.textContent = 'Error';
+                
+                const errorLine = document.createElement('div');
+                errorLine.className = 'log-line error';
+                errorLine.textContent = '❌ Error: ' + (data.message || 'Unknown error');
+                progressLogs.appendChild(errorLine);
+            }
+            
+            // Re-enable button
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-play"></i> Start Manual Fetch';
+            
+            // Scroll to bottom of logs
+            progressLogs.scrollTop = progressLogs.scrollHeight;
+        })
+        .catch(error => {
+            progressLogs.innerHTML += '<div class="log-line error">❌ Error: ' + error + '</div>';
+            
+            progressIcon.className = 'fas fa-exclamation-circle';
+            progressStatus.textContent = 'Connection error';
+            progressBadge.className = 'progress-status status-error';
+            progressBadge.textContent = 'Error';
+            
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-play"></i> Start Manual Fetch';
+        });
+    });
+
+    // Save Auto-Fetcher Settings
+    document.getElementById('saveAutoSettings')?.addEventListener('click', function() {
+        const btn = this;
+        const originalText = btn.innerHTML;
+        
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+        
+        const formData = new URLSearchParams({
+            'csrfmiddlewaretoken': '{{ csrf_token }}',
+            'test_mode': document.querySelector('input[name="test_mode"]:checked').value,
+            'prod_interval': document.getElementById('prod_interval').value,
+            'prod_unit': document.getElementById('prod_unit').value,
+            'prod_days': document.getElementById('prod_days').value,
+            'prod_limit': document.getElementById('prod_limit').value,
+            'prod_workers': document.getElementById('prod_workers').value,
+            'test_interval': document.getElementById('test_interval').value,
+            'test_unit': document.getElementById('test_unit').value,
+            'test_days': document.getElementById('test_days').value,
+            'test_limit': document.getElementById('test_limit').value,
+            'test_workers': document.getElementById('test_workers').value
+        });
+        
+        // FIXED: Use 'save_fetcher_settings' instead of 'save_auto_fetcher_settings'
+        fetch('{% url "save_fetcher_settings" %}', {
+            method: 'POST',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                alert('✅ Settings saved successfully!');
+            } else {
+                alert('❌ Error: ' + data.message);
+            }
+        })
+        .catch(error => {
+            alert('❌ Error saving settings: ' + error);
+        })
+        .finally(() => {
+            btn.disabled = false;
+            btn.innerHTML = originalText;
+        });
+    });
+
+    // Toggle Auto-Fetcher
+    document.getElementById('toggleAutoFetcher')?.addEventListener('click', function() {
+        const btn = this;
+        const originalText = btn.innerHTML;
+        const isRunning = btn.innerHTML.includes('Stop');
+        
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> ' + (isRunning ? 'Stopping...' : 'Starting...');
+        
+        const action = isRunning ? 'stop' : 'start';
+        
+        fetch('{% url "toggle_auto_fetcher" %}', {
+            method: 'POST',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            body: new URLSearchParams({
+                'action': action
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                location.reload(); // Reload to update all status displays
+            } else {
+                alert('❌ Error: ' + data.message);
+                btn.disabled = false;
+                btn.innerHTML = originalText;
+            }
+        })
+        .catch(error => {
+            alert('❌ Error: ' + error);
+            btn.disabled = false;
+            btn.innerHTML = originalText;
+        });
+    });
+
+    // Fetch Now
+    document.getElementById('fetchNow')?.addEventListener('click', function() {
+        const btn = this;
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Fetching...';
+        
+        // FIXED: Use 'trigger_manual_fetch' instead of 'trigger_auto_fetch'
+        fetch('{% url "trigger_manual_fetch" %}', {
+            method: 'POST',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRFToken': '{{ csrf_token }}'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success' || data.status === 'started') {
+                alert('✅ Fetch started! Check the manual fetch tab for progress.');
+            } else {
+                alert('❌ Error: ' + data.message);
+            }
+        })
+        .catch(error => {
+            alert('❌ Error: ' + error);
+        })
+        .finally(() => {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-bolt"></i> Fetch Now';
+        });
+    });
+
+    // Load schedule on tab switch
+    document.querySelector('[data-tab="scheduler"]')?.addEventListener('click', function() {
+        loadSchedule();
+    });
+
+    function loadSchedule() {
+        fetch('{% url "get_fetch_schedule" %}')
+            .then(response => response.json())
+            .then(data => {
+                const tbody = document.getElementById('scheduleTable');
+                tbody.innerHTML = '';
+                
+                if (data.schedule && data.schedule.length) {
+                    data.schedule.forEach((item, index) => {
+                        const row = document.createElement('tr');
+                        row.innerHTML = `
+                            <td style="padding: 0.75rem;">${index + 1}</td>
+                            <td style="padding: 0.75rem;">${item.time}</td>
+                            <td style="padding: 0.75rem;">${item.type}</td>
+                            <td style="padding: 0.75rem;">
+                                <span class="status-badge ${item.status === 'scheduled' ? 'badge-active' : 'badge-inactive'}">
+                                    ${item.status}
+                                </span>
+                            </td>
+                        `;
+                        tbody.appendChild(row);
+                    });
+                } else {
+                    tbody.innerHTML = '<tr><td colspan="4" style="padding: 2rem; text-align: center;">No scheduled fetches</td></tr>';
+                }
+            });
+    }
+
+    // Refresh schedule
+    document.getElementById('refreshSchedule')?.addEventListener('click', loadSchedule);
+
+    // Clear schedule
+    document.getElementById('clearSchedule')?.addEventListener('click', function() {
+        if (confirm('Are you sure you want to clear all scheduled fetches?')) {
+            fetch('{% url "clear_fetch_schedule" %}', {
+                method: 'POST',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRFToken': '{{ csrf_token }}'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    alert('✅ Schedule cleared!');
+                    loadSchedule();
+                } else {
+                    alert('❌ Error: ' + data.message);
+                }
+            });
+        }
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,1546 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{% if query %}Search: {{ query }}{% else %}Search - Ojukaye{% endif %}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .search-page {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 2rem;
+    }
+
+    .search-header {
+        margin-bottom: 2rem;
+        text-align: center;
+    }
+
+    .search-header h1 {
+        font-size: 2rem;
+        font-weight: 700;
+        color: var(--gray-900);
+        margin-bottom: 0.5rem;
+    }
+
+    .search-header p {
+        color: var(--gray-600);
+    }
+
+    .search-form-large {
+        max-width: 600px;
+        margin: 2rem auto;
+        position: relative;
+    }
+
+    .search-input-wrapper {
+        position: relative;
+        display: flex;
+        align-items: center;
+    }
+
+    .search-input-large {
+        width: 100%;
+        padding: 1rem 1.5rem;
+        padding-left: 3.5rem;
+        font-size: 1.1rem;
+        border: 2px solid var(--gray-200);
+        border-radius: 9999px;
+        transition: all 0.2s;
+        background: var(--white);
+    }
+
+    .search-input-large:focus {
+        outline: none;
+        border-color: var(--primary);
+        box-shadow: 0 0 0 3px var(--primary-soft);
+    }
+
+    .search-icon-large {
+        position: absolute;
+        left: 1.25rem;
+        color: var(--gray-500);
+        font-size: 1.25rem;
+    }
+
+    .search-clear-btn {
+        position: absolute;
+        right: 1.25rem;
+        background: none;
+        border: none;
+        color: var(--gray-500);
+        cursor: pointer;
+        padding: 0.5rem;
+        display: none;
+    }
+
+    .search-clear-btn:hover {
+        color: var(--gray-700);
+    }
+
+    .search-input-large:not(:placeholder-shown) + .search-clear-btn {
+        display: block;
+    }
+
+    /* Results Grid */
+    .search-results-grid {
+        display: grid;
+        grid-template-columns: 2fr 1000px;
+        gap: 2rem;
+    }
+
+    .search-filters {
+        background: var(--white);
+        border-radius: var(--radius-lg);
+        border: 1px solid var(--gray-200);
+        padding: 1.5rem;
+        position: sticky;
+        top: 2rem;
+        height: fit-content;
+    }
+
+    .filter-title {
+        font-size: 1rem;
+        font-weight: 600;
+        color: var(--gray-800);
+        margin-bottom: 1rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .filter-list {
+        list-style: none;
+        padding: 0;
+        margin: 0 0 1.5rem;
+    }
+
+    .filter-item {
+        margin-bottom: 0.5rem;
+    }
+
+    .filter-link {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        padding: 0.625rem 1rem;
+        border-radius: var(--radius-md);
+        color: var(--gray-700);
+        text-decoration: none;
+        transition: all 0.2s;
+    }
+
+    .filter-link:hover {
+        background: var(--gray-100);
+    }
+
+    .filter-link.active {
+        background: var(--primary-soft);
+        color: var(--primary);
+        font-weight: 600;
+    }
+
+    .filter-link i {
+        width: 20px;
+        font-size: 1rem;
+    }
+
+    .filter-count {
+        margin-left: auto;
+        background: var(--gray-200);
+        padding: 0.125rem 0.5rem;
+        border-radius: 9999px;
+        font-size: 0.75rem;
+        color: var(--gray-700);
+    }
+
+    .search-main {
+        min-height: 500px;
+    }
+
+    /* Result Sections */
+    .result-section {
+        background: var(--white);
+        border-radius: var(--radius-lg);
+        border: 1px solid var(--gray-200);
+        margin-bottom: 1.5rem;
+        overflow: hidden;
+    }
+
+    .section-header {
+        padding: 1rem 1.5rem;
+        background: var(--gray-50);
+        border-bottom: 1px solid var(--gray-200);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+
+    .section-title {
+        font-size: 1rem;
+        font-weight: 600;
+        color: var(--gray-800);
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        margin: 0;
+    }
+
+    .section-title i {
+        color: var(--primary);
+    }
+
+    .view-all-link {
+        font-size: 0.875rem;
+        color: var(--primary);
+        text-decoration: none;
+        display: flex;
+        align-items: center;
+        gap: 0.25rem;
+    }
+
+    .section-body {
+        padding: 1rem;
+    }
+
+    /* Post Cards */
+    .post-result {
+        display: flex;
+        gap: 1rem;
+        padding: 1rem;
+        border-bottom: 1px solid var(--gray-100);
+        transition: all 0.2s;
+    }
+
+    .post-result:last-child {
+        border-bottom: none;
+    }
+
+    .post-result:hover {
+        background: var(--gray-50);
+    }
+
+    .post-image {
+        width: 80px;
+        height: 80px;
+        border-radius: var(--radius-md);
+        overflow: hidden;
+        flex-shrink: 0;
+    }
+
+    .post-image img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    .post-image-placeholder {
+        width: 100%;
+        height: 100%;
+        background: var(--gray-200);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--gray-500);
+    }
+
+    .post-info {
+        flex: 1;
+    }
+
+    .post-title {
+        font-size: 1rem;
+        font-weight: 600;
+        margin-bottom: 0.25rem;
+    }
+
+    .post-title a {
+        color: var(--gray-900);
+        text-decoration: none;
+    }
+
+    .post-title a:hover {
+        color: var(--primary);
+    }
+
+    .post-meta {
+        display: flex;
+        gap: 1rem;
+        font-size: 0.75rem;
+        color: var(--gray-600);
+        margin-bottom: 0.25rem;
+    }
+
+    .post-meta i {
+        margin-right: 0.25rem;
+    }
+
+    .post-excerpt {
+        font-size: 0.875rem;
+        color: var(--gray-700);
+        line-height: 1.5;
+        margin-bottom: 0.5rem;
+    }
+
+    .post-badge {
+        display: inline-block;
+        padding: 0.125rem 0.5rem;
+        background: var(--gray-200);
+        border-radius: 9999px;
+        font-size: 0.625rem;
+        font-weight: 600;
+        color: var(--gray-700);
+    }
+
+    /* User Cards */
+    .user-result {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        padding: 1rem;
+        border-bottom: 1px solid var(--gray-100);
+        transition: all 0.2s;
+    }
+
+    .user-result:last-child {
+        border-bottom: none;
+    }
+
+    .user-result:hover {
+        background: var(--gray-50);
+    }
+
+    .user-avatar {
+        width: 48px;
+        height: 48px;
+        border-radius: 50%;
+        overflow: hidden;
+        flex-shrink: 0;
+        background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-weight: 600;
+    }
+
+    .user-avatar img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    .user-info {
+        flex: 1;
+    }
+
+    .user-name {
+        font-size: 1rem;
+        font-weight: 600;
+        color: var(--gray-900);
+        margin-bottom: 0.125rem;
+    }
+
+    .user-name a {
+        color: inherit;
+        text-decoration: none;
+    }
+
+    .user-name a:hover {
+        color: var(--primary);
+    }
+
+    .user-username {
+        font-size: 0.75rem;
+        color: var(--gray-600);
+        margin-bottom: 0.25rem;
+    }
+
+    .user-bio {
+        font-size: 0.75rem;
+        color: var(--gray-700);
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+
+    .user-stats {
+        display: flex;
+        gap: 1rem;
+        font-size: 0.625rem;
+        color: var(--gray-600);
+    }
+
+    .follow-btn-small {
+        padding: 0.25rem 0.75rem;
+        border: 1px solid var(--primary);
+        background: var(--primary);
+        color: white;
+        border-radius: 9999px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s;
+        white-space: nowrap;
+    }
+
+    .follow-btn-small:hover {
+        background: var(--primary-dark);
+    }
+
+    .follow-btn-small.following {
+        background: white;
+        color: var(--primary);
+    }
+
+    /* Category Cards */
+    .category-result {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 1rem;
+        border-bottom: 1px solid var(--gray-100);
+        transition: all 0.2s;
+    }
+
+    .category-result:last-child {
+        border-bottom: none;
+    }
+
+    .category-result:hover {
+        background: var(--gray-50);
+    }
+
+    .category-info {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }
+
+    .category-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: var(--radius-md);
+        background: var(--primary-soft);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--primary);
+        font-size: 1.25rem;
+    }
+
+    .category-details h4 {
+        font-size: 1rem;
+        font-weight: 600;
+        margin-bottom: 0.125rem;
+    }
+
+    .category-details h4 a {
+        color: var(--gray-900);
+        text-decoration: none;
+    }
+
+    .category-details h4 a:hover {
+        color: var(--primary);
+    }
+
+    .category-details p {
+        font-size: 0.75rem;
+        color: var(--gray-600);
+    }
+
+    .category-count {
+        padding: 0.25rem 0.75rem;
+        background: var(--gray-200);
+        border-radius: 9999px;
+        font-size: 0.75rem;
+        color: var(--gray-700);
+    }
+
+    /* Comment Cards */
+    .comment-result {
+        padding: 1rem;
+        border-bottom: 1px solid var(--gray-100);
+    }
+
+    .comment-result:last-child {
+        border-bottom: none;
+    }
+
+    .comment-header {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        margin-bottom: 0.5rem;
+    }
+
+    .comment-avatar {
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        overflow: hidden;
+    }
+
+    .comment-author {
+        font-weight: 600;
+        color: var(--gray-900);
+        font-size: 0.875rem;
+    }
+
+    .comment-post-link {
+        font-size: 0.75rem;
+        color: var(--gray-600);
+        text-decoration: none;
+    }
+
+    .comment-post-link:hover {
+        color: var(--primary);
+    }
+
+    .comment-text {
+        font-size: 0.875rem;
+        color: var(--gray-800);
+        margin-bottom: 0.5rem;
+        line-height: 1.5;
+    }
+
+    .comment-time {
+        font-size: 0.625rem;
+        color: var(--gray-600);
+    }
+
+    /* Admin Section */
+    .admin-section {
+        border-left: 3px solid #8b5cf6;
+    }
+
+    .admin-badge {
+        display: inline-block;
+        padding: 0.125rem 0.5rem;
+        background: #8b5cf6;
+        color: white;
+        border-radius: 9999px;
+        font-size: 0.625rem;
+        font-weight: 600;
+        margin-left: 0.5rem;
+    }
+
+    .admin-item {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        padding: 0.75rem 1rem;
+        border-bottom: 1px solid var(--gray-100);
+        text-decoration: none;
+        color: var(--gray-800);
+        transition: all 0.2s;
+    }
+
+    .admin-item:hover {
+        background: var(--gray-100);
+    }
+
+    .admin-item i {
+        width: 24px;
+        color: #8b5cf6;
+        font-size: 1rem;
+    }
+
+    .admin-item-content {
+        flex: 1;
+    }
+
+    .admin-item-title {
+        font-weight: 600;
+        margin-bottom: 0.125rem;
+    }
+
+    .admin-item-subtitle {
+        font-size: 0.75rem;
+        color: var(--gray-600);
+    }
+
+    .admin-item-badge {
+        background: #fee2e2;
+        color: #991b1b;
+        padding: 0.125rem 0.5rem;
+        border-radius: 9999px;
+        font-size: 0.625rem;
+        font-weight: 600;
+    }
+
+    /* Empty State */
+    .empty-state {
+        text-align: center;
+        padding: 3rem;
+    }
+
+    .empty-state i {
+        font-size: 3rem;
+        color: var(--gray-400);
+        margin-bottom: 1rem;
+    }
+
+    .empty-state h3 {
+        font-size: 1.25rem;
+        font-weight: 600;
+        color: var(--gray-800);
+        margin-bottom: 0.5rem;
+    }
+
+    .empty-state p {
+        color: var(--gray-600);
+        margin-bottom: 1.5rem;
+    }
+
+    .trending-searches {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        justify-content: center;
+    }
+
+    .trending-tag {
+        padding: 0.5rem 1rem;
+        background: var(--gray-100);
+        border-radius: 9999px;
+        color: var(--gray-700);
+        text-decoration: none;
+        font-size: 0.875rem;
+        transition: all 0.2s;
+    }
+
+    .trending-tag:hover {
+        background: var(--primary);
+        color: white;
+    }
+
+    /* Responsive */
+    @media (max-width: 992px) {
+        .search-results-grid {
+            grid-template-columns: 1fr;
+        }
+        
+        .search-filters {
+            position: static;
+            margin-bottom: 1.5rem;
+        }
+    }
+
+    @media (max-width: 768px) {
+        .search-page {
+            padding: 1rem;
+        }
+        
+        .post-result {
+            flex-direction: column;
+        }
+        
+        .post-image {
+            width: 100%;
+            height: 160px;
+        }
+        
+        .user-result {
+            flex-direction: column;
+            text-align: center;
+        }
+        
+        .follow-btn-small {
+            width: 100%;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="search-page">
+    <div class="search-header">
+        <h1><i class="fas fa-search"></i> Search Ojukaye</h1>
+        <p>Find posts, users, categories, and more</p>
+    </div>
+
+    <!-- Search Form -->
+    <div class="search-form-large">
+        <form method="get" action="{% url 'search' %}" id="searchForm">
+            <div class="search-input-wrapper">
+                <i class="fas fa-search search-icon-large"></i>
+                <input type="text" 
+                       name="q" 
+                       class="search-input-large" 
+                       placeholder="Search for anything..." 
+                       value="{{ query }}"
+                       id="searchInput"
+                       autocomplete="off"
+                       autofocus>
+                <button type="button" class="search-clear-btn" onclick="clearSearch()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+        </form>
+    </div>
+
+    {% if query %}
+        <div class="search-results-grid">
+            <!-- Filters Sidebar -->
+            <aside class="search-filters">
+                <h3 class="filter-title">
+                    <i class="fas fa-filter"></i> Filter Results
+                </h3>
+                
+                <ul class="filter-list">
+                    <li class="filter-item">
+                        <a href="?q={{ query }}&type=all" class="filter-link {% if not request.GET.type or request.GET.type == 'all' %}active{% endif %}">
+                            <i class="fas fa-globe"></i>
+                            <span>All Results</span>
+                            <span class="filter-count">{{ results.posts|length|add:results.users|length|add:results.categories|length|add:results.comments|length }}</span>
+                        </a>
+                    </li>
+                    <li class="filter-item">
+                        <a href="?q={{ query }}&type=posts" class="filter-link {% if request.GET.type == 'posts' %}active{% endif %}">
+                            <i class="fas fa-file-alt"></i>
+                            <span>Posts</span>
+                            <span class="filter-count">{{ results.posts|length }}</span>
+                        </a>
+                    </li>
+                    <li class="filter-item">
+                        <a href="?q={{ query }}&type=users" class="filter-link {% if request.GET.type == 'users' %}active{% endif %}">
+                            <i class="fas fa-users"></i>
+                            <span>Users</span>
+                            <span class="filter-count">{{ results.users|length }}</span>
+                        </a>
+                    </li>
+                    <li class="filter-item">
+                        <a href="?q={{ query }}&type=categories" class="filter-link {% if request.GET.type == 'categories' %}active{% endif %}">
+                            <i class="fas fa-tags"></i>
+                            <span>Categories</span>
+                            <span class="filter-count">{{ results.categories|length }}</span>
+                        </a>
+                    </li>
+                    <li class="filter-item">
+                        <a href="?q={{ query }}&type=comments" class="filter-link {% if request.GET.type == 'comments' %}active{% endif %}">
+                            <i class="fas fa-comments"></i>
+                            <span>Comments</span>
+                            <span class="filter-count">{{ results.comments|length }}</span>
+                        </a>
+                    </li>
+                </ul>
+
+                {% if results.admin %}
+                <h3 class="filter-title" style="margin-top: 1.5rem;">
+                    <i class="fas fa-lock"></i> Admin Area
+                </h3>
+                
+                <ul class="filter-list">
+                    <li class="filter-item">
+                        <a href="?q={{ query }}&type=admin_posts" class="filter-link {% if request.GET.type == 'admin_posts' %}active{% endif %}">
+                            <i class="fas fa-file-alt"></i>
+                            <span>Admin Posts</span>
+                            <span class="filter-count">{{ results.admin.posts|length }}</span>
+                        </a>
+                    </li>
+                    <li class="filter-item">
+                        <a href="?q={{ query }}&type=pending_news" class="filter-link {% if request.GET.type == 'pending_news' %}active{% endif %}">
+                            <i class="fas fa-clock"></i>
+                            <span>Pending News</span>
+                            <span class="filter-count">{{ results.admin.pending_news|length }}</span>
+                        </a>
+                    </li>
+                    <li class="filter-item">
+                        <a href="?q={{ query }}&type=flagged" class="filter-link {% if request.GET.type == 'flagged' %}active{% endif %}">
+                            <i class="fas fa-exclamation-triangle"></i>
+                            <span>Flagged Content</span>
+                            <span class="filter-count">{{ results.admin.flagged|length }}</span>
+                        </a>
+                    </li>
+                    <li class="filter-item">
+                        <a href="?q={{ query }}&type=admin_users" class="filter-link {% if request.GET.type == 'admin_users' %}active{% endif %}">
+                            <i class="fas fa-user-shield"></i>
+                            <span>All Users</span>
+                            <span class="filter-count">{{ results.admin.users|length }}</span>
+                        </a>
+                    </li>
+                </ul>
+                {% endif %}
+
+                <!-- Search Tips -->
+                <div style="margin-top: 2rem; padding: 1rem; background: var(--gray-100); border-radius: var(--radius-md);">
+                    <h4 style="font-size: 0.875rem; margin-bottom: 0.5rem;">Search Tips</h4>
+                    <ul style="font-size: 0.75rem; color: var(--gray-700); list-style: none; padding: 0;">
+                        <li style="margin-bottom: 0.25rem;">✓ Use specific keywords</li>
+                        <li style="margin-bottom: 0.25rem;">✓ Search for usernames with @ (e.g., @username)</li>
+                        <li style="margin-bottom: 0.25rem;">✓ Use quotes for exact phrases</li>
+                        <li style="margin-bottom: 0.25rem;">✓ Filter by type for better results</li>
+                    </ul>
+                </div>
+            </aside>
+
+            <!-- Main Results -->
+            <main class="search-main">
+                <!-- Posts Section -->
+                {% if results.posts %}
+                <div class="result-section">
+                    <div class="section-header">
+                        <h3 class="section-title">
+                            <i class="fas fa-file-alt"></i> Posts ({{ results.posts|length }})
+                        </h3>
+                        <a href="?q={{ query }}&type=posts" class="view-all-link">
+                            View All <i class="fas fa-arrow-right"></i>
+                        </a>
+                    </div>
+                    <div class="section-body">
+                        {% for post in results.posts %}
+                        <div class="post-result">
+                            <div class="post-image">
+                                {% if post.image %}
+                                <img src="{{ post.image.url }}" alt="{{ post.title }}">
+                                {% elif post.image_url %}
+                                <img src="{{ post.image_url }}" alt="{{ post.title }}">
+                                {% else %}
+                                <div class="post-image-placeholder">
+                                    <i class="fas fa-newspaper"></i>
+                                </div>
+                                {% endif %}
+                            </div>
+                            <div class="post-info">
+                                <h4 class="post-title">
+                                    <a href="{% url 'post_detail' post.id %}">{{ post.title }}</a>
+                                </h4>
+                                <div class="post-meta">
+                                    <span><i class="fas fa-user"></i> {{ post.author.username }}</span>
+                                    <span><i class="far fa-clock"></i> {{ post.published_at|timesince }} ago</span>
+                                    {% if post.category %}
+                                    <span><i class="fas fa-folder"></i> {{ post.category.name }}</span>
+                                    {% endif %}
+                                </div>
+                                <p class="post-excerpt">{{ post.content|truncatechars:150 }}</p>
+                                <div>
+                                    <span class="post-badge">{{ post.get_post_type_display }}</span>
+                                    {% if post.is_auto_fetched %}
+                                    <span class="post-badge">Auto-fetched</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- Users Section -->
+                {% if results.users %}
+                <div class="result-section">
+                    <div class="section-header">
+                        <h3 class="section-title">
+                            <i class="fas fa-users"></i> Users ({{ results.users|length }})
+                        </h3>
+                        <a href="?q={{ query }}&type=users" class="view-all-link">
+                            View All <i class="fas fa-arrow-right"></i>
+                        </a>
+                    </div>
+                    <div class="section-body">
+                        {% for user in results.users %}
+                        <div class="user-result">
+                            <div class="user-avatar">
+                                {% if user.profile.profile_pic %}
+                                <img src="{{ user.profile.profile_pic.url }}" alt="{{ user.username }}">
+                                {% else %}
+                                {{ user.username|first|upper }}
+                                {% endif %}
+                            </div>
+                            <div class="user-info">
+                                <div class="user-name">
+                                    <a href="{% url 'profile_view' username=user.username %}">
+                                        {{ user.get_full_name|default:user.username }}
+                                    </a>
+                                </div>
+                                <div class="user-username">@{{ user.username }}</div>
+                                {% if user.profile.bio %}
+                                <div class="user-bio">{{ user.profile.bio|truncatechars:80 }}</div>
+                                {% endif %}
+                                <div class="user-stats">
+                                    <span><i class="fas fa-pen"></i> {{ user.posts.count }}</span>
+                                    <span><i class="fas fa-users"></i> {{ user.followers.count }}</span>
+                                    <span><i class="fas fa-user-plus"></i> {{ user.following.count }}</span>
+                                </div>
+                            </div>
+                            {% if user.is_authenticated and user != request.user %}
+                            <button class="follow-btn-small" data-username="{{ user.username }}">
+                                <i class="fas fa-plus"></i> Follow
+                            </button>
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- Categories Section -->
+                {% if results.categories %}
+                <div class="result-section">
+                    <div class="section-header">
+                        <h3 class="section-title">
+                            <i class="fas fa-tags"></i> Categories ({{ results.categories|length }})
+                        </h3>
+                        <a href="?q={{ query }}&type=categories" class="view-all-link">
+                            View All <i class="fas fa-arrow-right"></i>
+                        </a>
+                    </div>
+                    <div class="section-body">
+                        {% for category in results.categories %}
+                        <div class="category-result">
+                            <div class="category-info">
+                                <div class="category-icon">
+                                    {% if category.icon %}
+                                    <i class="fas fa-{{ category.icon }}"></i>
+                                    {% else %}
+                                    <i class="fas fa-folder"></i>
+                                    {% endif %}
+                                </div>
+                                <div class="category-details">
+                                    <h4><a href="{% url 'category_view' category.slug %}">{{ category.name }}</a></h4>
+                                    {% if category.description %}
+                                    <p>{{ category.description|truncatechars:60 }}</p>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <span class="category-count">{{ category.posts.count }} posts</span>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- Comments Section -->
+                {% if results.comments %}
+                <div class="result-section">
+                    <div class="section-header">
+                        <h3 class="section-title">
+                            <i class="fas fa-comments"></i> Comments ({{ results.comments|length }})
+                        </h3>
+                        <a href="?q={{ query }}&type=comments" class="view-all-link">
+                            View All <i class="fas fa-arrow-right"></i>
+                        </a>
+                    </div>
+                    <div class="section-body">
+                        {% for comment in results.comments %}
+                        <div class="comment-result">
+                            <div class="comment-header">
+                                <div class="comment-avatar">
+                                    {% if comment.user.profile.profile_pic %}
+                                    <img src="{{ comment.user.profile.profile_pic.url }}" alt="{{ comment.user.username }}">
+                                    {% else %}
+                                    <div>{{ comment.user.username|first|upper }}</div>
+                                    {% endif %}
+                                </div>
+                                <span class="comment-author">{{ comment.user.username }}</span>
+                                <span>on</span>
+                                <a href="{% url 'post_detail' comment.post.id %}#comment-{{ comment.id }}" class="comment-post-link">
+                                    {{ comment.post.title|truncatechars:40 }}
+                                </a>
+                            </div>
+                            <div class="comment-text">{{ comment.content|truncatechars:120 }}</div>
+                            <div class="comment-time">{{ comment.created_at|timesince }} ago</div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- Admin Section (Only visible to staff) -->
+                {% if results.admin %}
+                <div class="result-section admin-section">
+                    <div class="section-header">
+                        <h3 class="section-title">
+                            <i class="fas fa-lock"></i> Admin Results
+                            <span class="admin-badge">Staff Only</span>
+                        </h3>
+                    </div>
+                    <div class="section-body">
+                        <!-- Admin Posts (Drafts, etc.) -->
+                        {% for post in results.admin.posts %}
+                        <a href="{% url 'admin:core_post_change' post.id %}" class="admin-item">
+                            <i class="fas fa-file-alt"></i>
+                            <div class="admin-item-content">
+                                <div class="admin-item-title">{{ post.title }}</div>
+                                <div class="admin-item-subtitle">
+                                    {% if post.status == 'draft' %}Draft{% else %}{{ post.status }}{% endif %} • 
+                                    by {{ post.author.username }} • 
+                                    {{ post.created_at|timesince }} ago
+                                </div>
+                            </div>
+                        </a>
+                        {% endfor %}
+
+                        <!-- Pending News Submissions -->
+                        {% for post in results.admin.pending_news %}
+                        <a href="{% url 'admin_news_detail' post.id %}" class="admin-item">
+                            <i class="fas fa-clock" style="color: #f59e0b;"></i>
+                            <div class="admin-item-content">
+                                <div class="admin-item-title">{{ post.title }}</div>
+                                <div class="admin-item-subtitle">
+                                    Pending review • by {{ post.author.username }} • 
+                                    {% if post.verification_score %}Score: {{ post.verification_score|floatformat:2 }}{% endif %}
+                                </div>
+                            </div>
+                            <span class="admin-item-badge">Pending</span>
+                        </a>
+                        {% endfor %}
+
+                        <!-- Flagged Content -->
+                        {% for post in results.admin.flagged %}
+                        <a href="{% url 'admin_news_detail' post.id %}" class="admin-item">
+                            <i class="fas fa-exclamation-triangle" style="color: #ef4444;"></i>
+                            <div class="admin-item-content">
+                                <div class="admin-item-title">{{ post.title }}</div>
+                                <div class="admin-item-subtitle">
+                                    Marked as fake • Score: {{ post.verification_score|floatformat:2 }}
+                                </div>
+                            </div>
+                            <span class="admin-item-badge" style="background: #fee2e2; color: #991b1b;">Fake</span>
+                        </a>
+                        {% endfor %}
+
+                        <!-- All Users (Admin view) -->
+                        {% for user in results.admin.users %}
+                        <a href="{% url 'admin:auth_user_change' user.id %}" class="admin-item">
+                            <i class="fas fa-user"></i>
+                            <div class="admin-item-content">
+                                <div class="admin-item-title">{{ user.get_full_name|default:user.username }}</div>
+                                <div class="admin-item-subtitle">
+                                    @{{ user.username }} • {{ user.email }} • 
+                                    Joined {{ user.date_joined|date }}
+                                </div>
+                            </div>
+                        </a>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- No Results -->
+                {% if not results.posts and not results.users and not results.categories and not results.comments and not results.admin %}
+                <div class="empty-state">
+                    <i class="fas fa-search"></i>
+                    <h3>No results found</h3>
+                    <p>We couldn't find anything matching "{{ query }}"</p>
+                    <p>Try different keywords or check your spelling</p>
+                    <div class="trending-searches">
+                        <a href="?q=news" class="trending-tag">news</a>
+                        <a href="?q=politics" class="trending-tag">politics</a>
+                        <a href="?q=technology" class="trending-tag">technology</a>
+                        <a href="?q=sports" class="trending-tag">sports</a>
+                        <a href="?q=business" class="trending-tag">business</a>
+                    </div>
+                </div>
+                {% endif %}
+            </main>
+        </div>
+    {% else %}
+        <!-- Initial Search Page (no query) -->
+        <div class="empty-state">
+            <i class="fas fa-arrow-up" style="font-size: 3rem; color: var(--gray-400); margin-bottom: 1rem;"></i>
+            <h3>Enter a search term above</h3>
+            <p>Search for posts, users, categories, and more</p>
+            
+            <div style="margin-top: 2rem;">
+                <h4 style="margin-bottom: 1rem;">Popular Searches</h4>
+                <div class="trending-searches">
+                    {% for topic in trending_topics %}
+                    <a href="?q={{ topic.topic }}" class="trending-tag">
+                        {{ topic.topic }} <small>({{ topic.count }})</small>
+                    </a>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    {% endif %}
+</div>
+
+<!-- Autocomplete Dropdown -->
+<div id="autocompleteDropdown" class="autocomplete-dropdown" style="display: none;">
+    <div class="dropdown-header">
+        <span>Suggestions</span>
+        <button class="close-dropdown" onclick="closeAutocomplete()">
+            <i class="fas fa-times"></i>
+        </button>
+    </div>
+    <div class="dropdown-body" id="autocompleteBody">
+        <!-- Will be populated via AJAX -->
+        <div class="loading-suggestions">
+            <i class="fas fa-spinner fa-spin"></i> Loading suggestions...
+        </div>
+    </div>
+</div>
+
+<style>
+/* Autocomplete Dropdown Styles */
+.autocomplete-dropdown {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: white;
+    border: 1px solid var(--gray-200);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-lg);
+    z-index: 1000;
+    max-height: 400px;
+    display: flex;
+    flex-direction: column;
+    margin-top: 0.5rem;
+    overflow: hidden;
+}
+
+.dropdown-header {
+    padding: 0.75rem 1rem;
+    background: var(--gray-50);
+    border-bottom: 1px solid var(--gray-200);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-weight: 600;
+    color: var(--gray-700);
+    font-size: 0.875rem;
+}
+
+.close-dropdown {
+    background: none;
+    border: none;
+    color: var(--gray-500);
+    cursor: pointer;
+    padding: 0.25rem 0.5rem;
+    border-radius: var(--radius-md);
+}
+
+.close-dropdown:hover {
+    background: var(--gray-200);
+    color: var(--gray-700);
+}
+
+.dropdown-body {
+    overflow-y: auto;
+    max-height: 350px;
+    padding: 0.5rem 0;
+}
+
+.suggestion-group {
+    padding: 0.5rem 0;
+}
+
+.group-title {
+    padding: 0.5rem 1rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--gray-600);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    background: var(--gray-50);
+}
+
+.suggestion-item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.625rem 1rem;
+    text-decoration: none;
+    color: var(--gray-800);
+    transition: all 0.2s;
+    border-left: 3px solid transparent;
+}
+
+.suggestion-item:hover {
+    background: var(--gray-100);
+    border-left-color: var(--primary);
+}
+
+.suggestion-item.highlighted {
+    background: var(--primary-soft);
+    border-left-color: var(--primary);
+}
+
+.suggestion-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: var(--radius-md);
+    background: var(--gray-100);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--primary);
+    font-size: 0.875rem;
+    flex-shrink: 0;
+}
+
+.suggestion-icon.user {
+    background: #dcfce7;
+    color: #166534;
+}
+
+.suggestion-icon.category {
+    background: #fee2e2;
+    color: #991b1b;
+}
+
+.suggestion-icon.admin {
+    background: #ede9fe;
+    color: #6b21a8;
+}
+
+.suggestion-icon img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: var(--radius-md);
+}
+
+.suggestion-content {
+    flex: 1;
+}
+
+.suggestion-title {
+    font-weight: 600;
+    font-size: 0.9375rem;
+    margin-bottom: 0.125rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.suggestion-subtitle {
+    font-size: 0.75rem;
+    color: var(--gray-600);
+}
+
+.suggestion-badge {
+    padding: 0.125rem 0.5rem;
+    background: var(--gray-200);
+    border-radius: 9999px;
+    font-size: 0.625rem;
+    font-weight: 600;
+    color: var(--gray-700);
+}
+
+.suggestion-badge.admin {
+    background: #8b5cf6;
+    color: white;
+}
+
+.loading-suggestions {
+    text-align: center;
+    padding: 2rem;
+    color: var(--gray-500);
+}
+
+.empty-suggestions {
+    text-align: center;
+    padding: 2rem;
+    color: var(--gray-500);
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const searchInput = document.getElementById('searchInput');
+    const dropdown = document.getElementById('autocompleteDropdown');
+    const dropdownBody = document.getElementById('autocompleteBody');
+    const searchForm = document.getElementById('searchForm');
+    
+    let debounceTimer;
+    let currentHighlightIndex = -1;
+    let currentSuggestions = [];
+    
+    // Handle input changes for autocomplete
+    searchInput.addEventListener('input', function() {
+        clearTimeout(debounceTimer);
+        const query = this.value.trim();
+        
+        if (query.length >= 2) {
+            debounceTimer = setTimeout(() => {
+                fetchSuggestions(query);
+            }, 300);
+        } else {
+            dropdown.style.display = 'none';
+        }
+    });
+    
+    // Handle keyboard navigation
+    searchInput.addEventListener('keydown', function(e) {
+        if (dropdown.style.display !== 'block') return;
+        
+        const items = document.querySelectorAll('.suggestion-item');
+        
+        switch(e.key) {
+            case 'ArrowDown':
+                e.preventDefault();
+                currentHighlightIndex = (currentHighlightIndex + 1) % items.length;
+                highlightSuggestion(items[currentHighlightIndex]);
+                break;
+                
+            case 'ArrowUp':
+                e.preventDefault();
+                currentHighlightIndex = (currentHighlightIndex - 1 + items.length) % items.length;
+                highlightSuggestion(items[currentHighlightIndex]);
+                break;
+                
+            case 'Enter':
+                if (currentHighlightIndex >= 0 && items[currentHighlightIndex]) {
+                    e.preventDefault();
+                    items[currentHighlightIndex].click();
+                }
+                break;
+                
+            case 'Escape':
+                dropdown.style.display = 'none';
+                break;
+        }
+    });
+    
+    // Handle form submission
+    searchForm.addEventListener('submit', function(e) {
+        // Only prevent if we're about to navigate to a suggestion
+        if (currentHighlightIndex >= 0) {
+            e.preventDefault();
+        }
+    });
+    
+    // Close dropdown when clicking outside
+    document.addEventListener('click', function(e) {
+        if (!searchInput.contains(e.target) && !dropdown.contains(e.target)) {
+            dropdown.style.display = 'none';
+        }
+    });
+    
+    function fetchSuggestions(query) {
+        fetch(`/search/suggestions/?q=${encodeURIComponent(query)}`, {
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            renderSuggestions(data, query);
+        })
+        .catch(error => {
+            console.error('Error fetching suggestions:', error);
+        });
+    }
+    
+    function renderSuggestions(data, query) {
+        currentSuggestions = [];
+        dropdownBody.innerHTML = '';
+        
+        let hasResults = false;
+        
+        // Posts
+        if (data.posts && data.posts.length > 0) {
+            hasResults = true;
+            addGroupTitle('Posts');
+            data.posts.forEach(post => {
+                currentSuggestions.push({ type: 'post', data: post });
+                dropdownBody.appendChild(createPostSuggestion(post));
+            });
+        }
+        
+        // Users
+        if (data.users && data.users.length > 0) {
+            hasResults = true;
+            addGroupTitle('Users');
+            data.users.forEach(user => {
+                currentSuggestions.push({ type: 'user', data: user });
+                dropdownBody.appendChild(createUserSuggestion(user));
+            });
+        }
+        
+        // Categories
+        if (data.categories && data.categories.length > 0) {
+            hasResults = true;
+            addGroupTitle('Categories');
+            data.categories.forEach(category => {
+                currentSuggestions.push({ type: 'category', data: category });
+                dropdownBody.appendChild(createCategorySuggestion(category));
+            });
+        }
+        
+        // Quick Links
+        if (data.quick_links && data.quick_links.length > 0) {
+            hasResults = true;
+            addGroupTitle('Quick Links');
+            data.quick_links.forEach(link => {
+                currentSuggestions.push({ type: 'quick_link', data: link });
+                dropdownBody.appendChild(createQuickLinkSuggestion(link));
+            });
+        }
+        
+        // Admin suggestions (if any)
+        if (data.admin && data.admin.length > 0) {
+            hasResults = true;
+            addGroupTitle('Admin Area', 'admin');
+            data.admin.forEach(adminItem => {
+                currentSuggestions.push({ type: 'admin', data: adminItem });
+                dropdownBody.appendChild(createAdminSuggestion(adminItem));
+            });
+        }
+        
+        if (!hasResults) {
+            dropdownBody.innerHTML = '<div class="empty-suggestions">No suggestions found</div>';
+        }
+        
+        dropdown.style.display = 'block';
+        currentHighlightIndex = -1;
+    }
+    
+    function addGroupTitle(title, className = '') {
+        const groupTitle = document.createElement('div');
+        groupTitle.className = 'group-title';
+        if (className) {
+            groupTitle.classList.add(className);
+        }
+        groupTitle.textContent = title;
+        dropdownBody.appendChild(groupTitle);
+    }
+    
+    function createPostSuggestion(post) {
+        const item = document.createElement('a');
+        item.href = post.url;
+        item.className = 'suggestion-item';
+        
+        item.innerHTML = `
+            <div class="suggestion-icon">
+                <i class="fas fa-file-alt"></i>
+            </div>
+            <div class="suggestion-content">
+                <div class="suggestion-title">${escapeHtml(post.title)}</div>
+                <div class="suggestion-subtitle">${escapeHtml(post.category)}</div>
+            </div>
+        `;
+        
+        item.addEventListener('mouseenter', () => {
+            removeHighlight();
+            item.classList.add('highlighted');
+            currentHighlightIndex = Array.from(item.parentNode.children).indexOf(item) - 1;
+        });
+        
+        return item;
+    }
+    
+    function createUserSuggestion(user) {
+        const item = document.createElement('a');
+        item.href = user.url;
+        item.className = 'suggestion-item';
+        
+        item.innerHTML = `
+            <div class="suggestion-icon user">
+                ${user.avatar ? `<img src="${user.avatar}" alt="${user.username}">` : `<i class="fas fa-user"></i>`}
+            </div>
+            <div class="suggestion-content">
+                <div class="suggestion-title">
+                    ${escapeHtml(user.full_name || user.username)}
+                    ${user.full_name ? `<span class="suggestion-badge">@${escapeHtml(user.username)}</span>` : ''}
+                </div>
+                <div class="suggestion-subtitle">${escapeHtml(user.full_name ? user.username : '')}</div>
+            </div>
+        `;
+        
+        return item;
+    }
+    
+    function createCategorySuggestion(category) {
+        const item = document.createElement('a');
+        item.href = category.url;
+        item.className = 'suggestion-item';
+        
+        item.innerHTML = `
+            <div class="suggestion-icon category">
+                <i class="fas fa-folder"></i>
+            </div>
+            <div class="suggestion-content">
+                <div class="suggestion-title">
+                    ${escapeHtml(category.name)}
+                    <span class="suggestion-badge">${category.post_count} posts</span>
+                </div>
+            </div>
+        `;
+        
+        return item;
+    }
+    
+    function createQuickLinkSuggestion(link) {
+        const item = document.createElement('a');
+        item.href = link.url;
+        item.className = 'suggestion-item';
+        
+        item.innerHTML = `
+            <div class="suggestion-icon">
+                <i class="fas fa-${link.icon}"></i>
+            </div>
+            <div class="suggestion-content">
+                <div class="suggestion-title">${escapeHtml(link.text)}</div>
+            </div>
+        `;
+        
+        return item;
+    }
+    
+    function createAdminSuggestion(adminItem) {
+        const item = document.createElement('a');
+        item.href = adminItem.url;
+        item.className = 'suggestion-item';
+        
+        const badgeHtml = adminItem.badge ? `<span class="suggestion-badge admin">${adminItem.badge}</span>` : '';
+        
+        item.innerHTML = `
+            <div class="suggestion-icon admin">
+                <i class="fas fa-${adminItem.icon}"></i>
+            </div>
+            <div class="suggestion-content">
+                <div class="suggestion-title">
+                    ${escapeHtml(adminItem.text)}
+                    ${badgeHtml}
+                </div>
+            </div>
+        `;
+        
+        return item;
+    }
+    
+    function highlightSuggestion(item) {
+        removeHighlight();
+        if (item) {
+            item.classList.add('highlighted');
+            item.scrollIntoView({ block: 'nearest' });
+        }
+    }
+    
+    function removeHighlight() {
+        document.querySelectorAll('.suggestion-item').forEach(item => {
+            item.classList.remove('highlighted');
+        });
+    }
+    
+    // Helper function to escape HTML
+    function escapeHtml(text) {
+        if (!text) return '';
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+});
+
+// Clear search input
+function clearSearch() {
+    const input = document.getElementById('searchInput');
+    input.value = '';
+    input.focus();
+    document.getElementById('autocompleteDropdown').style.display = 'none';
+}
+
+// Close autocomplete dropdown
+function closeAutocomplete() {
+    document.getElementById('autocompleteDropdown').style.display = 'none';
+}
+</script>
+{% endblock %}

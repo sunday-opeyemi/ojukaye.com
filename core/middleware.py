@@ -3,7 +3,57 @@ from django.shortcuts import redirect
 from django.urls import reverse
 from django.utils.deprecation import MiddlewareMixin
 from django.contrib import messages
+from django.utils.cache import add_never_cache_headers
+import json
 
+class MessageToModalMiddleware(MiddlewareMixin):
+    """
+    Convert Django messages to modal display
+    """
+    def process_response(self, request, response):
+        # Check if there are messages and this is not an AJAX request
+        if hasattr(request, '_messages') and not request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            message_list = []
+            storage = messages.get_messages(request)
+            
+            for message in storage:
+                message_list.append({
+                    'message': str(message),
+                    'tags': message.tags,
+                    'level': message.level
+                })
+            
+            if message_list:
+                # Store messages in session for modal display
+                request.session['modal_messages'] = message_list
+                
+                # Clear the messages so they don't appear in regular alerts
+                storage.used = True
+        
+        return response
+
+
+class DisableBrowserCacheMiddleware:
+    """
+    Disable browser caching during development
+    This ensures templates and CSS changes appear immediately
+    """
+    def __init__(self, get_response):
+        self.get_response = get_response
+
+    def __call__(self, request):
+        response = self.get_response(request)
+        
+        # Only disable cache in debug mode
+        if settings.DEBUG:
+            add_never_cache_headers(response)
+            response['Cache-Control'] = 'no-cache, no-store, must-revalidate, private'
+            response['Pragma'] = 'no-cache'
+            response['Expires'] = '0'
+        
+        return response
+
+        
 class StaticFilesDebugMiddleware:
     def __init__(self, get_response):
         self.get_response = get_response

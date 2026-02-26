@@ -1,0 +1,404 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Contact Us - Ojukaye{% endblock %}
+
+{% block content %}
+<div class="contact-page">
+    <div class="contact-header">
+        <div class="container">
+            <h1><i class="fas fa-envelope"></i> Get in Touch</h1>
+            <p>Have questions, feedback, or need assistance? We're here to help!</p>
+        </div>
+    </div>
+
+    <div class="contact-grid">
+        <!-- Contact Form -->
+        <div class="contact-form-section">
+            <h2>Send us a Message</h2>
+            <form method="post" action="{% url 'contact' %}" class="contact-form">
+                {% csrf_token %}
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="name">Your Name *</label>
+                        <input type="text" id="name" name="name" required 
+                               placeholder="Enter your full name"
+                               value="{{ user.get_full_name|default:'' }}">
+                    </div>
+                    <div class="form-group">
+                        <label for="email">Email Address *</label>
+                        <input type="email" id="email" name="email" required 
+                               placeholder="your@email.com"
+                               value="{{ user.email|default:'' }}">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="subject">Subject *</label>
+                    <select id="subject" name="subject" required>
+                        <option value="">Select a topic</option>
+                        <option value="general">General Inquiry</option>
+                        <option value="support">Technical Support</option>
+                        <option value="business">Business Inquiry</option>
+                        <option value="advertising">Advertising</option>
+                        <option value="press">Press/Media</option>
+                        <option value="feedback">Feedback</option>
+                        <option value="report">Report an Issue</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="message">Message *</label>
+                    <textarea id="message" name="message" rows="6" required 
+                              placeholder="How can we help you?"></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label class="checkbox-label">
+                        <input type="checkbox" name="copy_me">
+                        Send a copy to my email
+                    </label>
+                </div>
+
+                <button type="submit" class="btn btn-primary btn-lg">
+                    <i class="fas fa-paper-plane"></i> Send Message
+                </button>
+            </form>
+        </div>
+
+        <!-- Contact Information -->
+        <div class="contact-info-section">
+            <div class="info-card">
+                <h3><i class="fas fa-map-marker-alt"></i> Visit Us</h3>
+                <address>
+                    Ojukaye<br>
+                    <br>
+                    <br>
+                    Nigeria
+                </address>
+            </div>
+
+            <div class="info-card">
+                <h3><i class="fas fa-phone-alt"></i> Call Us</h3>
+                <p>
+                    <a href="tel:+2341234567890"></a><br>
+                    <a href="tel:+2349876543210"></a>
+                </p>
+                <small>Mon-Fri, 9am - 6pm (WAT)</small>
+            </div>
+
+            <div class="info-card">
+                <h3><i class="fas fa-envelope"></i> Email Us</h3>
+                <p>
+                    <a href="mailto:support@ojukaye.com">support@ojukaye.com</a><br>
+                    <a href="mailto:business@ojukaye.com">business@ojukaye.com</a><br>
+                    <a href="mailto:press@ojukaye.com">press@ojukaye.com</a>
+                </p>
+            </div>
+
+            <div class="info-card social-card">
+                <h3><i class="fas fa-share-alt"></i> Follow Us</h3>
+                <div class="social-links">
+                    <a href="#" class="social-link" target="_blank">
+                        <i class="fab fa-twitter"></i>
+                    </a>
+                    <a href="#" class="social-link" target="_blank">
+                        <i class="fab fa-facebook"></i>
+                    </a>
+                    <a href="#" class="social-link" target="_blank">
+                        <i class="fab fa-instagram"></i>
+                    </a>
+                    <a href="#" class="social-link" target="_blank">
+                        <i class="fab fa-linkedin"></i>
+                    </a>
+                    <a href="#" class="social-link" target="_blank">
+                        <i class="fab fa-youtube"></i>
+                    </a>
+                </div>
+            </div>
+
+            <div class="info-card response-card">
+                <i class="fas fa-clock"></i>
+                <h4>Response Time</h4>
+                <p>We typically respond within 24-48 hours during business days.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Map Section -->
+    <div class="map-section">
+        <iframe 
+            src="""
+            style="border:0;" 
+            allowfullscreen="" 
+            loading="lazy">
+        </iframe>
+    </div>
+
+    <!-- FAQ Preview -->
+    <div class="faq-preview">
+        <div class="container">
+            <h2>Quick Answers</h2>
+            <div class="faq-grid">
+                <div class="faq-item">
+                    <h4>How do I reset my password?</h4>
+                    <p>Click on "Forgot Password" on the login page and follow the instructions sent to your email.</p>
+                    <a href="{% url 'help_center' %}?article=reset-password">Learn more →</a>
+                </div>
+                <div class="faq-item">
+                    <h4>How do I report a post?</h4>
+                    <p>Click the three dots on any post and select "Report" to flag inappropriate content.</p>
+                    <a href="{% url 'help_center' %}?article=reporting">Learn more →</a>
+                </div>
+                <div class="faq-item">
+                    <h4>How do I verify my account?</h4>
+                    <p>Business accounts can request verification through your profile settings.</p>
+                    <a href="{% url 'help_center' %}?article=verification">Learn more →</a>
+                </div>
+            </div>
+            <div class="faq-cta">
+                <a href="{% url 'help_center' %}" class="btn btn-outline">
+                    Visit Help Center <i class="fas fa-arrow-right"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.contact-page {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 2rem 1rem;
+}
+
+.contact-header {
+    text-align: center;
+    margin-bottom: 3rem;
+    padding: 2rem;
+    background: linear-gradient(135deg, var(--primary-light), rgba(37, 99, 235, 0.05));
+    border-radius: var(--radius-lg);
+}
+
+.contact-header h1 {
+    font-size: 2.5rem;
+    font-weight: 800;
+    margin-bottom: 0.5rem;
+}
+
+.contact-header h1 i {
+    color: var(--primary);
+    margin-right: 0.5rem;
+}
+
+.contact-grid {
+    display: grid;
+    grid-template-columns: 1fr 350px;
+    gap: 2rem;
+    margin-bottom: 3rem;
+}
+
+.contact-form-section {
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    padding: 2rem;
+}
+
+.contact-form-section h2 {
+    margin-bottom: 2rem;
+    font-size: 1.5rem;
+}
+
+.contact-form .form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+}
+
+.form-group {
+    margin-bottom: 1.5rem;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 500;
+    color: var(--text-primary);
+}
+
+.form-group input,
+.form-group select,
+.form-group textarea {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius);
+    background: var(--input-bg);
+    color: var(--text-primary);
+    transition: all 0.2s;
+}
+
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+.checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    cursor: pointer;
+}
+
+.checkbox-label input[type="checkbox"] {
+    width: auto;
+}
+
+.contact-info-section {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.info-card {
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    padding: 1.5rem;
+}
+
+.info-card h3 {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+    color: var(--primary);
+}
+
+.info-card address,
+.info-card p {
+    color: var(--text-secondary);
+    line-height: 1.6;
+}
+
+.info-card a {
+    color: var(--text-primary);
+    text-decoration: none;
+    transition: color 0.2s;
+}
+
+.info-card a:hover {
+    color: var(--primary);
+}
+
+.social-links {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.social-link {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: var(--hover-bg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-primary);
+    font-size: 1.25rem;
+    transition: all 0.2s;
+}
+
+.social-link:hover {
+    background: var(--primary);
+    color: white;
+    transform: translateY(-2px);
+}
+
+.response-card {
+    text-align: center;
+    background: linear-gradient(135deg, var(--primary-light), var(--primary));
+    color: white;
+}
+
+.response-card i {
+    font-size: 2rem;
+    margin-bottom: 0.5rem;
+}
+
+.response-card h4 {
+    margin-bottom: 0.5rem;
+}
+
+.response-card p {
+    opacity: 0.9;
+}
+
+.map-section {
+    margin-bottom: 3rem;
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    border: 1px solid var(--border-color);
+}
+
+.faq-preview {
+    background: var(--bg-secondary);
+    padding: 3rem;
+    border-radius: var(--radius-lg);
+    text-align: center;
+}
+
+.faq-preview h2 {
+    margin-bottom: 2rem;
+}
+
+.faq-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 2rem;
+    margin-bottom: 2rem;
+    text-align: left;
+}
+
+.faq-item h4 {
+    margin-bottom: 0.5rem;
+    color: var(--primary);
+}
+
+.faq-item p {
+    color: var(--text-secondary);
+    margin-bottom: 0.5rem;
+    font-size: 0.9375rem;
+}
+
+.faq-item a {
+    color: var(--text-tertiary);
+    text-decoration: none;
+    font-size: 0.875rem;
+    transition: color 0.2s;
+}
+
+.faq-item a:hover {
+    color: var(--primary);
+}
+
+@media (max-width: 768px) {
+    .contact-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .contact-form .form-row {
+        grid-template-columns: 1fr;
+    }
+    
+    .faq-grid {
+        grid-template-columns: 1fr;
+    }
+}
+</style>
+{% endblock %}

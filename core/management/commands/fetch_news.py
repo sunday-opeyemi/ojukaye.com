@@ -17,13 +17,13 @@ class Command(BaseCommand):
         parser.add_argument(
             '--days',
             type=int,
-            default=7,
+            default=1,
             help='Days back to fetch (default: 7)'
         )
         parser.add_argument(
             '--limit',
             type=int,
-            default=100,
+            default=50,
             help='Articles per source (default: 100)'
         )
         parser.add_argument(
@@ -50,17 +50,17 @@ class Command(BaseCommand):
         )
     
     def handle(self, *args, **options):
-        days = options['days']
-        limit = options['limit']
+        days = options['days'] 
+        limit = min(options['limit'], 100)
         workers = options['workers']
         sources = options['sources'].lower()
         extract_full = not options['no_extract']
         quiet = options['quiet']
         
         self.stdout.write(self.style.SUCCESS('=' * 60))
-        self.stdout.write(self.style.SUCCESS('🚀 UNIFIED NEWS FETCHER - The One Ring of News'))
+        self.stdout.write(self.style.SUCCESS('🚀 UNIFIED NEWS FETCHER'))
         self.stdout.write(self.style.SUCCESS('=' * 60))
-        self.stdout.write(f'📅 Days: {days}')
+        self.stdout.write(f'📅 Days: {days}')  # This will show 1
         self.stdout.write(f'📊 Limit: {limit}')
         self.stdout.write(f'🔧 Workers: {workers}')
         self.stdout.write(f'📡 Sources: {sources}')

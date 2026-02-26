@@ -916,21 +916,20 @@ function initAuthAnimations() {
     document.head.appendChild(style);
 }
 
-/**
- * Initialize remember me functionality
- */
+// ===== REMEMBER ME FUNCTIONALITY =====
 function initRememberMe() {
-    const rememberCheckbox = document.querySelector('#remember');
-    const usernameInput = document.querySelector('#id_username');
+    const rememberCheckbox = document.getElementById('remember');
+    const usernameInput = document.getElementById('id_username');
     
     if (rememberCheckbox && usernameInput) {
-        // Check for saved username
+        // Load saved username
         const savedUsername = localStorage.getItem('remembered_username');
         if (savedUsername) {
             usernameInput.value = savedUsername;
             rememberCheckbox.checked = true;
         }
         
+        // Save username when checkbox is checked
         rememberCheckbox.addEventListener('change', function() {
             if (this.checked && usernameInput.value.trim()) {
                 localStorage.setItem('remembered_username', usernameInput.value.trim());
@@ -939,6 +938,7 @@ function initRememberMe() {
             }
         });
         
+        // Update saved username when input changes
         usernameInput.addEventListener('input', function() {
             if (rememberCheckbox.checked && this.value.trim()) {
                 localStorage.setItem('remembered_username', this.value.trim());
@@ -946,7 +946,6 @@ function initRememberMe() {
         });
     }
 }
-
 /**
  * Initialize social login buttons
  */
@@ -1218,4 +1217,177 @@ document.addEventListener('DOMContentLoaded', function() {
     
     window.addEventListener('resize', adjustFontSizes);
     adjustFontSizes();
+});
+// ===== PASSWORD TOGGLE FIX FOR AUTH PAGES =====
+function initPasswordToggles() {
+    console.log('Initializing password toggles');
+    const toggleButtons = document.querySelectorAll('.password-toggle');
+    
+    toggleButtons.forEach(button => {
+        // Remove any existing listeners to prevent duplicates
+        button.removeEventListener('click', handlePasswordToggle);
+        button.addEventListener('click', handlePasswordToggle);
+    });
+}
+
+function handlePasswordToggle(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    const button = e.currentTarget;
+    const wrapper = button.closest('.password-wrapper');
+    if (!wrapper) return;
+    
+    const passwordInput = wrapper.querySelector('input[type="password"], input[type="text"]');
+    const icon = button.querySelector('i');
+    
+    if (!passwordInput || !icon) return;
+    
+    if (passwordInput.type === 'password') {
+        passwordInput.type = 'text';
+        icon.classList.remove('fa-eye');
+        icon.classList.add('fa-eye-slash');
+    } else {
+        passwordInput.type = 'password';
+        icon.classList.remove('fa-eye-slash');
+        icon.classList.add('fa-eye');
+    }
+    
+    // Keep focus on input
+    passwordInput.focus();
+}
+
+// ===== BUSINESS FIELDS TOGGLE =====
+function initBusinessFieldsToggle() {
+    const accountRadios = document.querySelectorAll('input[name="account_type"]');
+    const businessFields = document.querySelector('.business-fields');
+    
+    if (!accountRadios.length || !businessFields) return;
+    
+    function toggleBusinessFields() {
+        const selectedRadio = document.querySelector('input[name="account_type"]:checked');
+        if (selectedRadio && selectedRadio.value === 'business') {
+            businessFields.style.display = 'block';
+            // Make business fields required
+            const requiredInputs = businessFields.querySelectorAll('input[required]');
+            requiredInputs.forEach(input => input.required = true);
+        } else {
+            businessFields.style.display = 'none';
+            // Remove required from business fields
+            const inputs = businessFields.querySelectorAll('input');
+            inputs.forEach(input => input.required = false);
+        }
+    }
+    
+    // Initial state
+    toggleBusinessFields();
+    
+    // Add event listeners
+    accountRadios.forEach(radio => {
+        radio.addEventListener('change', toggleBusinessFields);
+    });
+}
+// ===== QUICK FLASH MESSAGES =====
+function initFlashMessages() {
+    const alerts = document.querySelectorAll('.alert');
+    
+    alerts.forEach(alert => {
+        // Auto-dismiss after 3 seconds
+        setTimeout(() => {
+            alert.style.transition = 'opacity 0.3s ease';
+            alert.style.opacity = '0';
+            setTimeout(() => alert.remove(), 300);
+        }, 3000);
+        
+        // Add close button if not present
+        if (!alert.querySelector('.alert-close')) {
+            const closeBtn = document.createElement('button');
+            closeBtn.className = 'alert-close';
+            closeBtn.innerHTML = '<i class="fas fa-times"></i>';
+            closeBtn.addEventListener('click', () => alert.remove());
+            alert.appendChild(closeBtn);
+        }
+    });
+}
+document.addEventListener('DOMContentLoaded', function() {
+    // Your existing init functions
+    initMobileMenu();
+    initImageFallback();
+    initInfiniteScroll();
+    initCommentReplies();
+    initLikeButtons();
+    initBookmarkButtons();
+    initShareButtons();
+    initFollowButtons();
+    initNewsFilters();
+    initBannerSlider();
+    initPostCreation();
+    initCommentLoadMore();
+    initSearchAutocomplete();
+    initDarkMode();
+    
+    // NEW: Auth page specific functions
+    if (document.querySelector('.auth-page')) {
+        initPasswordToggles();
+        initBusinessFieldsToggle();
+        initAuthFormValidation();
+        initRememberMe();
+        initFlashMessages();
+    }
+    
+    // Fix profile text visibility
+    fixProfileTextVisibility();
+    
+    // Set up mutation observer for dynamic content
+    setupMutationObserver();
+});
+
+// Add mutation observer to handle dynamically loaded content
+function setupMutationObserver() {
+    const observer = new MutationObserver(function(mutations) {
+        mutations.forEach(function(mutation) {
+            if (mutation.addedNodes.length) {
+                // Reinitialize password toggles if new auth content is added
+                if (document.querySelector('.auth-page')) {
+                    initPasswordToggles();
+                }
+                // Reinitialize image fallback
+                initImageFallback();
+                // Fix profile text
+                fixProfileTextVisibility();
+            }
+        });
+    });
+    
+    observer.observe(document.body, {
+        childList: true,
+        subtree: true
+    });
+}
+// ===== MODAL MESSAGE HANDLER =====
+function checkForModalMessages() {
+    // Check if there are messages in session to display as modal
+    fetch('/api/get-modal-messages/', {
+        method: 'GET',
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.messages && data.messages.length > 0) {
+            // Show each message as modal (with slight delay between)
+            data.messages.forEach((msg, index) => {
+                setTimeout(() => {
+                    showMessageModal(msg.message, msg.tags || 'info');
+                }, index * 500);
+            });
+        }
+    })
+    .catch(error => console.error('Error checking messages:', error));
+}
+
+// Call this on page load
+document.addEventListener('DOMContentLoaded', function() {
+    checkForModalMessages();
 });

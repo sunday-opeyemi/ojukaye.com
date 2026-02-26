@@ -1,5 +1,3 @@
-# core/news_fetcher_unified.py - ENHANCED VERSION
-
 import requests
 import feedparser
 import json
@@ -31,10 +29,9 @@ class UnifiedNewsFetcher:
     
     def __init__(self):
         self.session = self._create_robust_session()
-        self.cloudscraper = cloudscraper.create_scraper()  # For Cloudflare sites
+        self.cloudscraper = cloudscraper.create_scraper()  
         self.setup_newspaper_config()
         
-        # Skip these domains (consent pages, etc.)
         self.skip_domains = [
             'consent.yahoo.com',
             'consent.google.com',
@@ -43,7 +40,6 @@ class UnifiedNewsFetcher:
             'terms-of-service'
         ]
         
-        # Known problematic sites that need special handling
         self.problematic_sites = {
             'thenewhumanitarian.org': {'skip_ssl': True, 'timeout': 30},
             'france24.com': {'use_cloudscraper': True},
@@ -547,89 +543,105 @@ class UnifiedNewsFetcher:
         
         return result
     
-    def fetch_from_newsapi(self, api_key: str, days: int = 7, limit: int = 100) -> List[Dict]:
-        """Fetch articles from NewsAPI"""
-        articles = []
-        from_date = (timezone.now() - timedelta(days=days)).strftime('%Y-%m-%d')
-        
-        # Comprehensive queries
-        queries = [
-            # Nigeria focus
-            {'q': 'Nigeria', 'pageSize': limit},
-            {'q': 'Lagos', 'pageSize': limit},
-            {'q': 'Abuja', 'pageSize': limit},
-            {'q': '"Nigerian government"', 'pageSize': limit},
-            {'q': '"Nigerian economy" OR naira', 'pageSize': limit},
-            {'q': '"Super Eagles" OR "Nigerian football"', 'pageSize': limit},
-            {'q': 'Nollywood OR "Nigerian movies"', 'pageSize': limit},
-            {'q': 'Tinubu OR APC OR PDP', 'pageSize': limit},
-            {'q': '"Nigerian music" OR Afrobeats', 'pageSize': limit},
+    def fetch_from_newsapi(self, api_key: str, days: int = 1, limit: int = 50) -> List[Dict]:
+            """Fetch articles from NewsAPI with proper limits"""
+            articles = []
+            from_date = (timezone.now() - timedelta(days=days)).strftime('%Y-%m-%d')
             
-            # African news
-            {'q': 'Africa', 'pageSize': limit},
-            {'q': 'Ghana', 'pageSize': limit},
-            {'q': 'Kenya', 'pageSize': limit},
-            {'q': '"South Africa"', 'pageSize': limit},
-            {'q': '"African Union" OR AU', 'pageSize': limit},
-        ]
-        
-        for query in queries:
-            try:
-                url = "https://newsapi.org/v2/everything"
-                params = {
-                    'q': query['q'],
-                    'apiKey': api_key,
-                    'pageSize': min(query['pageSize'], 100),
-                    'language': 'en',
-                    'sortBy': 'publishedAt',
-                    'from': from_date,
-                }
+            # Adjust pageSize based on limit
+            page_size = min(limit, 100)  # NewsAPI max is 100
+            
+            # Focused queries for Nigerian/African news
+            queries = [
+                # Nigeria focus - primary
+                {'q': 'Nigeria', 'pageSize': min(30, page_size)},
+                {'q': 'Lagos', 'pageSize': min(15, page_size)},
+                {'q': 'Abuja', 'pageSize': min(10, page_size)},
                 
-                logger.info(f"NewsAPI: {query['q']}")
-                
-                response = requests.get(url, params=params, timeout=15)
-                
-                if response.status_code == 200:
-                    data = response.json()
+                # African news
+                {'q': 'Africa', 'pageSize': min(20, page_size)},
+                {'q': 'Ghana OR Kenya OR "South Africa"', 'pageSize': min(15, page_size)},
+            ]
+            
+            # Adjust total queries based on limit
+            if limit <= 30:
+                queries = queries[:3]  # Only Nigeria-focused queries for small limits
+            
+            total_fetched = 0
+            max_to_fetch = limit
+            
+            logger.info(f"📊 NewsAPI: Will fetch up to {max_to_fetch} articles total")
+            
+            for query in queries:
+                if total_fetched >= max_to_fetch:
+                    break
                     
-                    if data.get('status') == 'ok':
-                        for item in data.get('articles', []):
-                            if not item.get('title') or item['title'] == '[Removed]':
-                                continue
-                            if not item.get('url'):
-                                continue
+                try:
+                    url = "https://newsapi.org/v2/everything"
+                    params = {
+                        'q': query['q'],
+                        'apiKey': api_key,
+                        'pageSize': min(query['pageSize'], max_to_fetch - total_fetched),
+                        'language': 'en',
+                        'sortBy': 'publishedAt',
+                        'from': from_date,
+                    }
+                    
+                    logger.info(f"NewsAPI Query: {query['q']} (pageSize: {params['pageSize']})")
+                    
+                    response = requests.get(url, params=params, timeout=15)
+                    
+                    if response.status_code == 200:
+                        data = response.json()
+                        
+                        if data.get('status') == 'ok':
+                            fetched = 0
+                            for item in data.get('articles', []):
+                                if total_fetched >= max_to_fetch:
+                                    break
+                                    
+                                if not item.get('title') or item['title'] == '[Removed]':
+                                    continue
+                                if not item.get('url'):
+                                    continue
+                                
+                                articles.append({
+                                    'title': item['title'],
+                                    'url': item['url'],
+                                    'description': item.get('description', ''),
+                                    'content': item.get('content', ''),
+                                    'image': item.get('urlToImage', ''),
+                                    'source': item.get('source', {}).get('name', 'Unknown'),
+                                    'published_at': item.get('publishedAt', ''),
+                                    'author': item.get('author', ''),
+                                    'source_type': 'newsapi',
+                                    'search_query': query['q']
+                                })
+                                
+                                total_fetched += 1
+                                fetched += 1
                             
-                            articles.append({
-                                'title': item['title'],
-                                'url': item['url'],
-                                'description': item.get('description', ''),
-                                'content': item.get('content', ''),
-                                'image': item.get('urlToImage', ''),
-                                'source': item.get('source', {}).get('name', 'Unknown'),
-                                'published_at': item.get('publishedAt', ''),
-                                'author': item.get('author', ''),
-                                'source_type': 'newsapi',
-                                'search_query': query['q']
-                            })
-                        
-                        logger.info(f"  Found {len(data.get('articles', []))} articles")
+                            logger.info(f"  ✅ Found {fetched} articles")
+                        else:
+                            logger.error(f"  ❌ API Error: {data.get('message', 'Unknown error')}")
+                            
+                    elif response.status_code == 426:
+                        logger.warning("  ⚠️ NewsAPI upgrade required")
+                        break  # Stop if API key needs upgrade
                     else:
-                        logger.error(f"  API Error: {data.get('message', 'Unknown error')}")
+                        logger.error(f"  ❌ HTTP {response.status_code}")
                         
-                elif response.status_code == 426:
-                    logger.warning("  NewsAPI upgrade required")
-                else:
-                    logger.error(f"  HTTP {response.status_code}")
-                    
-            except Exception as e:
-                logger.error(f"  Error: {e}")
+                except Exception as e:
+                    logger.error(f"  ❌ Error: {e}")
+                
+                # Rate limiting - small delay between queries
+                time.sleep(1)
             
-            time.sleep(1)  # Rate limiting
-        
-        return articles
+            logger.info(f"📊 NewsAPI total: {len(articles)} articles fetched")
+            return articles
     
-    def fetch_from_rss(self) -> List[Dict]:
-        """Fetch articles from RSS feeds"""
+    def fetch_from_rss(self, limit: int = 50) -> List[Dict]:
+        """Fetch articles from RSS feeds with proper limits"""
         articles = []
         
         # Working RSS feeds
@@ -637,23 +649,33 @@ class UnifiedNewsFetcher:
             ('BBC Africa', 'http://feeds.bbci.co.uk/news/world/africa/rss.xml'),
             ('Al Jazeera Africa', 'https://www.aljazeera.com/xml/rss/all.xml'),
             ('Reuters Africa', 'http://feeds.reuters.com/reuters/AFRICATopNews'),
-            ('CNN Africa', 'http://rss.cnn.com/rss/edition_africa.rss'),
             ('Premium Times', 'https://www.premiumtimesng.com/feed'),
             ('Vanguard', 'https://www.vanguardngr.com/feed'),
             ('Punch', 'https://punchng.com/feed'),
-            ('The Guardian Nigeria', 'https://guardian.ng/feed'),
-            ('Daily Trust', 'https://dailytrust.com/feed'),
-            ('BusinessDay', 'https://businessday.ng/feed'),
         ]
         
+        total_fetched = 0
+        max_to_fetch = limit
+        per_feed_limit = max(5, min(15, limit // len(rss_feeds)))  # Distribute limit across feeds
+        
+        logger.info(f"📡 RSS: Will fetch up to {max_to_fetch} articles total ({per_feed_limit} per feed)")
+        
         for name, url in rss_feeds:
+            if total_fetched >= max_to_fetch:
+                break
+                
             try:
-                logger.info(f"RSS: {name}")
+                logger.info(f"RSS Feed: {name}")
                 
                 headers = self._get_headers()
                 feed_data = feedparser.parse(url, agent=headers['User-Agent'])
                 
-                entries = feed_data.entries[:20]  # Limit per feed
+                # Calculate how many to take from this feed
+                remaining = max_to_fetch - total_fetched
+                take_from_feed = min(per_feed_limit, remaining, len(feed_data.entries))
+                
+                entries = feed_data.entries[:take_from_feed]
+                fetched = 0
                 
                 for entry in entries:
                     title = entry.get('title', '')
@@ -701,14 +723,19 @@ class UnifiedNewsFetcher:
                         'author': entry.get('author', ''),
                         'source_type': 'rss'
                     })
+                    
+                    total_fetched += 1
+                    fetched += 1
                 
-                logger.info(f"  Found {len(entries)} articles")
+                logger.info(f"  ✅ Found {fetched} articles")
                 
             except Exception as e:
                 logger.error(f"  Error: {e}")
             
-            time.sleep(1)
+            # Small delay between feeds
+            time.sleep(0.5)
         
+        logger.info(f"📡 RSS total: {len(articles)} articles fetched")
         return articles
     
     def process_article(self, article: Dict, extract_full: bool = True) -> Dict:
@@ -885,12 +912,16 @@ class UnifiedNewsFetcher:
         clean = re.sub(r'\s+', ' ', clean).strip()
         return clean
     
-    def fetch_all(self, api_key: str, days: int = 7, limit: int = 100, workers: int = 5, extract_full: bool = True) -> Dict:
-        """Fetch from all sources and return stats"""
+    def fetch_all(self, api_key: str, days: int = 1, limit: int = 50, workers: int = 5, extract_full: bool = True) -> Dict:
+        """Fetch from all sources and return stats - NOW WITH PROPER LIMITS"""
         
         if not self._check_internet():
             logger.error("No internet connection")
             return {'error': 'No internet connection'}
+        
+        logger.info("="*60)
+        logger.info(f"📰 FETCHING NEWS - Last {days} day(s), Max {limit} articles")
+        logger.info("="*60)
         
         stats = {
             'newsapi': 0,
@@ -904,29 +935,34 @@ class UnifiedNewsFetcher:
         }
         
         all_articles = []
+        remaining_limit = limit
         
-        # Fetch from NewsAPI
-        logger.info("Fetching from NewsAPI...")
-        newsapi_articles = self.fetch_from_newsapi(api_key, days=days, limit=limit)
+        # Fetch from NewsAPI (50% of limit)
+        newsapi_limit = min(limit // 2, 50)
+        logger.info(f"\n📰 Fetching from NewsAPI (limit: {newsapi_limit})...")
+        newsapi_articles = self.fetch_from_newsapi(api_key, days=days, limit=newsapi_limit)
         all_articles.extend(newsapi_articles)
         stats['newsapi'] = len(newsapi_articles)
-        logger.info(f"Found {len(newsapi_articles)} NewsAPI articles")
+        remaining_limit -= len(newsapi_articles)
         
-        # Fetch from RSS
-        logger.info("Fetching from RSS feeds...")
-        rss_articles = self.fetch_from_rss()
-        all_articles.extend(rss_articles)
-        stats['rss'] = len(rss_articles)
-        logger.info(f"Found {len(rss_articles)} RSS articles")
+        # Fetch from RSS (remaining limit)
+        rss_limit = min(remaining_limit, 50)
+        if rss_limit > 0:
+            logger.info(f"\n📡 Fetching from RSS feeds (limit: {rss_limit})...")
+            rss_articles = self.fetch_from_rss(limit=rss_limit)
+            all_articles.extend(rss_articles)
+            stats['rss'] = len(rss_articles)
+        
+        logger.info(f"\n📊 TOTAL RAW: {len(all_articles)} articles")
         
         # Remove duplicates
         unique_articles = self.remove_duplicates(all_articles)
         stats['unique'] = len(unique_articles)
-        logger.info(f"Unique articles: {len(unique_articles)} (removed {len(all_articles) - len(unique_articles)} duplicates)")
+        logger.info(f"🔍 UNIQUE: {len(unique_articles)} (removed {len(all_articles) - len(unique_articles)} duplicates)")
         
-        # Process articles
+        # Process articles (extract content and media)
         if unique_articles:
-            logger.info("Extracting full content and media...")
+            logger.info(f"\n🔧 Processing {len(unique_articles)} articles...")
             processed_articles = self.process_articles_parallel(
                 unique_articles, 
                 max_workers=workers,
@@ -939,7 +975,10 @@ class UnifiedNewsFetcher:
                 stats['audio'] += len(article.get('audios', []))
                 stats['images'] += len(article.get('images', []))
             
-            logger.info(f"Media found: {stats['videos']} videos, {stats['audio']} audio, {stats['images']} images")
+            logger.info(f"\n📊 MEDIA FOUND:")
+            logger.info(f"   📹 Videos: {stats['videos']}")
+            logger.info(f"   🎵 Audio: {stats['audio']}")
+            logger.info(f"   🖼️  Images: {stats['images']}")
         
         stats['processed'] = len(processed_articles) if 'processed_articles' in locals() else 0
         

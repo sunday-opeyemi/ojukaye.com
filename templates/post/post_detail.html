@@ -1056,6 +1056,7 @@
     </div>
 </div>
 
+{% endblock %}
 <style>
 /* Additional styles for video/audio playback */
 .video-item:hover {
@@ -1098,244 +1099,427 @@
 }
 </style>
 
+
+
+
+{% block extra_js %}
 <script>
-// Global variables
-const csrfToken = '{{ csrf_token }}';
-const isAuthenticated = {% if user.is_authenticated %}true{% else %}false{% endif %};
+// ==================== GLOBAL VARIABLES ====================
+const CSRF_TOKEN = '{{ csrf_token }}';
+const IS_AUTHENTICATED = {% if user.is_authenticated %}true{% else %}false{% endif %};
 
-// Like Post
-document.querySelectorAll('.like-btn').forEach(btn => {
-    btn.addEventListener('click', async function(e) {
-        e.preventDefault();
-        
-        if (!isAuthenticated) {
-            window.location.href = '/login/?next=' + encodeURIComponent(window.location.pathname);
-            return;
-        }
-        
-        const postId = this.dataset.postId;
-        
-        try {
-            const response = await fetch(`/like/${postId}/`, {
-                method: 'POST',
-                headers: {
-                    'X-CSRFToken': csrfToken,
-                    'X-Requested-With': 'XMLHttpRequest'
-                }
-            });
-            
-            if (response.ok) {
-                const data = await response.json();
-                
-                // Update UI
-                document.getElementById('likeCount').innerHTML = data.like_count;
-                document.getElementById('likeCountBtn').innerHTML = data.like_count;
-                
-                if (data.liked) {
-                    this.classList.add('liked');
-                    this.querySelector('i').classList.remove('far');
-                    this.querySelector('i').classList.add('fas');
-                    this.querySelector('i').style.color = 'var(--danger)';
-                    showNotification('Post liked!', 'success');
-                } else {
-                    this.classList.remove('liked');
-                    this.querySelector('i').classList.remove('fas');
-                    this.querySelector('i').classList.add('far');
-                    this.querySelector('i').style.color = 'var(--gray-500)';
-                    showNotification('Post unliked', 'info');
-                }
-            }
-        } catch (error) {
-            console.error('Error liking post:', error);
-            showNotification('Error liking post', 'error');
-        }
-    });
+// ==================== INITIALIZATION ====================
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('DOM fully loaded - initializing buttons');
+    
+    // Initialize all buttons
+    initAllButtons();
+    
+    // Set up mutation observer to handle dynamically loaded content
+    setupMutationObserver();
 });
 
-// Bookmark Post
-document.querySelectorAll('.bookmark-btn').forEach(btn => {
-    btn.addEventListener('click', async function(e) {
-        e.preventDefault();
-        
-        if (!isAuthenticated) {
-            window.location.href = '/login/?next=' + encodeURIComponent(window.location.pathname);
-            return;
-        }
-        
-        const postId = this.dataset.postId;
-        
-        try {
-            const response = await fetch(`/bookmark/${postId}/`, {
-                method: 'POST',
-                headers: {
-                    'X-CSRFToken': csrfToken,
-                    'X-Requested-With': 'XMLHttpRequest'
-                }
-            });
-            
-            if (response.ok) {
-                const data = await response.json();
-                
-                if (data.bookmarked) {
-                    this.classList.add('bookmarked');
-                    this.querySelector('i').classList.remove('far');
-                    this.querySelector('i').classList.add('fas');
-                    this.querySelector('i').style.color = 'var(--warning)';
-                    showNotification('Post saved to bookmarks!', 'success');
-                } else {
-                    this.classList.remove('bookmarked');
-                    this.querySelector('i').classList.remove('fas');
-                    this.querySelector('i').classList.add('far');
-                    this.querySelector('i').style.color = 'var(--gray-500)';
-                    showNotification('Post removed from bookmarks', 'info');
-                }
-            }
-        } catch (error) {
-            console.error('Error bookmarking post:', error);
-            showNotification('Error bookmarking post', 'error');
-        }
-    });
-});
-
-// Share functionality
-document.querySelectorAll('.share-btn').forEach(btn => {
-    btn.addEventListener('click', function(e) {
-        e.preventDefault();
-        showShareModal();
-    });
-});
-
-// Follow/Unfollow
-document.querySelectorAll('.follow-btn').forEach(btn => {
-    btn.addEventListener('click', async function(e) {
-        e.preventDefault();
-        
-        if (!isAuthenticated) {
-            window.location.href = '/login/?next=' + encodeURIComponent(window.location.pathname);
-            return;
-        }
-        
-        const username = this.dataset.username;
-        
-        try {
-            const response = await fetch(`/profile/${username}/follow/`, {
-                method: 'POST',
-                headers: {
-                    'X-CSRFToken': csrfToken,
-                    'X-Requested-With': 'XMLHttpRequest'
-                }
-            });
-            
-            if (response.ok) {
-                const data = await response.json();
-                
-                if (data.followed) {
-                    this.classList.remove('btn-primary');
-                    this.classList.add('btn-outline');
-                    this.innerHTML = '<i class="fas fa-user-check"></i> Following';
-                    showNotification(`You are now following @${username}`, 'success');
-                } else {
-                    this.classList.remove('btn-outline');
-                    this.classList.add('btn-primary');
-                    this.innerHTML = '<i class="fas fa-user-plus"></i> Follow';
-                    showNotification(`You unfollowed @${username}`, 'info');
-                }
-            }
-        } catch (error) {
-            console.error('Error following user:', error);
-            showNotification('Error following user', 'error');
-        }
-    });
-});
-
-// Comment Functions
-function setReply(username, commentId) {
-    document.getElementById('parentCommentId').value = commentId;
-    document.getElementById('replyToName').textContent = '@' + username;
-    document.getElementById('replyIndicator').style.display = 'flex';
-    document.getElementById('commentContent').focus();
-    document.getElementById('commentContent').placeholder = `Reply to @${username}...`;
+// ==================== MAIN INITIALIZATION ====================
+function initAllButtons() {
+    initLikeButtons();
+    initBookmarkButtons();
+    initShareButtons();
 }
 
-function cancelReply() {
-    document.getElementById('parentCommentId').value = '';
-    document.getElementById('replyIndicator').style.display = 'none';
-    document.getElementById('commentContent').placeholder = 'Add a comment...';
+// ==================== LIKE BUTTONS - FIXED VERSION ====================
+function initLikeButtons() {
+    console.log('Initializing like buttons');
+    
+    // Select all possible like button variations
+    const likeButtons = document.querySelectorAll(
+        '.like-btn, ' +
+        '.post-action-btn.like-btn, ' +
+        '.interaction-btn.like-btn, ' +
+        'button[class*="like"]'
+    );
+    
+    console.log(`Found ${likeButtons.length} like buttons`);
+    
+    likeButtons.forEach(btn => {
+        // Remove existing listeners to prevent duplicates
+        btn.removeEventListener('click', handleLikeClick);
+        btn.addEventListener('click', handleLikeClick);
+        
+        // Make sure button has post ID
+        if (!btn.dataset.postId) {
+            // Try to find post ID from parent elements
+            const postCard = btn.closest('[data-post-id]');
+            if (postCard) {
+                btn.dataset.postId = postCard.dataset.postId;
+            }
+        }
+    });
 }
 
-function likeComment(commentId) {
-    if (!isAuthenticated) {
-        window.location.href = '/login/?next=' + encodeURIComponent(window.location.pathname);
+async function handleLikeClick(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    const btn = e.currentTarget;
+    const postId = btn.dataset.postId;
+    
+    console.log('Like button clicked for post:', postId);
+    
+    if (!postId) {
+        console.error('No post ID found on button');
+        showNotification('Error: Could not identify post', 'error');
         return;
     }
     
-    fetch(`/comment/${commentId}/like/`, {
-        method: 'POST',
-        headers: {
-            'X-CSRFToken': csrfToken,
-            'X-Requested-With': 'XMLHttpRequest'
-        }
-    })
-    .then(response => response.json())
-    .then(data => {
-        const btn = document.querySelector(`#comment-${commentId} .comment-like-btn .like-count`);
-        if (btn) btn.textContent = data.like_count;
-    })
-    .catch(error => {
-        console.error('Error liking comment:', error);
-        showNotification('Error liking comment', 'error');
-    });
-}
-
-function deleteComment(commentId) {
-    if (confirm('Are you sure you want to delete this comment?')) {
-        fetch(`/comment/${commentId}/delete/`, {
+    if (!IS_AUTHENTICATED) {
+        showNotification('Please login to like posts', 'warning');
+        setTimeout(() => {
+            window.location.href = '/login/?next=' + encodeURIComponent(window.location.pathname);
+        }, 1500);
+        return;
+    }
+    
+    // Visual feedback
+    btn.disabled = true;
+    btn.classList.add('processing');
+    
+    try {
+        const formData = new FormData();
+        formData.append('post_id', postId);
+        formData.append('csrfmiddlewaretoken', CSRF_TOKEN);
+        
+        const response = await fetch(`/like/${postId}/`, {
             method: 'POST',
             headers: {
-                'X-CSRFToken': csrfToken,
-                'X-Requested-With': 'XMLHttpRequest'
-            }
-        })
-        .then(response => {
-            if (response.ok) {
-                document.getElementById(`comment-${commentId}`).remove();
-                showNotification('Comment deleted successfully', 'success');
-            } else {
-                showNotification('Error deleting comment', 'error');
-            }
-        })
-        .catch(error => {
-            console.error('Error deleting comment:', error);
-            showNotification('Error deleting comment', 'error');
+                'X-CSRFToken': CSRF_TOKEN,
+                'X-Requested-With': 'XMLHttpRequest',
+            },
+            credentials: 'same-origin',
+            body: formData
         });
+        
+        const data = await response.json();
+        console.log('Like response:', data);
+        
+        if (!response.ok) {
+            throw new Error(data.error || `HTTP error! status: ${response.status}`);
+        }
+        
+        if (data.success === false) {
+            throw new Error(data.error || 'Unknown error occurred');
+        }
+        
+        // Update UI
+        updateLikeUI(postId, data.liked, data.like_count);
+        
+        showNotification(
+            data.liked ? 'Post liked!' : 'Post unliked',
+            'success'
+        );
+        
+    } catch (error) {
+        console.error('Error liking post:', error);
+        showNotification('Error: ' + error.message, 'error');
+    } finally {
+        btn.disabled = false;
+        btn.classList.remove('processing');
     }
 }
 
-// Repost Modal
-function showRepostModal() {
-    document.getElementById('repostModal').style.display = 'flex';
-    document.body.style.overflow = 'hidden';
+function updateLikeUI(postId, liked, count) {
+    // Update all like buttons for this post
+    document.querySelectorAll(`[data-post-id="${postId}"] .like-btn, [data-post-id="${postId}"] button[class*="like"]`).forEach(btn => {
+        const icon = btn.querySelector('i');
+        const countSpan = btn.querySelector('.like-count, .count:not(.fa-heart)');
+        
+        if (icon) {
+            if (liked) {
+                icon.classList.remove('far');
+                icon.classList.add('fas');
+                btn.classList.add('liked');
+                btn.classList.add('active');
+                if (btn.classList.contains('interaction-btn')) {
+                    icon.style.color = 'var(--danger)';
+                }
+            } else {
+                icon.classList.remove('fas');
+                icon.classList.add('far');
+                btn.classList.remove('liked');
+                btn.classList.remove('active');
+                if (btn.classList.contains('interaction-btn')) {
+                    icon.style.color = 'var(--gray-500)';
+                }
+            }
+        }
+        
+        if (countSpan) {
+            countSpan.textContent = count;
+        }
+    });
+    
+    // Update any standalone like counts
+    document.querySelectorAll(`#likeCount, #likeCountBtn`).forEach(el => {
+        el.textContent = count;
+    });
 }
 
-function closeRepostModal() {
-    document.getElementById('repostModal').style.display = 'none';
-    document.body.style.overflow = 'auto';
+// ==================== BOOKMARK BUTTONS - FIXED VERSION ====================
+function initBookmarkButtons() {
+    console.log('Initializing bookmark buttons');
+    
+    const bookmarkButtons = document.querySelectorAll(
+        '.bookmark-btn, ' +
+        '.post-action-btn.bookmark-btn, ' +
+        '.interaction-btn.bookmark-btn, ' +
+        'button[class*="bookmark"]'
+    );
+    
+    console.log(`Found ${bookmarkButtons.length} bookmark buttons`);
+    
+    bookmarkButtons.forEach(btn => {
+        btn.removeEventListener('click', handleBookmarkClick);
+        btn.addEventListener('click', handleBookmarkClick);
+        
+        if (!btn.dataset.postId) {
+            const postCard = btn.closest('[data-post-id]');
+            if (postCard) {
+                btn.dataset.postId = postCard.dataset.postId;
+            }
+        }
+    });
 }
 
-// Share Modal
-function showShareModal() {
-    document.getElementById('shareModal').style.display = 'flex';
-    document.body.style.overflow = 'hidden';
+async function handleBookmarkClick(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    const btn = e.currentTarget;
+    const postId = btn.dataset.postId;
+    
+    console.log('Bookmark button clicked for post:', postId);
+    
+    if (!postId) {
+        console.error('No post ID found on button');
+        showNotification('Error: Could not identify post', 'error');
+        return;
+    }
+    
+    if (!IS_AUTHENTICATED) {
+        showNotification('Please login to bookmark posts', 'warning');
+        setTimeout(() => {
+            window.location.href = '/login/?next=' + encodeURIComponent(window.location.pathname);
+        }, 1500);
+        return;
+    }
+    
+    btn.disabled = true;
+    btn.classList.add('processing');
+    
+    try {
+        const formData = new FormData();
+        formData.append('post_id', postId);
+        formData.append('csrfmiddlewaretoken', CSRF_TOKEN);
+        
+        const response = await fetch(`/bookmark/${postId}/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': CSRF_TOKEN,
+                'X-Requested-With': 'XMLHttpRequest',
+            },
+            credentials: 'same-origin',
+            body: formData
+        });
+        
+        const data = await response.json();
+        console.log('Bookmark response:', data);
+        
+        if (!response.ok) {
+            throw new Error(data.error || `HTTP error! status: ${response.status}`);
+        }
+        
+        if (data.success === false) {
+            throw new Error(data.error || 'Unknown error occurred');
+        }
+        
+        updateBookmarkUI(postId, data.bookmarked);
+        
+        showNotification(
+            data.bookmarked ? 'Saved to bookmarks!' : 'Removed from bookmarks',
+            'success'
+        );
+        
+    } catch (error) {
+        console.error('Error bookmarking post:', error);
+        showNotification('Error: ' + error.message, 'error');
+    } finally {
+        btn.disabled = false;
+        btn.classList.remove('processing');
+    }
 }
 
-function closeShareModal() {
-    document.getElementById('shareModal').style.display = 'none';
-    document.body.style.overflow = 'auto';
+function updateBookmarkUI(postId, bookmarked) {
+    document.querySelectorAll(`[data-post-id="${postId}"] .bookmark-btn, [data-post-id="${postId}"] button[class*="bookmark"]`).forEach(btn => {
+        const icon = btn.querySelector('i');
+        
+        if (icon) {
+            if (bookmarked) {
+                icon.classList.remove('far');
+                icon.classList.add('fas');
+                btn.classList.add('bookmarked');
+                btn.classList.add('active');
+                if (btn.classList.contains('interaction-btn')) {
+                    icon.style.color = 'var(--warning)';
+                }
+            } else {
+                icon.classList.remove('fas');
+                icon.classList.add('far');
+                btn.classList.remove('bookmarked');
+                btn.classList.remove('active');
+                if (btn.classList.contains('interaction-btn')) {
+                    icon.style.color = 'var(--gray-500)';
+                }
+            }
+        }
+    });
 }
 
-// Copy to clipboard
-function copyToClipboard() {
-    navigator.clipboard.writeText(window.location.href).then(() => {
+// ==================== SHARE BUTTONS ====================
+function initShareButtons() {
+    console.log('Initializing share buttons');
+    
+    const shareButtons = document.querySelectorAll(
+        '.share-btn, ' +
+        '.post-action-btn.share-btn, ' +
+        '.interaction-btn.share-btn'
+    );
+    
+    console.log(`Found ${shareButtons.length} share buttons`);
+    
+    shareButtons.forEach(btn => {
+        btn.removeEventListener('click', handleShareClick);
+        btn.addEventListener('click', handleShareClick);
+        
+        if (!btn.dataset.postId) {
+            const postCard = btn.closest('[data-post-id]');
+            if (postCard) {
+                btn.dataset.postId = postCard.dataset.postId;
+            }
+        }
+        
+        if (!btn.dataset.title) {
+            const postTitle = btn.closest('[data-post-id]')?.querySelector('.post-title, h3, .post-detail-title')?.textContent;
+            if (postTitle) {
+                btn.dataset.title = postTitle.trim();
+            }
+        }
+    });
+}
+
+function handleShareClick(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    const btn = e.currentTarget;
+    const postId = btn.dataset.postId;
+    const title = btn.dataset.title || document.title;
+    const url = btn.dataset.url ? window.location.origin + btn.dataset.url : window.location.href;
+    
+    console.log('Share button clicked:', { title, url, postId });
+    
+    // Track share if post ID exists
+    if (postId) {
+        trackShare(postId);
+    }
+    
+    // Use Web Share API if available
+    if (navigator.share) {
+        navigator.share({
+            title: title,
+            text: `Check out this article: ${title}`,
+            url: url
+        })
+        .then(() => {
+            console.log('Shared successfully');
+            showNotification('Thanks for sharing!', 'success');
+        })
+        .catch(error => {
+            console.log('Share cancelled or failed:', error);
+            showShareModal(title, url);
+        });
+    } else {
+        // Fallback - copy link
+        copyToClipboard(url);
+        showNotification('Link copied to clipboard!', 'success');
+    }
+}
+
+function trackShare(postId) {
+    if (postId) {
+        fetch(`/api/track-share/${postId}/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': CSRF_TOKEN,
+                'Content-Type': 'application/json'
+            },
+            credentials: 'same-origin',
+            body: JSON.stringify({ post_id: postId })
+        }).catch(console.error);
+    }
+}
+
+function showShareModal(title, url) {
+    // Create simple modal for sharing options
+    const modalHtml = `
+        <div class="modal" id="shareModal" style="display: block; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 9999;">
+            <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 20px; border-radius: 10px; max-width: 400px; width: 90%;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <h3 style="margin: 0;"><i class="fas fa-share-alt"></i> Share</h3>
+                    <button onclick="closeShareModal()" style="background: none; border: none; font-size: 24px; cursor: pointer;">&times;</button>
+                </div>
+                <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px;">
+                    <button onclick="shareToFacebook('${encodeURIComponent(url)}')" style="padding: 10px; background: #1877f2; color: white; border: none; border-radius: 5px; cursor: pointer;">
+                        <i class="fab fa-facebook-f"></i> Facebook
+                    </button>
+                    <button onclick="shareToTwitter('${encodeURIComponent(title)}', '${encodeURIComponent(url)}')" style="padding: 10px; background: #1da1f2; color: white; border: none; border-radius: 5px; cursor: pointer;">
+                        <i class="fab fa-twitter"></i> Twitter
+                    </button>
+                    <button onclick="shareToWhatsApp('${encodeURIComponent(title)}', '${encodeURIComponent(url)}')" style="padding: 10px; background: #25d366; color: white; border: none; border-radius: 5px; cursor: pointer;">
+                        <i class="fab fa-whatsapp"></i> WhatsApp
+                    </button>
+                    <button onclick="copyToClipboard('${url}')" style="padding: 10px; background: #6c757d; color: white; border: none; border-radius: 5px; cursor: pointer;">
+                        <i class="fas fa-link"></i> Copy Link
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    // Remove existing modal if any
+    const existingModal = document.getElementById('shareModal');
+    if (existingModal) existingModal.remove();
+    
+    // Add new modal
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+}
+
+// Share functions
+function shareToFacebook(url) {
+    window.open(`https://www.facebook.com/sharer/sharer.php?u=${url}`, '_blank', 'width=600,height=400');
+    closeShareModal();
+}
+
+function shareToTwitter(text, url) {
+    window.open(`https://twitter.com/intent/tweet?text=${text}&url=${url}`, '_blank', 'width=600,height=400');
+    closeShareModal();
+}
+
+function shareToWhatsApp(text, url) {
+    window.open(`https://wa.me/?text=${text}%20${url}`, '_blank');
+    closeShareModal();
+}
+
+function copyToClipboard(text) {
+    navigator.clipboard.writeText(decodeURIComponent(text)).then(() => {
         showNotification('Link copied to clipboard!', 'success');
         closeShareModal();
     }).catch(() => {
@@ -1343,183 +1527,122 @@ function copyToClipboard() {
     });
 }
 
-// Post Management
-function togglePostMenu() {
-    const menu = document.getElementById('postMenuDropdown');
-    menu.classList.toggle('active');
+function closeShareModal() {
+    const modal = document.getElementById('shareModal');
+    if (modal) modal.remove();
 }
 
-function deletePost(postId) {
-    if (confirm('Are you sure you want to delete this post? This action cannot be undone.')) {
-        fetch(`/post/${postId}/delete/`, {
-            method: 'POST',
-            headers: {
-                'X-CSRFToken': csrfToken,
-                'X-Requested-With': 'XMLHttpRequest'
-            }
-        })
-        .then(response => {
-            if (response.ok) {
-                window.location.href = '/';
-                showNotification('Post deleted successfully', 'success');
-            } else {
-                showNotification('Error deleting post', 'error');
-            }
-        })
-        .catch(error => {
-            console.error('Error deleting post:', error);
-            showNotification('Error deleting post', 'error');
-        });
-    }
-}
+// Make share functions globally available
+window.shareToFacebook = shareToFacebook;
+window.shareToTwitter = shareToTwitter;
+window.shareToWhatsApp = shareToWhatsApp;
+window.copyToClipboard = copyToClipboard;
+window.closeShareModal = closeShareModal;
 
-// Load More Comments
-document.addEventListener('DOMContentLoaded', function() {
-    const loadMoreBtn = document.getElementById('loadMoreComments');
-    
-    if (loadMoreBtn) {
-        loadMoreBtn.addEventListener('click', async function() {
-            const postId = this.dataset.postId;
-            const offset = parseInt(this.dataset.offset);
-            
-            try {
-                const response = await fetch(`/post/${postId}/comments/?offset=${offset}`, {
-                    headers: {
-                        'X-Requested-With': 'XMLHttpRequest'
-                    }
-                });
-                
-                if (response.ok) {
-                    const html = await response.text();
-                    document.querySelector('.comments-list').insertAdjacentHTML('beforeend', html);
-                    
-                    const newOffset = offset + 12;
-                    this.dataset.offset = newOffset;
-                    
-                    if (newOffset >= parseInt(this.dataset.total)) {
-                        this.style.display = 'none';
-                    }
-                }
-            } catch (error) {
-                console.error('Error loading more comments:', error);
-                showNotification('Error loading more comments', 'error');
+// ==================== MUTATION OBSERVER ====================
+function setupMutationObserver() {
+    const observer = new MutationObserver(function(mutations) {
+        let shouldReinit = false;
+        
+        mutations.forEach(function(mutation) {
+            if (mutation.addedNodes.length > 0) {
+                shouldReinit = true;
             }
         });
-    }
-    
-    // Character counter for comments
-    const commentInput = document.getElementById('commentContent');
-    const charCount = document.getElementById('charCount');
-    
-    if (commentInput && charCount) {
-        commentInput.addEventListener('input', function() {
-            charCount.textContent = this.value.length;
-        });
-    }
-    
-    // Character counter for repost
-    const repostInput = document.getElementById('repostContent');
-    const repostCharCount = document.getElementById('repostCharCount');
-    
-    if (repostInput && repostCharCount) {
-        repostInput.addEventListener('input', function() {
-            repostCharCount.textContent = this.value.length;
-        });
-    }
-    
-    // Generate Table of Contents
-    generateTableOfContents();
-});
-
-// Generate Table of Contents from headings
-function generateTableOfContents() {
-    const content = document.getElementById('postContent');
-    const toc = document.getElementById('tableOfContents');
-    
-    if (!content || !toc) return;
-    
-    const headings = content.querySelectorAll('h2, h3, h4');
-    
-    if (headings.length === 0) return;
-    
-    headings.forEach((heading, index) => {
-        // Add ID to heading if not present
-        if (!heading.id) {
-            heading.id = `heading-${index}`;
+        
+        if (shouldReinit) {
+            console.log('New content detected, reinitializing buttons');
+            initAllButtons();
         }
-        
-        const li = document.createElement('li');
-        const a = document.createElement('a');
-        a.href = `#${heading.id}`;
-        a.textContent = heading.textContent;
-        a.style.textDecoration = 'none';
-        a.style.color = 'var(--primary)';
-        
-        // Indent based on heading level
-        a.style.paddingLeft = `${(parseInt(heading.tagName[1]) - 2) * 20}px`;
-        a.style.display = 'block';
-        a.style.padding = '0.25rem 0';
-        
-        li.appendChild(a);
-        toc.appendChild(li);
+    });
+    
+    observer.observe(document.body, {
+        childList: true,
+        subtree: true
     });
 }
 
-// Close modals when clicking outside
-window.addEventListener('click', function(e) {
-    const repostModal = document.getElementById('repostModal');
-    const shareModal = document.getElementById('shareModal');
+// ==================== NOTIFICATION SYSTEM ====================
+function showNotification(message, type = 'success', duration = 3000) {
+    // Remove existing notifications
+    const existingNotifications = document.querySelectorAll('.notification');
+    existingNotifications.forEach(notif => notif.remove());
     
-    if (e.target === repostModal) {
-        closeRepostModal();
-    }
-    
-    if (e.target === shareModal) {
-        closeShareModal();
-    }
-    
-    // Close dropdowns
-    if (!e.target.closest('.post-admin-menu')) {
-        const menu = document.getElementById('postMenuDropdown');
-        if (menu) menu.classList.remove('active');
-    }
-});
-
-// Show notification
-function showNotification(message, type = 'info') {
+    // Create notification
     const notification = document.createElement('div');
     notification.className = `notification notification-${type}`;
-    notification.style.position = 'fixed';
-    notification.style.top = '20px';
-    notification.style.right = '20px';
-    notification.style.zIndex = '9999';
-    notification.style.minWidth = '250px';
-    notification.style.padding = '1rem';
-    notification.style.borderRadius = '8px';
-    notification.style.background = type === 'success' ? '#d4edda' : type === 'error' ? '#f8d7da' : '#cce5ff';
-    notification.style.color = type === 'success' ? '#155724' : type === 'error' ? '#721c24' : '#004085';
-    notification.style.border = `1px solid ${type === 'success' ? '#c3e6cb' : type === 'error' ? '#f5c6cb' : '#b8daff'}`;
-    notification.style.boxShadow = '0 4px 6px rgba(0,0,0,0.1)';
-    notification.style.transform = 'translateX(120%)';
-    notification.style.transition = 'transform 0.3s ease';
+    notification.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        padding: 15px 20px;
+        background: ${type === 'success' ? '#4caf50' : type === 'error' ? '#f44336' : '#ff9800'};
+        color: white;
+        border-radius: 5px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+        z-index: 10000;
+        animation: slideIn 0.3s ease;
+    `;
     
     notification.innerHTML = `
-        <div style="display: flex; align-items: center; gap: 0.75rem;">
-            <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-circle' : 'info-circle'}" style="font-size: 1.25rem;"></i>
-            <span style="flex: 1;">${message}</span>
+        <div style="display: flex; align-items: center; gap: 10px;">
+            <i class="fas ${type === 'success' ? 'fa-check-circle' : type === 'error' ? 'fa-exclamation-circle' : 'fa-info-circle'}"></i>
+            <span>${message}</span>
         </div>
     `;
     
     document.body.appendChild(notification);
     
+    // Auto remove
     setTimeout(() => {
-        notification.style.transform = 'translateX(0)';
-    }, 10);
-    
-    setTimeout(() => {
-        notification.style.transform = 'translateX(120%)';
+        notification.style.animation = 'slideOut 0.3s ease';
         setTimeout(() => notification.remove(), 300);
-    }, 3000);
+    }, duration);
 }
+
+// Add animation styles
+const style = document.createElement('style');
+style.textContent = `
+    @keyframes slideIn {
+        from { transform: translateX(100%); opacity: 0; }
+        to { transform: translateX(0); opacity: 1; }
+    }
+    
+    @keyframes slideOut {
+        from { transform: translateX(0); opacity: 1; }
+        to { transform: translateX(100%); opacity: 0; }
+    }
+    
+    .processing {
+        opacity: 0.7;
+        pointer-events: none;
+    }
+    
+    .notification {
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    }
+`;
+document.head.appendChild(style);
+
+// ==================== UTILITY FUNCTIONS ====================
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+// Make showNotification globally available
+window.showNotification = showNotification;
+
+console.log('All button handlers initialized');
 </script>
 {% endblock %}

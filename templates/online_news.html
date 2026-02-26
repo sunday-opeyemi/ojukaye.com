@@ -49,12 +49,6 @@
                         <div class="label">Verified</div>
                     </div>
                 </div>
-                
-                <!-- Manual Fetch Button -->
-                <button class="fetch-button btn-block" onclick="manualFetchNews()" id="fetchButton">
-                    <i class="fas fa-sync-alt"></i> Fetch News Now
-                </button>
-                <div id="fetchProgress" class="fetch-progress" style="display: none;"></div>
             </div>
             {% endif %}
 
@@ -683,7 +677,7 @@
 {% block extra_js %}
 <script>
 // ==================== GLOBAL VARIABLES ====================
-const CSRF_TOKEN = getCookie('csrftoken');
+const CSRF_TOKEN = '{{ csrf_token }}';
 const IS_AUTHENTICATED = {% if user.is_authenticated %}true{% else %}false{% endif %};
 
 // ==================== INITIALIZATION ====================
@@ -702,37 +696,14 @@ function initAllButtons() {
     initLikeButtons();
     initBookmarkButtons();
     initShareButtons();
-    initFollowButtons();
 }
 
 // ==================== LIKE BUTTONS - FIXED VERSION ====================
 function initLikeButtons() {
-    console.log('Initializing like buttons');
-    
-    // Select all possible like button variations
-    const likeButtons = document.querySelectorAll(
-        '.like-btn, ' +
-        '.post-action-btn.like-btn, ' +
-        'button[class*="like"], ' +
-        '.post-actions button:has(i.fa-heart), ' +
-        '[data-action="like"]'
-    );
-    
-    console.log(`Found ${likeButtons.length} like buttons`);
-    
-    likeButtons.forEach(btn => {
-        // Remove existing listeners to prevent duplicates
+    document.querySelectorAll('.like-btn').forEach(btn => {
+        // Remove existing listeners
         btn.removeEventListener('click', handleLikeClick);
         btn.addEventListener('click', handleLikeClick);
-        
-        // Make sure button has post ID
-        if (!btn.dataset.postId) {
-            // Try to find post ID from parent elements
-            const postCard = btn.closest('[data-post-id]');
-            if (postCard) {
-                btn.dataset.postId = postCard.dataset.postId;
-            }
-        }
     });
 }
 
@@ -742,6 +713,7 @@ async function handleLikeClick(e) {
     
     const btn = e.currentTarget;
     const postId = btn.dataset.postId;
+    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value || '{{ csrf_token }}';
     
     console.log('Like button clicked for post:', postId);
     
@@ -764,27 +736,51 @@ async function handleLikeClick(e) {
     btn.classList.add('processing');
     
     try {
-        const response = await fetch(`/like/${postId}/`, {
+        const response = await fetch(`/post/${postId}/like/`, {
             method: 'POST',
             headers: {
-                'X-CSRFToken': CSRF_TOKEN,
-                'X-Requested-With': 'XMLHttpRequest',
-                'Content-Type': 'application/json',
-            },
-            credentials: 'same-origin',
-            body: JSON.stringify({ post_id: postId })
+                'X-CSRFToken': csrfToken,
+                'X-Requested-With': 'XMLHttpRequest'
+            }
         });
         
         if (!response.ok) {
-            const errorData = await response.json().catch(() => ({}));
-            throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+            throw new Error(`HTTP error! status: ${response.status}`);
         }
         
         const data = await response.json();
         console.log('Like response:', data);
         
         // Update UI
-        updateLikeUI(postId, data.liked, data.like_count);
+        const icon = btn.querySelector('i');
+        const countSpan = btn.querySelector('.like-count, .count:not(.fa-heart)');
+        
+        if (data.liked !== undefined) {
+            if (data.liked) {
+                icon.classList.remove('far');
+                icon.classList.add('fas');
+                btn.classList.add('liked');
+                if (btn.classList.contains('interaction-btn')) {
+                    icon.style.color = 'var(--danger)';
+                }
+            } else {
+                icon.classList.remove('fas');
+                icon.classList.add('far');
+                btn.classList.remove('liked');
+                if (btn.classList.contains('interaction-btn')) {
+                    icon.style.color = 'var(--gray-500)';
+                }
+            }
+        }
+        
+        if (countSpan) {
+            countSpan.textContent = data.like_count;
+        }
+        
+        // Update any standalone like counts
+        document.querySelectorAll(`#likeCount, #likeCountBtn`).forEach(el => {
+            if (el) el.textContent = data.like_count;
+        });
         
         showNotification(
             data.liked ? 'Post liked!' : 'Post unliked',
@@ -804,7 +800,7 @@ function updateLikeUI(postId, liked, count) {
     // Update all like buttons for this post
     document.querySelectorAll(`[data-post-id="${postId}"] .like-btn, [data-post-id="${postId}"] button[class*="like"]`).forEach(btn => {
         const icon = btn.querySelector('i');
-        const countSpan = btn.querySelector('.like-count, span:not(.fa-heart)');
+        const countSpan = btn.querySelector('.like-count, .count:not(.fa-heart)');
         
         if (icon) {
             if (liked) {
@@ -812,11 +808,17 @@ function updateLikeUI(postId, liked, count) {
                 icon.classList.add('fas');
                 btn.classList.add('liked');
                 btn.classList.add('active');
+                if (btn.classList.contains('interaction-btn')) {
+                    icon.style.color = 'var(--danger)';
+                }
             } else {
                 icon.classList.remove('fas');
                 icon.classList.add('far');
                 btn.classList.remove('liked');
                 btn.classList.remove('active');
+                if (btn.classList.contains('interaction-btn')) {
+                    icon.style.color = 'var(--gray-500)';
+                }
             }
         }
         
@@ -826,34 +828,17 @@ function updateLikeUI(postId, liked, count) {
     });
     
     // Update any standalone like counts
-    document.querySelectorAll(`.like-count[data-post-id="${postId}"], [data-post-id="${postId}"] .like-count`).forEach(el => {
+    document.querySelectorAll(`#likeCount, #likeCountBtn`).forEach(el => {
         el.textContent = count;
     });
 }
 
 // ==================== BOOKMARK BUTTONS - FIXED VERSION ====================
 function initBookmarkButtons() {
-    console.log('Initializing bookmark buttons');
-    
-    const bookmarkButtons = document.querySelectorAll(
-        '.bookmark-btn, ' +
-        '.post-action-btn.bookmark-btn, ' +
-        'button[class*="bookmark"], ' +
-        '[data-action="bookmark"]'
-    );
-    
-    console.log(`Found ${bookmarkButtons.length} bookmark buttons`);
-    
-    bookmarkButtons.forEach(btn => {
+    document.querySelectorAll('.bookmark-btn').forEach(btn => {
+        // Remove existing listeners
         btn.removeEventListener('click', handleBookmarkClick);
         btn.addEventListener('click', handleBookmarkClick);
-        
-        if (!btn.dataset.postId) {
-            const postCard = btn.closest('[data-post-id]');
-            if (postCard) {
-                btn.dataset.postId = postCard.dataset.postId;
-            }
-        }
     });
 }
 
@@ -863,6 +848,7 @@ async function handleBookmarkClick(e) {
     
     const btn = e.currentTarget;
     const postId = btn.dataset.postId;
+    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value || '{{ csrf_token }}';
     
     console.log('Bookmark button clicked for post:', postId);
     
@@ -884,15 +870,12 @@ async function handleBookmarkClick(e) {
     btn.classList.add('processing');
     
     try {
-        const response = await fetch(`/bookmark/${postId}/`, {
+        const response = await fetch(`/post/${postId}/bookmark/`, {
             method: 'POST',
             headers: {
-                'X-CSRFToken': CSRF_TOKEN,
-                'X-Requested-With': 'XMLHttpRequest',
-                'Content-Type': 'application/json',
-            },
-            credentials: 'same-origin',
-            body: JSON.stringify({ post_id: postId })
+                'X-CSRFToken': csrfToken,
+                'X-Requested-With': 'XMLHttpRequest'
+            }
         });
         
         if (!response.ok) {
@@ -902,12 +885,27 @@ async function handleBookmarkClick(e) {
         const data = await response.json();
         console.log('Bookmark response:', data);
         
-        updateBookmarkUI(postId, data.bookmarked);
+        const icon = btn.querySelector('i');
         
-        showNotification(
-            data.bookmarked ? 'Saved to bookmarks!' : 'Removed from bookmarks',
-            'success'
-        );
+        if (data.bookmarked !== undefined) {
+            if (data.bookmarked) {
+                icon.classList.remove('far');
+                icon.classList.add('fas');
+                btn.classList.add('bookmarked');
+                if (btn.classList.contains('interaction-btn')) {
+                    icon.style.color = 'var(--warning)';
+                }
+                showNotification('Post saved to bookmarks!', 'success');
+            } else {
+                icon.classList.remove('fas');
+                icon.classList.add('far');
+                btn.classList.remove('bookmarked');
+                if (btn.classList.contains('interaction-btn')) {
+                    icon.style.color = 'var(--gray-500)';
+                }
+                showNotification('Post removed from bookmarks', 'info');
+            }
+        }
         
     } catch (error) {
         console.error('Error bookmarking post:', error);
@@ -928,25 +926,30 @@ function updateBookmarkUI(postId, bookmarked) {
                 icon.classList.add('fas');
                 btn.classList.add('bookmarked');
                 btn.classList.add('active');
+                if (btn.classList.contains('interaction-btn')) {
+                    icon.style.color = 'var(--warning)';
+                }
             } else {
                 icon.classList.remove('fas');
                 icon.classList.add('far');
                 btn.classList.remove('bookmarked');
                 btn.classList.remove('active');
+                if (btn.classList.contains('interaction-btn')) {
+                    icon.style.color = 'var(--gray-500)';
+                }
             }
         }
     });
 }
 
-// ==================== SHARE BUTTONS - FIXED VERSION ====================
+// ==================== SHARE BUTTONS ====================
 function initShareButtons() {
     console.log('Initializing share buttons');
     
     const shareButtons = document.querySelectorAll(
         '.share-btn, ' +
         '.post-action-btn.share-btn, ' +
-        'button[class*="share"], ' +
-        '[data-action="share"]'
+        '.interaction-btn.share-btn'
     );
     
     console.log(`Found ${shareButtons.length} share buttons`);
@@ -963,7 +966,7 @@ function initShareButtons() {
         }
         
         if (!btn.dataset.title) {
-            const postTitle = btn.closest('[data-post-id]')?.querySelector('.post-title, h3')?.textContent;
+            const postTitle = btn.closest('[data-post-id]')?.querySelector('.post-title, h3, .post-detail-title')?.textContent;
             if (postTitle) {
                 btn.dataset.title = postTitle.trim();
             }
@@ -1094,88 +1097,6 @@ window.shareToTwitter = shareToTwitter;
 window.shareToWhatsApp = shareToWhatsApp;
 window.copyToClipboard = copyToClipboard;
 window.closeShareModal = closeShareModal;
-
-// ==================== FOLLOW BUTTONS ====================
-function initFollowButtons() {
-    console.log('Initializing follow buttons');
-    
-    const followButtons = document.querySelectorAll(
-        '.btn-follow, ' +
-        '.follow-btn, ' +
-        '.user-item-follow-btn, ' +
-        '[data-action="follow"]'
-    );
-    
-    console.log(`Found ${followButtons.length} follow buttons`);
-    
-    followButtons.forEach(btn => {
-        btn.removeEventListener('click', handleFollowClick);
-        btn.addEventListener('click', handleFollowClick);
-    });
-}
-
-async function handleFollowClick(e) {
-    e.preventDefault();
-    e.stopPropagation();
-    
-    const btn = e.currentTarget;
-    const username = btn.dataset.username;
-    
-    console.log('Follow button clicked for user:', username);
-    
-    if (!username) {
-        console.error('No username found on button');
-        return;
-    }
-    
-    if (!IS_AUTHENTICATED) {
-        showNotification('Please login to follow users', 'warning');
-        setTimeout(() => {
-            window.location.href = '/login/?next=' + encodeURIComponent(window.location.pathname);
-        }, 1500);
-        return;
-    }
-    
-    btn.disabled = true;
-    btn.classList.add('processing');
-    
-    try {
-        const response = await fetch(`/follow/${username}/`, {
-            method: 'POST',
-            headers: {
-                'X-CSRFToken': CSRF_TOKEN,
-                'X-Requested-With': 'XMLHttpRequest',
-                'Content-Type': 'application/json',
-            },
-            credentials: 'same-origin',
-            body: JSON.stringify({ username: username })
-        });
-        
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        
-        const data = await response.json();
-        console.log('Follow response:', data);
-        
-        if (data.followed) {
-            btn.innerHTML = '<i class="fas fa-check"></i> Following';
-            btn.classList.add('following');
-        } else {
-            btn.innerHTML = '<i class="fas fa-plus"></i> Follow';
-            btn.classList.remove('following');
-        }
-        
-        showNotification(data.message, 'success');
-        
-    } catch (error) {
-        console.error('Error following user:', error);
-        showNotification('Error following user. Please try again.', 'error');
-    } finally {
-        btn.disabled = false;
-        btn.classList.remove('processing');
-    }
-}
 
 // ==================== MUTATION OBSERVER ====================
 function setupMutationObserver() {

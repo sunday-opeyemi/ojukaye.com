@@ -1046,3 +1046,31 @@ class AdAnalytics(models.Model):
         if self.clicks > 0:
             self.cpc = self.cost / self.clicks
         self.save()
+
+class FetchLog(models.Model):
+    action = models.CharField(max_length=100)
+    details = models.TextField(blank=True)
+    user = models.ForeignKey(User, null=True, blank=True, on_delete=models.SET_NULL)
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        ordering = ['-created_at']
+
+class FetchSchedule(models.Model):
+    FETCH_TYPES = [
+        ('auto', 'Automatic'),
+        ('manual', 'Manual'),
+        ('custom', 'Custom'),
+    ]
+    
+    scheduled_time = models.DateTimeField()
+    fetch_type = models.CharField(max_length=20, choices=FETCH_TYPES, default='auto')
+    days = models.IntegerField(default=1)
+    limit = models.IntegerField(default=50)
+    completed = models.BooleanField(default=False)
+    completed_at = models.DateTimeField(null=True, blank=True)
+    created_by = models.ForeignKey(User, null=True, on_delete=models.SET_NULL)
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        ordering = ['scheduled_time']

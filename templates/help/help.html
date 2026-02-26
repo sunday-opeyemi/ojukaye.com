@@ -1,0 +1,372 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Help Center - Ojukaye{% endblock %}
+
+{% block content %}
+<div class="help-center-page">
+    <!-- Header with Search -->
+    <div class="help-header">
+        <div class="container">
+            <h1><i class="fas fa-question-circle"></i> How can we help you?</h1>
+            <div class="search-box">
+                <i class="fas fa-search"></i>
+                <input type="text" placeholder="Search for answers..." id="helpSearch">
+                <button class="btn btn-primary">Search</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Popular Topics -->
+    <div class="popular-topics">
+        <div class="container">
+            <h2>Popular Topics</h2>
+            <div class="topics-grid">
+                <a href="#account" class="topic-item">
+                    <i class="fas fa-user-circle"></i>
+                    <span>Account</span>
+                </a>
+                <a href="#privacy" class="topic-item">
+                    <i class="fas fa-shield-alt"></i>
+                    <span>Privacy</span>
+                </a>
+                <a href="#posts" class="topic-item">
+                    <i class="fas fa-pen"></i>
+                    <span>Posts</span>
+                </a>
+                <a href="#news" class="topic-item">
+                    <i class="fas fa-newspaper"></i>
+                    <span>News</span>
+                </a>
+                <a href="#business" class="topic-item">
+                    <i class="fas fa-briefcase"></i>
+                    <span>Business</span>
+                </a>
+                <a href="#technical" class="topic-item">
+                    <i class="fas fa-code"></i>
+                    <span>Technical</span>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Help Categories -->
+    <div class="help-categories">
+        <div class="container">
+            <div class="categories-grid">
+                <!-- Account Help -->
+                <div class="category-section" id="account">
+                    <h3><i class="fas fa-user-circle" style="color: var(--primary);"></i> Account & Profile</h3>
+                    <ul class="help-list">
+                        <li><a href="#">How to create an account</a></li>
+                        <li><a href="#">Editing your profile</a></li>
+                        <li><a href="#">Changing your password</a></li>
+                        <li><a href="#">Account verification</a></li>
+                        <li><a href="#">Deleting your account</a></li>
+                        <li><a href="#">Privacy settings</a></li>
+                    </ul>
+                    <a href="#" class="view-all">View all account articles →</a>
+                </div>
+
+                <!-- Posts & Content -->
+                <div class="category-section" id="posts">
+                    <h3><i class="fas fa-pen" style="color: var(--primary);"></i> Posts & Content</h3>
+                    <ul class="help-list">
+                        <li><a href="#">Creating a post</a></li>
+                        <li><a href="#">Editing or deleting posts</a></li>
+                        <li><a href="#">Adding images and media</a></li>
+                        <li><a href="#">Post privacy settings</a></li>
+                        <li><a href="#">Commenting on posts</a></li>
+                        <li><a href="#">Liking and bookmarking</a></li>
+                    </ul>
+                    <a href="#" class="view-all">View all posting articles →</a>
+                </div>
+
+                <!-- News & Verification -->
+                <div class="category-section" id="news">
+                    <h3><i class="fas fa-newspaper" style="color: var(--primary);"></i> News & Verification</h3>
+                    <ul class="help-list">
+                        <li><a href="#">How news is verified</a></li>
+                        <li><a href="#">Submitting news articles</a></li>
+                        <li><a href="#">Understanding verification badges</a></li>
+                        <li><a href="#">Reporting fake news</a></li>
+                        <li><a href="#">News sources and credibility</a></li>
+                    </ul>
+                    <a href="#" class="view-all">View all news articles →</a>
+                </div>
+
+                <!-- Business & Advertising -->
+                <div class="category-section" id="business">
+                    <h3><i class="fas fa-briefcase" style="color: var(--primary);"></i> Business & Advertising</h3>
+                    <ul class="help-list">
+                        <li><a href="#">Business account benefits</a></li>
+                        <li><a href="#">How to advertise</a></li>
+                        <li><a href="#">Ad pricing and credits</a></li>
+                        <li><a href="#">Analytics and insights</a></li>
+                        <li><a href="#">Sponsored content guidelines</a></li>
+                    </ul>
+                    <a href="#" class="view-all">View all business articles →</a>
+                </div>
+
+                <!-- Technical Support -->
+                <div class="category-section" id="technical">
+                    <h3><i class="fas fa-code" style="color: var(--primary);"></i> Technical Support</h3>
+                    <ul class="help-list">
+                        <li><a href="#">Browser requirements</a></li>
+                        <li><a href="#">Mobile app help</a></li>
+                        <li><a href="#">Troubleshooting issues</a></li>
+                        <li><a href="#">API documentation</a></li>
+                        <li><a href="#">Report a bug</a></li>
+                    </ul>
+                    <a href="#" class="view-all">View all technical articles →</a>
+                </div>
+
+                <!-- Safety & Privacy -->
+                <div class="category-section" id="privacy">
+                    <h3><i class="fas fa-shield-alt" style="color: var(--primary);"></i> Safety & Privacy</h3>
+                    <ul class="help-list">
+                        <li><a href="#">Privacy policy overview</a></li>
+                        <li><a href="#">Data collection and usage</a></li>
+                        <li><a href="#">Blocking and reporting</a></li>
+                        <li><a href="#">Safety tips</a></li>
+                        <li><a href="#">Two-factor authentication</a></li>
+                    </ul>
+                    <a href="#" class="view-all">View all safety articles →</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Still Need Help? -->
+    <div class="still-need-help">
+        <div class="container">
+            <div class="help-cta">
+                <i class="fas fa-headset"></i>
+                <h2>Still need help?</h2>
+                <p>Can't find what you're looking for? Our support team is here to help.</p>
+                <div class="cta-buttons">
+                    <a href="{% url 'contact' %}" class="btn btn-primary">
+                        <i class="fas fa-envelope"></i> Contact Support
+                    </a>
+                    <a href="#" class="btn btn-outline">
+                        <i class="fas fa-comments"></i> Live Chat
+                    </a>
+                </div>
+                <p class="response-time">Average response time: &lt; 24 hours</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.help-center-page {
+    background: var(--bg-primary);
+}
+
+.help-header {
+    background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+    color: white;
+    padding: 4rem 0;
+    text-align: center;
+}
+
+.help-header h1 {
+    font-size: 2.5rem;
+    margin-bottom: 2rem;
+}
+
+.help-header h1 i {
+    margin-right: 0.5rem;
+}
+
+.search-box {
+    max-width: 600px;
+    margin: 0 auto;
+    display: flex;
+    gap: 0.5rem;
+    background: white;
+    border-radius: var(--radius-full);
+    padding: 0.25rem;
+}
+
+.search-box i {
+    color: var(--gray-400);
+    font-size: 1.25rem;
+    margin-left: 1rem;
+    align-self: center;
+}
+
+.search-box input {
+    flex: 1;
+    border: none;
+    padding: 0.75rem 0;
+    font-size: 1rem;
+    outline: none;
+}
+
+.search-box .btn {
+    border-radius: var(--radius-full);
+    padding: 0.75rem 2rem;
+}
+
+.popular-topics {
+    padding: 3rem 0;
+    background: var(--bg-secondary);
+}
+
+.popular-topics h2 {
+    text-align: center;
+    margin-bottom: 2rem;
+    font-size: 1.75rem;
+}
+
+.topics-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 1rem;
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+.topic-item {
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    padding: 1.5rem 1rem;
+    text-align: center;
+    text-decoration: none;
+    color: var(--text-primary);
+    transition: all 0.2s;
+}
+
+.topic-item:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+    border-color: var(--primary);
+}
+
+.topic-item i {
+    font-size: 2rem;
+    color: var(--primary);
+    margin-bottom: 0.5rem;
+}
+
+.help-categories {
+    padding: 3rem 0;
+}
+
+.categories-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+    gap: 2rem;
+}
+
+.category-section {
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    padding: 1.5rem;
+}
+
+.category-section h3 {
+    margin-bottom: 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid var(--border-color);
+}
+
+.help-list {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 1rem 0;
+}
+
+.help-list li {
+    margin-bottom: 0.5rem;
+}
+
+.help-list a {
+    color: var(--text-secondary);
+    text-decoration: none;
+    transition: all 0.2s;
+    display: block;
+    padding: 0.5rem;
+    border-radius: var(--radius);
+}
+
+.help-list a:hover {
+    background: var(--hover-bg);
+    color: var(--primary);
+    padding-left: 1rem;
+}
+
+.view-all {
+    color: var(--primary);
+    text-decoration: none;
+    font-weight: 500;
+    display: inline-block;
+}
+
+.still-need-help {
+    padding: 4rem 0;
+    background: var(--bg-secondary);
+    text-align: center;
+}
+
+.help-cta {
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+.help-cta i {
+    font-size: 4rem;
+    color: var(--primary);
+    margin-bottom: 1rem;
+}
+
+.help-cta h2 {
+    font-size: 2rem;
+    margin-bottom: 1rem;
+}
+
+.help-cta p {
+    color: var(--text-secondary);
+    margin-bottom: 2rem;
+}
+
+.cta-buttons {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    margin-bottom: 1rem;
+}
+
+.response-time {
+    font-size: 0.875rem;
+    color: var(--text-tertiary);
+}
+
+@media (max-width: 768px) {
+    .help-header h1 {
+        font-size: 2rem;
+    }
+    
+    .search-box {
+        flex-direction: column;
+        background: transparent;
+    }
+    
+    .search-box i {
+        display: none;
+    }
+    
+    .search-box input {
+        border-radius: var(--radius-full);
+        padding: 1rem;
+    }
+    
+    .cta-buttons {
+        flex-direction: column;
+    }
+}
+</style>
+{% endblock %}

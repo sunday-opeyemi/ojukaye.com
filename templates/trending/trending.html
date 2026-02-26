@@ -1,0 +1,346 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Trending - Ojukaye{% endblock %}
+
+{% block content %}
+<div class="trending-page">
+    <div class="page-header">
+        <div class="header-content">
+            <h1><i class="fas fa-fire" style="color: #f97316;"></i> Trending Now</h1>
+            <p>Discover what's hot and popular across Ojukaye right now</p>
+        </div>
+    </div>
+
+    <div class="trending-grid">
+        <!-- Main Trending Content -->
+        <main class="trending-main">
+            <!-- Time Filter -->
+            <div class="time-filter">
+                <a href="?time=today" class="filter-btn {% if time_filter == 'today' or not time_filter %}active{% endif %}">Today</a>
+                <a href="?time=week" class="filter-btn {% if time_filter == 'week' %}active{% endif %}">This Week</a>
+                <a href="?time=month" class="filter-btn {% if time_filter == 'month' %}active{% endif %}">This Month</a>
+                <a href="?time=all" class="filter-btn {% if time_filter == 'all' %}active{% endif %}">All Time</a>
+            </div>
+
+            <!-- Trending Topics -->
+            <section class="trending-topics">
+                <h2 class="section-title">
+                    <i class="fas fa-hashtag" style="color: var(--primary);"></i> Trending Topics
+                </h2>
+                <div class="topics-grid">
+                    {% for topic in trending_topics %}
+                    <a href="{% url 'search' %}?q={{ topic.topic }}" class="topic-card">
+                        <span class="topic-name">#{{ topic.topic }}</span>
+                        <span class="topic-count">{{ topic.count }} posts</span>
+                    </a>
+                    {% empty %}
+                    <div class="empty-state small">
+                        <p>No trending topics yet</p>
+                    </div>
+                    {% endfor %}
+                </div>
+            </section>
+
+            <!-- Trending Posts -->
+            <section class="trending-posts">
+                <h2 class="section-title">
+                    <i class="fas fa-chart-line" style="color: var(--primary);"></i> Trending Posts
+                </h2>
+                
+                {% for post in trending_posts %}
+                <article class="trending-post-card">
+                    <div class="trending-rank">{{ forloop.counter }}</div>
+                    <div class="post-content">
+                        <div class="post-header">
+                            <div class="post-author">
+                                <div class="author-avatar">
+                                    {% if post.author.profile.profile_pic %}
+                                    <img src="{{ post.author.profile.profile_pic.url }}" alt="{{ post.author.username }}">
+                                    {% else %}
+                                    <div class="avatar-placeholder">{{ post.author.username|first|upper }}</div>
+                                    {% endif %}
+                                </div>
+                                <div class="author-info">
+                                    <a href="{% url 'profile_view' username=post.author.username %}" class="author-name">
+                                        {{ post.author.get_full_name|default:post.author.username }}
+                                    </a>
+                                    <span class="post-time">{{ post.published_at|timesince }} ago</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <a href="{% url 'post_detail' post.id %}" class="post-link">
+                            <h3 class="post-title">{{ post.title }}</h3>
+                            <p class="post-excerpt">{{ post.content|truncatechars:150 }}</p>
+                        </a>
+                        
+                        <div class="post-meta">
+                            <span><i class="fas fa-eye"></i> {{ post.views }}</span>
+                            <span><i class="fas fa-heart"></i> {{ post.likes.count }}</span>
+                            <span><i class="fas fa-comment"></i> {{ post.comments.count }}</span>
+                            {% if post.has_media %}
+                            <span class="media-badge"><i class="fas fa-play-circle"></i> Media</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </article>
+                {% empty %}
+                <div class="empty-state">
+                    <i class="fas fa-chart-line"></i>
+                    <h3>No trending posts yet</h3>
+                    <p>Check back later for trending content</p>
+                </div>
+                {% endfor %}
+            </section>
+        </main>
+
+        <!-- Right Sidebar -->
+        <aside class="trending-sidebar">
+            <!-- Trending Hashtags -->
+            <div class="sidebar-card">
+                <div class="card-header">
+                    <h3><i class="fas fa-hashtag"></i> Popular Hashtags</h3>
+                </div>
+                <div class="hashtag-list">
+                    {% for tag in popular_hashtags %}
+                    <a href="{% url 'search' %}?q=%23{{ tag.name }}" class="hashtag-item">
+                        <span class="hashtag-name">#{{ tag.name }}</span>
+                        <span class="hashtag-count">{{ tag.count }}</span>
+                    </a>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Trending Categories -->
+            <div class="sidebar-card">
+                <div class="card-header">
+                    <h3><i class="fas fa-tags"></i> Trending Categories</h3>
+                </div>
+                <div class="category-list">
+                    {% for category in trending_categories %}
+                    <a href="{% url 'category_view' category.slug %}" class="category-item">
+                        <span class="category-name">{{ category.name }}</span>
+                        <span class="category-count">{{ category.post_count }}</span>
+                    </a>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Today's Stats -->
+            <div class="sidebar-card">
+                <div class="card-header">
+                    <h3><i class="fas fa-chart-bar"></i> Today's Stats</h3>
+                </div>
+                <div class="stats-list">
+                    <div class="stat-item">
+                        <span class="stat-label">Posts</span>
+                        <span class="stat-value">{{ today_posts }}</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Comments</span>
+                        <span class="stat-value">{{ today_comments }}</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Likes</span>
+                        <span class="stat-value">{{ today_likes }}</span>
+                    </div>
+                </div>
+            </div>
+        </aside>
+    </div>
+</div>
+
+<style>
+.trending-page {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 2rem 1rem;
+}
+
+.page-header {
+    text-align: center;
+    margin-bottom: 3rem;
+    padding: 2rem;
+    background: linear-gradient(135deg, rgba(249, 115, 22, 0.1), rgba(234, 88, 12, 0.05));
+    border-radius: var(--radius-lg);
+}
+
+.page-header h1 {
+    font-size: 2.5rem;
+    font-weight: 800;
+    margin-bottom: 0.5rem;
+    background: linear-gradient(135deg, #f97316, #ea580c);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.page-header p {
+    color: var(--text-secondary);
+    font-size: 1.1rem;
+}
+
+.trending-grid {
+    display: grid;
+    grid-template-columns: 1fr 300px;
+    gap: 2rem;
+}
+
+.time-filter {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 2rem;
+    background: var(--card-bg);
+    padding: 0.5rem;
+    border-radius: var(--radius-full);
+    border: 1px solid var(--border-color);
+}
+
+.filter-btn {
+    padding: 0.5rem 1.25rem;
+    border-radius: var(--radius-full);
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+    text-decoration: none;
+    transition: all 0.2s;
+}
+
+.filter-btn.active {
+    background: var(--primary);
+    color: white;
+}
+
+.section-title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin-bottom: 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.topics-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 1rem;
+    margin-bottom: 2rem;
+}
+
+.topic-card {
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    padding: 1rem;
+    text-decoration: none;
+    transition: all 0.2s;
+}
+
+.topic-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+    border-color: var(--primary);
+}
+
+.topic-name {
+    display: block;
+    font-weight: 600;
+    color: var(--primary);
+    margin-bottom: 0.25rem;
+}
+
+.topic-count {
+    font-size: 0.875rem;
+    color: var(--text-tertiary);
+}
+
+.trending-post-card {
+    display: flex;
+    gap: 1rem;
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    padding: 1.5rem;
+    margin-bottom: 1rem;
+    transition: all 0.2s;
+}
+
+.trending-post-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+}
+
+.trending-rank {
+    font-size: 2rem;
+    font-weight: 800;
+    color: var(--primary);
+    opacity: 0.3;
+    min-width: 3rem;
+    text-align: center;
+}
+
+.post-meta {
+    display: flex;
+    gap: 1rem;
+    margin-top: 1rem;
+    font-size: 0.875rem;
+    color: var(--text-tertiary);
+}
+
+.media-badge {
+    color: var(--primary);
+    background: rgba(37, 99, 235, 0.1);
+    padding: 0.25rem 0.5rem;
+    border-radius: var(--radius-full);
+}
+
+.hashtag-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.hashtag-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 0.5rem;
+    border-radius: var(--radius);
+    text-decoration: none;
+    color: var(--text-primary);
+    transition: all 0.2s;
+}
+
+.hashtag-item:hover {
+    background: var(--hover-bg);
+    color: var(--primary);
+}
+
+.hashtag-name {
+    font-weight: 500;
+}
+
+.hashtag-count {
+    font-size: 0.875rem;
+    color: var(--text-tertiary);
+}
+
+@media (max-width: 768px) {
+    .trending-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .page-header h1 {
+        font-size: 2rem;
+    }
+    
+    .time-filter {
+        flex-wrap: wrap;
+    }
+    
+    .filter-btn {
+        flex: 1;
+        text-align: center;
+    }
+}
+</style>
+{% endblock %}

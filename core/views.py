@@ -30,7 +30,7 @@ from django.template.loader import render_to_string
 from .models import (
     Post, Category, Comment, UserProfile, Notification, 
     UserActivity, Follow, Advertisement, Repost, SystemSettings, 
-    AdAnalytics, Group, GroupMember, GroupPost
+    AdAnalytics, Group, GroupMember, GroupPost, FetchLog, FetchSchedule 
 )
 from .forms import (
     PostForm, CommentForm, UserProfileForm, UserUpdateForm, 
@@ -39,6 +39,7 @@ from .forms import (
 )
 from .news_fetcher_unified import UnifiedNewsFetcher
 from .news_verifier import EnhancedNewsVerifier
+from .autostart import auto_fetcher
 
 logger = logging.getLogger(__name__)
 
@@ -371,6 +372,20 @@ def api_track_ad_click(request, ad_id):
 
 
 # ==================== HOME PAGE ====================
+def dynamic_home(request):
+    """
+    Dynamic homepage:
+    - If user is logged in -> show personal homepage
+    - If user is logged out -> show online news
+    """
+    if request.user.is_authenticated:
+        # User is logged in - show personal homepage
+        return home(request)  # Call your existing home view
+    else:
+        # User is logged out - show online news
+        return online_news(request)
+
+
 
 @login_required
 def home(request):
@@ -2115,15 +2130,26 @@ def create_post(request):
             post = form.save(commit=False)
             post.author = request.user
             
-            # Set initial status based on post type
-            if post.post_type == 'user_news':
+            # FIX: Set post_type and is_news_submission consistently
+            post_type = form.cleaned_data.get('post_type')
+            print(f"DEBUG - Post type from form: {post_type}")
+            
+            if post_type == 'user_news':
+                post.post_type = 'user_news'
+                post.is_news_submission = True  # IMPORTANT: Set this to True
                 post.status = 'draft'  # News posts need approval
-                post.is_news_submission = True
                 post.submission_status = 'pending'
                 messages.info(request, 'Your news submission has been sent for review.')
-            else:
+            elif post_type == 'discussion':
+                post.post_type = 'discussion'
+                post.is_news_submission = False
                 post.status = 'published'
-                messages.success(request, 'Post created successfully!')
+                messages.success(request, 'Discussion post created successfully!')
+            else:  # profile_post
+                post.post_type = 'profile_post'
+                post.is_news_submission = False
+                post.status = 'published'
+                messages.success(request, 'Profile post created successfully!')
             
             # Handle media
             if form.cleaned_data.get('video_url'):
@@ -2256,69 +2282,124 @@ def delete_post(request, post_id):
 
 
 # ==================== INTERACTION VIEWS ====================
-
 @login_required
-@require_POST
-def like_post(request, post_id):
-    """Like/Unlike a post"""
-    post = get_object_or_404(Post, id=post_id)
-    
-    if request.user in post.likes.all():
-        post.likes.remove(request.user)
-        liked = False
-    else:
-        post.likes.add(request.user)
-        liked = True
-        
-        # Create notification if not liking own post
-        if post.author != request.user:
-            Notification.objects.create(
-                user=post.author,
-                from_user=request.user,
-                notification_type='like',
-                message=f'{request.user.username} liked your post',
-                post=post
-            )
-    
-    # Return JSON for AJAX requests
-    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+@csrf_exempt
+def test_ajax(request):
+    """Test view to verify AJAX is working"""
+    if request.method == 'POST':
         return JsonResponse({
-            'liked': liked,
-            'like_count': post.likes.count()
+            'success': True,
+            'message': 'AJAX is working!',
+            'user': request.user.username
         })
-    
-    return redirect('post_detail', post_id=post_id)
+    return JsonResponse({'error': 'GET not allowed'}, status=405)
 
+
+
+def like_post(request, post_id):
+    """Like/Unlike a post - handles both AJAX and regular requests"""
+    
+    # Check if user is authenticated
+    if not request.user.is_authenticated:
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return JsonResponse({
+                'success': False,
+                'error': 'Please login to like posts',
+                'login_required': True
+            }, status=401)
+        else:
+            from django.shortcuts import redirect
+            return redirect(f'/login/?next={request.path}')
+    
+    try:
+        post = get_object_or_404(Post, id=post_id)
+        
+        if request.user in post.likes.all():
+            post.likes.remove(request.user)
+            liked = False
+        else:
+            post.likes.add(request.user)
+            liked = True
+            
+            # Create notification if not liking own post
+            if post.author != request.user:
+                try:
+                    from .models import Notification
+                    Notification.objects.create(
+                        user=post.author,
+                        from_user=request.user,
+                        notification_type='like',
+                        message=f'{request.user.username} liked your post',
+                        post=post
+                    )
+                except Exception as e:
+                    print(f"Error creating notification: {e}")
+        
+        # Return JSON for AJAX requests
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return JsonResponse({
+                'success': True,
+                'liked': liked,
+                'like_count': post.likes.count()
+            })
+        
+        # Regular request - redirect
+        from django.shortcuts import redirect
+        return redirect('post_detail', post_id=post_id)
+    
+    except Exception as e:
+        print(f"Error in like_post: {e}")
+        import traceback
+        traceback.print_exc()
+        
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return JsonResponse({
+                'success': False,
+                'error': str(e)
+            }, status=500)
+        raise
+    
+    
 
 @login_required
 @require_POST
 def bookmark_post(request, post_id):
     """Bookmark/Unbookmark a post"""
-    post = get_object_or_404(Post, id=post_id)
-    
-    if request.user in post.bookmarks.all():
-        post.bookmarks.remove(request.user)
-        bookmarked = False
-    else:
-        post.bookmarks.add(request.user)
-        bookmarked = True
+    try:
+        post = get_object_or_404(Post, id=post_id)
         
-        # Create activity
-        UserActivity.objects.create(
-            user=request.user,
-            activity_type='post_saved',
-            post=post,
-            details={'title': post.title[:50]}
-        )
+        if request.user in post.bookmarks.all():
+            post.bookmarks.remove(request.user)
+            bookmarked = False
+        else:
+            post.bookmarks.add(request.user)
+            bookmarked = True
+            
+            # Create activity
+            UserActivity.objects.create(
+                user=request.user,
+                activity_type='post_saved',
+                post=post,
+                details={'title': post.title[:50]}
+            )
+        
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return JsonResponse({
+                'success': True,
+                'bookmarked': bookmarked,
+                'bookmark_count': post.bookmarks.count()
+            })
+        
+        return redirect('post_detail', post_id=post_id)
     
-    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-        return JsonResponse({
-            'bookmarked': bookmarked,
-            'bookmark_count': post.bookmarks.count()
-        })
-    
-    return redirect('post_detail', post_id=post_id)
-
+    except Exception as e:
+        logger.error(f"Error in bookmark_post: {e}")
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return JsonResponse({
+                'success': False,
+                'error': str(e)
+            }, status=500)
+        raise
 
 @login_required
 @require_POST
@@ -2743,81 +2824,231 @@ def bookmarks(request):
 # ==================== SEARCH ====================
 
 def search(request):
-    """Search functionality"""
+    """Enhanced search functionality with autocomplete support"""
     query = request.GET.get('q', '').strip()
-    results = []
     
     # Get trending topics
     trending_topics = get_trending_topics()
     
+    context = {
+        'query': query,
+        'trending_topics': trending_topics,
+        'title': f'Search: {query}' if query else 'Search'
+    }
+    
     if query and len(query) >= 2:
-        # Search posts
-        post_results = Post.objects.filter(
-            Q(title__icontains=query) | 
-            Q(content__icontains=query) |
-            Q(author__username__icontains=query)
-        ).filter(status='published').select_related('author', 'category')[:50]
+        # Base search results
+        results = {
+            'posts': [],
+            'users': [],
+            'categories': [],
+            'comments': [],
+            'admin': [] if request.user.is_staff else None
+        }
         
-        # Search users
-        user_results = User.objects.filter(
+        # Search posts (public content)
+        posts = Post.objects.filter(
+            Q(title__icontains=query) | 
+            Q(content__icontains=query)
+        ).filter(status='published').select_related('author', 'category').distinct()[:20]
+        
+        # Filter posts based on privacy
+        filtered_posts = []
+        for post in posts:
+            if can_view_post(request.user, post):
+                filtered_posts.append(post)
+        results['posts'] = filtered_posts
+        
+        # Search users (public profiles)
+        results['users'] = User.objects.filter(
             Q(username__icontains=query) |
             Q(first_name__icontains=query) |
-            Q(last_name__icontains=query)
-        ).filter(is_active=True)[:20]
+            Q(last_name__icontains=query) |
+            Q(email__icontains=query) |
+            Q(profile__bio__icontains=query)
+        ).filter(is_active=True).distinct()[:15]
         
         # Search categories
-        category_results = Category.objects.filter(
+        results['categories'] = Category.objects.filter(
             Q(name__icontains=query) |
             Q(description__icontains=query)
         )[:10]
         
-        results = {
-            'posts': post_results,
-            'users': user_results,
-            'categories': category_results,
-            'query': query
-        }
+        # Search comments
+        results['comments'] = Comment.objects.filter(
+            Q(content__icontains=query) &
+            Q(is_active=True)
+        ).select_related('user', 'post').distinct()[:10]
+        
+        # Admin-only search results
+        if request.user.is_staff:
+            # Admin posts (including drafts, pending, etc.)
+            admin_posts = Post.objects.filter(
+                Q(title__icontains=query) | 
+                Q(content__icontains=query)
+            ).exclude(status='published').select_related('author', 'category')[:10]
+            
+            # Pending news submissions
+            pending_news = Post.objects.filter(
+                Q(title__icontains=query) & 
+                Q(is_news_submission=True) &
+                Q(submission_status='pending')
+            )[:10]
+            
+            # Flagged content
+            flagged = Post.objects.filter(
+                Q(title__icontains=query) &
+                Q(verification_status='fake')
+            )[:10]
+            
+            # User management (all users for admin)
+            all_users = User.objects.filter(
+                Q(username__icontains=query) |
+                Q(email__icontains=query) |
+                Q(first_name__icontains=query) |
+                Q(last_name__icontains=query)
+            )[:15]
+            
+            results['admin'] = {
+                'posts': admin_posts,
+                'pending_news': pending_news,
+                'flagged': flagged,
+                'users': all_users
+            }
+        
+        context['results'] = results
     
-    return render(request, 'search/search.html', {
-        'results': results,
-        'query': query,
-        'trending_topics': trending_topics,
-        'title': f'Search: {query}' if query else 'Search'
-    })
+    # Check if this is an AJAX request for autocomplete
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        return JsonResponse(get_autocomplete_suggestions(request, query))
+    
+    return render(request, 'search/search.html', context)
 
 
 @require_GET
 def search_suggestions(request):
-    """Get search suggestions via AJAX"""
+    """Get search suggestions via AJAX for autocomplete"""
     query = request.GET.get('q', '').strip()
     
     if len(query) < 2:
         return JsonResponse({'suggestions': []})
     
-    # Get post title suggestions
-    post_suggestions = Post.objects.filter(
-        title__icontains=query,
-        status='published'
-    ).values_list('title', flat=True)[:5]
-    
-    # Get user suggestions
-    user_suggestions = User.objects.filter(
-        username__icontains=query
-    ).values_list('username', flat=True)[:3]
-    
-    # Get category suggestions
-    category_suggestions = Category.objects.filter(
-        name__icontains=query
-    ).values_list('name', flat=True)[:3]
-    
-    suggestions = {
-        'posts': list(post_suggestions),
-        'users': list(user_suggestions),
-        'categories': list(category_suggestions)
-    }
-    
+    suggestions = get_autocomplete_suggestions(request, query)
     return JsonResponse(suggestions)
 
+
+def get_autocomplete_suggestions(request, query):
+    """Generate autocomplete suggestions based on user role"""
+    suggestions = {
+        'posts': [],
+        'users': [],
+        'categories': [],
+        'quick_links': [],
+        'admin': [] if request.user.is_staff else None
+    }
+    
+    # Post title suggestions (public)
+    posts = Post.objects.filter(
+        title__icontains=query,
+        status='published'
+    ).select_related('category')[:5]
+    
+    for post in posts:
+        if can_view_post(request.user, post):
+            suggestions['posts'].append({
+                'id': post.id,
+                'title': post.title,
+                'url': post.get_absolute_url(),
+                'category': post.category.name if post.category else 'Post',
+                'type': 'post',
+                'image': post.image.url if post.image else None
+            })
+    
+    # User suggestions
+    users = User.objects.filter(
+        Q(username__icontains=query) |
+        Q(first_name__icontains=query) |
+        Q(last_name__icontains=query)
+    ).filter(is_active=True)[:5]
+    
+    for user in users:
+        suggestions['users'].append({
+            'id': user.id,
+            'username': user.username,
+            'full_name': user.get_full_name(),
+            'url': reverse('profile_view', args=[user.username]),
+            'type': 'user',
+            'avatar': user.profile.profile_pic.url if hasattr(user, 'profile') and user.profile.profile_pic else None
+        })
+    
+    # Category suggestions
+    categories = Category.objects.filter(
+        Q(name__icontains=query) |
+        Q(description__icontains=query)
+    )[:5]
+    
+    for category in categories:
+        suggestions['categories'].append({
+            'id': category.id,
+            'name': category.name,
+            'url': reverse('category_view', args=[category.slug]),
+            'type': 'category',
+            'post_count': category.posts.filter(status='published').count()
+        })
+    
+    # Quick links (common search terms)
+    quick_links = [
+        {'text': 'Latest News', 'url': reverse('online_news'), 'icon': 'newspaper'},
+        {'text': 'Trending', 'url': reverse('trending_posts'), 'icon': 'fire'},
+        {'text': 'Discover', 'url': reverse('discover'), 'icon': 'compass'},
+    ]
+    
+    # Filter quick links based on query
+    for link in quick_links:
+        if query.lower() in link['text'].lower():
+            suggestions['quick_links'].append(link)
+    
+    # Admin-only suggestions
+    if request.user.is_staff:
+        admin_suggestions = []
+        
+        # Admin pages
+        admin_pages = [
+            {'text': 'Admin Dashboard', 'url': reverse('admin_dashboard'), 'icon': 'tachometer-alt'},
+            {'text': 'Manage Posts', 'url': reverse('admin_posts'), 'icon': 'file-alt'},
+            {'text': 'News Submissions', 'url': reverse('admin_news_submissions'), 'icon': 'newspaper'},
+            {'text': 'Auto-Fetched News', 'url': reverse('admin_auto_fetched_news'), 'icon': 'sync-alt'},
+            {'text': 'Quick Fetch News', 'url': reverse('quick_fetch_news'), 'icon': 'bolt'},
+            {'text': 'System Settings', 'url': reverse('admin_system_settings'), 'icon': 'cogs'},
+        ]
+        
+        for page in admin_pages:
+            if query.lower() in page['text'].lower():
+                admin_suggestions.append(page)
+        
+        # Pending items
+        pending_count = Post.objects.filter(is_news_submission=True, submission_status='pending').count()
+        if pending_count > 0:
+            admin_suggestions.append({
+                'text': f'Pending Submissions ({pending_count})',
+                'url': reverse('admin_news_submissions') + '?filter=pending',
+                'icon': 'clock',
+                'badge': str(pending_count)
+            })
+        
+        # Flagged items
+        flagged_count = Post.objects.filter(verification_status='fake').count()
+        if flagged_count > 0:
+            admin_suggestions.append({
+                'text': f'Flagged Content ({flagged_count})',
+                'url': reverse('admin_posts') + '?filter=fake',
+                'icon': 'exclamation-triangle',
+                'badge': str(flagged_count)
+            })
+        
+        suggestions['admin'] = admin_suggestions
+    
+    return suggestions
 
 # ==================== FETCH NEWS (STAFF ONLY) ====================
 
@@ -2875,35 +3106,6 @@ def fetch_news(request):
     return redirect('online_news')
 
 
-@staff_member_required
-def force_fetch_news(request):
-    """Force fetch news with improved image extraction"""
-    from .news_fetcher import NewsFetcher
-    
-    fetcher = NewsFetcher()
-    saved_count = fetcher.fetch_all_news()
-    
-    # Show what was fetched
-    recent_news = Post.objects.filter(
-        is_auto_fetched=True
-    ).order_by('-created_at')[:10]
-    
-    news_list = []
-    for news in recent_news:
-        news_list.append({
-            'title': news.title,
-            'image_url': news.image.url if news.image else news.image_url,
-            'has_image': bool(news.image or news.image_url),
-            'source': news.external_source,
-            'has_media': news.has_media,
-        })
-    
-    messages.success(request, f'Fetched {saved_count} new articles with improved extraction!')
-    return render(request, 'admin/fetch_result.html', {
-        'count': saved_count,
-        'recent_news': news_list
-    })
-
 
 @staff_member_required
 def fetch_news_status(request):
@@ -2945,7 +3147,7 @@ def fetch_news_status(request):
 def login_view(request):
     """User login with admin detection"""
     if request.user.is_authenticated:
-        return redirect('home')
+        return redirect('home')  # This will now go to dynamic_home
     
     if request.method == 'POST':
         form = AuthenticationForm(request, data=request.POST)
@@ -2962,7 +3164,7 @@ def login_view(request):
                     next_page = request.GET.get('next', 'admin_dashboard')
                 else:
                     messages.success(request, f'Welcome back, {username}!')
-                    next_page = request.GET.get('next', 'home')
+                    next_page = request.GET.get('next', 'home')  # Goes to dynamic_home
                 
                 return redirect(next_page)
             else:
@@ -2976,10 +3178,11 @@ def login_view(request):
     return render(request, 'registration/login.html', context)
 
 
+
 def register_view(request):
     """User registration"""
     if request.user.is_authenticated:
-        return redirect('home')
+        return redirect('home')  # This will now go to dynamic_home
     
     if request.method == 'POST':
         form = UserCreationForm(request.POST)
@@ -2992,7 +3195,7 @@ def register_view(request):
             # Auto login
             login(request, user)
             messages.success(request, 'Registration successful! Welcome to Ojukaye!')
-            return redirect('home')
+            return redirect('home') 
     else:
         form = UserCreationForm()
     
@@ -3005,6 +3208,8 @@ def logout_view(request):
     auth_logout(request)
     messages.success(request, 'You have been logged out successfully!')
     return redirect('home')
+
+
 
 
 # ==================== STATIC PAGES ====================
@@ -3612,10 +3817,10 @@ def admin_news_submissions(request):
     filter_type = request.GET.get('filter', 'pending')
     search_query = request.GET.get('q', '')
     
-    # Base queryset - user-submitted news
+    # FIX: Make sure we're getting ALL user-submitted news
+    # Either post_type='user_news' OR is_news_submission=True
     submissions = Post.objects.filter(
-        is_news_submission=True,
-        post_type='user_news'
+        Q(post_type='user_news') | Q(is_news_submission=True)
     ).select_related('author', 'category', 'reviewed_by').order_by('-created_at')
     
     # Apply filters
@@ -3639,10 +3844,22 @@ def admin_news_submissions(request):
     
     # Statistics
     stats = {
-        'pending': Post.objects.filter(is_news_submission=True, submission_status='pending').count(),
-        'approved': Post.objects.filter(is_news_submission=True, submission_status='approved').count(),
-        'rejected': Post.objects.filter(is_news_submission=True, submission_status='rejected').count(),
-        'flagged': Post.objects.filter(is_news_submission=True, submission_status='flagged').count(),
+        'pending': Post.objects.filter(
+            Q(post_type='user_news') | Q(is_news_submission=True),
+            submission_status='pending'
+        ).count(),
+        'approved': Post.objects.filter(
+            Q(post_type='user_news') | Q(is_news_submission=True),
+            submission_status='approved'
+        ).count(),
+        'rejected': Post.objects.filter(
+            Q(post_type='user_news') | Q(is_news_submission=True),
+            submission_status='rejected'
+        ).count(),
+        'flagged': Post.objects.filter(
+            Q(post_type='user_news') | Q(is_news_submission=True),
+            submission_status='flagged'
+        ).count(),
     }
     
     # Pagination
@@ -3660,7 +3877,6 @@ def admin_news_submissions(request):
     }
     
     return render(request, 'admin/news_submissions.html', context)
-
 
 @staff_member_required
 def admin_auto_fetched_news(request):
@@ -3732,6 +3948,722 @@ def admin_auto_fetched_news(request):
     
     return render(request, 'admin/auto_fetched_news.html', context)
 
+
+@staff_member_required
+def get_fetcher_status(request):
+    """Get current fetcher status and configuration"""
+    try:
+        # Get current auto-fetcher status from cache or autostart
+        status = {
+            'running': auto_fetcher._running if hasattr(auto_fetcher, '_running') else False,
+            'test_mode': getattr(auto_fetcher, 'TEST_MODE', False),
+            'prod_interval': getattr(auto_fetcher, 'prod_interval', 12),
+            'prod_unit': getattr(auto_fetcher, 'prod_unit', 'hours'),
+            'prod_days': getattr(auto_fetcher, 'prod_days', 1),
+            'prod_limit': getattr(auto_fetcher, 'prod_limit', 100),
+            'prod_workers': getattr(auto_fetcher, 'prod_workers', 5),
+            'test_interval': getattr(auto_fetcher, 'test_interval', 5),
+            'test_unit': getattr(auto_fetcher, 'test_unit', 'minutes'),
+            'test_days': getattr(auto_fetcher, 'test_days', 1),
+            'test_limit': getattr(auto_fetcher, 'test_limit', 20),
+            'test_workers': getattr(auto_fetcher, 'test_workers', 2),
+            'last_fetch': cache.get('last_fetch_time', 'Never'),
+            'next_fetch': cache.get('next_fetch_time', 'Not scheduled'),
+            'fetch_count': getattr(auto_fetcher, 'fetch_count', 0),
+        }
+        
+        # Format interval for display
+        if status['test_mode']:
+            interval = status['test_interval']
+            unit = status['test_unit']
+        else:
+            interval = status['prod_interval']
+            unit = status['prod_unit']
+        
+        if unit == 'seconds':
+            status['interval_display'] = f"Every {interval} seconds"
+        elif unit == 'minutes':
+            status['interval_display'] = f"Every {interval} minutes"
+        else:
+            status['interval_display'] = f"Every {interval} hours"
+        
+        return JsonResponse({'status': 'success', 'data': status})
+    
+    except Exception as e:
+        logger.error(f"Error getting fetcher status: {e}")
+        return JsonResponse({'status': 'error', 'message': str(e)})
+
+
+@staff_member_required
+def save_fetcher_settings(request):
+    """Save auto-fetcher settings"""
+    if request.method != 'POST':
+        return JsonResponse({'status': 'error', 'message': 'Method not allowed'})
+    
+    try:
+        # Get settings from POST
+        test_mode = request.POST.get('test_mode') == 'true'
+        
+        # Production settings
+        prod_interval = int(request.POST.get('prod_interval', 12))
+        prod_unit = request.POST.get('prod_unit', 'hours')
+        prod_days = int(request.POST.get('prod_days', 1))
+        prod_limit = int(request.POST.get('prod_limit', 100))
+        prod_workers = int(request.POST.get('prod_workers', 5))
+        
+        # Test settings
+        test_interval = int(request.POST.get('test_interval', 5))
+        test_unit = request.POST.get('test_unit', 'minutes')
+        test_days = int(request.POST.get('test_days', 1))
+        test_limit = int(request.POST.get('test_limit', 20))
+        test_workers = int(request.POST.get('test_workers', 2))
+        
+        # Validate settings
+        if prod_interval < 1:
+            return JsonResponse({'status': 'error', 'message': 'Production interval must be at least 1'})
+        if test_interval < 1:
+            return JsonResponse({'status': 'error', 'message': 'Test interval must be at least 1'})
+        if prod_limit > 500:
+            return JsonResponse({'status': 'error', 'message': 'Production limit cannot exceed 500'})
+        if test_limit > 200:
+            return JsonResponse({'status': 'error', 'message': 'Test limit cannot exceed 200'})
+        
+        # Save to auto_fetcher instance
+        auto_fetcher.TEST_MODE = test_mode
+        auto_fetcher.prod_interval = prod_interval
+        auto_fetcher.prod_unit = prod_unit
+        auto_fetcher.prod_days = prod_days
+        auto_fetcher.prod_limit = prod_limit
+        auto_fetcher.prod_workers = prod_workers
+        auto_fetcher.test_interval = test_interval
+        auto_fetcher.test_unit = test_unit
+        auto_fetcher.test_days = test_days
+        auto_fetcher.test_limit = test_limit
+        auto_fetcher.test_workers = test_workers
+        
+        # Update fetch interval
+        if test_mode:
+            auto_fetcher.fetch_interval = auto_fetcher._convert_to_seconds(test_interval, test_unit)
+            auto_fetcher.days_to_fetch = test_days
+            auto_fetcher.limit = test_limit
+            auto_fetcher.workers = test_workers
+        else:
+            auto_fetcher.fetch_interval = auto_fetcher._convert_to_seconds(prod_interval, prod_unit)
+            auto_fetcher.days_to_fetch = prod_days
+            auto_fetcher.limit = prod_limit
+            auto_fetcher.workers = prod_workers
+        
+        # Save to cache for persistence
+        cache.set('auto_fetcher_settings', {
+            'test_mode': test_mode,
+            'prod_interval': prod_interval,
+            'prod_unit': prod_unit,
+            'prod_days': prod_days,
+            'prod_limit': prod_limit,
+            'prod_workers': prod_workers,
+            'test_interval': test_interval,
+            'test_unit': test_unit,
+            'test_days': test_days,
+            'test_limit': test_limit,
+            'test_workers': test_workers,
+        }, timeout=None)  # Never expire
+        
+        # Log the change
+        FetchLog.objects.create(
+            action='settings_update',
+            details=f"Updated fetcher settings: Mode={'test' if test_mode else 'production'}"
+        )
+        
+        return JsonResponse({
+            'status': 'success',
+            'message': 'Settings saved successfully!',
+            'interval_display': auto_fetcher._format_interval(auto_fetcher.fetch_interval)
+        })
+    
+    except Exception as e:
+        logger.error(f"Error saving fetcher settings: {e}")
+        return JsonResponse({'status': 'error', 'message': str(e)})
+
+
+@staff_member_required
+def toggle_auto_fetcher(request):
+    """Start or stop the auto-fetcher"""
+    if request.method != 'POST':
+        return JsonResponse({'status': 'error', 'message': 'Method not allowed'})
+    
+    try:
+        action = request.POST.get('action', 'toggle')
+        
+        if action == 'start':
+            if not auto_fetcher._running:
+                auto_fetcher.start()
+                message = 'Auto-fetcher started successfully!'
+            else:
+                message = 'Auto-fetcher is already running'
+        
+        elif action == 'stop':
+            if auto_fetcher._running:
+                auto_fetcher.stop()
+                message = 'Auto-fetcher stopped successfully!'
+            else:
+                message = 'Auto-fetcher is already stopped'
+        
+        elif action == 'restart':
+            if auto_fetcher._running:
+                auto_fetcher.stop()
+                time.sleep(2)
+            auto_fetcher.start()
+            message = 'Auto-fetcher restarted successfully!'
+        
+        else:
+            # Toggle
+            if auto_fetcher._running:
+                auto_fetcher.stop()
+                message = 'Auto-fetcher stopped'
+            else:
+                auto_fetcher.start()
+                message = 'Auto-fetcher started'
+        
+        # Log the action
+        FetchLog.objects.create(
+            action=f'auto_fetcher_{action}',
+            details=message
+        )
+        
+        return JsonResponse({
+            'status': 'success',
+            'message': message,
+            'running': auto_fetcher._running
+        })
+    
+    except Exception as e:
+        logger.error(f"Error toggling auto-fetcher: {e}")
+        return JsonResponse({'status': 'error', 'message': str(e)})
+
+
+@staff_member_required
+def trigger_manual_fetch(request):
+    """Trigger an immediate manual fetch"""
+    if request.method != 'POST':
+        return JsonResponse({'status': 'error', 'message': 'Method not allowed'})
+    
+    try:
+        # Get parameters
+        days = int(request.POST.get('days', 1))
+        limit = int(request.POST.get('limit', 50))
+        workers = int(request.POST.get('workers', 5))
+        sources = request.POST.get('sources', 'all')
+        extract_full = request.POST.get('extract_full') == 'true'
+        
+        # Start fetch in background (or return task ID for polling)
+        from .tasks import fetch_news_task
+        task = fetch_news_task.delay(days, limit, workers, sources, extract_full)
+        
+        return JsonResponse({
+            'status': 'started',
+            'message': 'Fetch started in background',
+            'task_id': task.id
+        })
+    
+    except Exception as e:
+        logger.error(f"Error triggering manual fetch: {e}")
+        return JsonResponse({'status': 'error', 'message': str(e)})
+
+
+
+@staff_member_required
+def quick_fetch_news(request):
+    """Enhanced admin panel for quick news fetching with full controls"""
+    from .news_fetcher_unified import UnifiedNewsFetcher
+    from django.conf import settings
+    import hashlib
+    import random
+    
+    # Get API key
+    api_key = getattr(settings, 'NEWS_API_KEY', '')
+    
+    # Handle AJAX fetch request
+    if request.method == 'POST' and request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        try:
+            # Get fetch parameters
+            days = int(request.POST.get('days', 1))
+            limit = int(request.POST.get('limit', 50))
+            workers = int(request.POST.get('workers', 5))
+            sources = request.POST.get('sources', 'all')
+            content_type = request.POST.get('content_type', 'all')
+            extract_full = request.POST.get('extract_full') == 'true'
+            
+            # Initialize fetcher
+            fetcher = UnifiedNewsFetcher()
+            
+            response_data = {
+                'status': 'started',
+                'message': 'Starting fetch...',
+                'logs': []
+            }
+            
+            # Log start
+            response_data['logs'].append(f'🚀 Starting fetch at {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}')
+            response_data['logs'].append(f'📅 Days: {days}, Limit: {limit}, Workers: {workers}')
+            response_data['logs'].append(f'📡 Sources: {sources}, Extract Full: {extract_full}')
+            
+            # Fetch based on sources
+            all_articles = []
+            
+            if sources in ['all', 'newsapi']:
+                response_data['logs'].append('📰 Fetching from NewsAPI...')
+                newsapi_articles = fetcher.fetch_from_newsapi(api_key, days=days, limit=limit // 2)
+                all_articles.extend(newsapi_articles)
+                response_data['logs'].append(f'   ✅ Found {len(newsapi_articles)} articles from NewsAPI')
+            
+            if sources in ['all', 'rss']:
+                response_data['logs'].append('📡 Fetching from RSS feeds...')
+                rss_articles = fetcher.fetch_from_rss(limit=limit // 2)
+                all_articles.extend(rss_articles)
+                response_data['logs'].append(f'   ✅ Found {len(rss_articles)} articles from RSS')
+            
+            if not all_articles:
+                return JsonResponse({
+                    'status': 'error',
+                    'message': 'No articles found from any source',
+                    'logs': response_data['logs'] + ['❌ No articles found!']
+                })
+            
+            # Remove duplicates
+            response_data['logs'].append('🔍 Removing duplicates...')
+            unique_articles = fetcher.remove_duplicates(all_articles)
+            response_data['logs'].append(f'   ✅ {len(unique_articles)} unique articles (removed {len(all_articles) - len(unique_articles)} duplicates)')
+            
+            # Filter by content type
+            if content_type != 'all':
+                filtered_articles = []
+                response_data['logs'].append(f'🔍 Filtering by content type: {content_type}...')
+                
+                # First, do quick checks on existing data
+                for article in unique_articles:
+                    if content_type == 'with_video':
+                        if article.get('has_video') or 'youtube' in article.get('url', '').lower():
+                            filtered_articles.append(article)
+                    elif content_type == 'with_audio':
+                        if article.get('has_audio'):
+                            filtered_articles.append(article)
+                    elif content_type == 'with_images':
+                        if article.get('image') or article.get('has_images'):
+                            filtered_articles.append(article)
+                    elif content_type == 'text_only':
+                        if not (article.get('has_video') or article.get('has_audio')):
+                            filtered_articles.append(article)
+                
+                # If we need to check deeper and extract full content
+                if len(filtered_articles) < len(unique_articles) * 0.1 and extract_full:
+                    response_data['logs'].append('   ⚠️ Not enough matches, doing deeper extraction...')
+                    # Process a sample to check
+                    sample = unique_articles[:min(10, len(unique_articles))]
+                    processed = fetcher.process_articles_parallel(sample, max_workers=2, extract_full=True)
+                    
+                    for i, article in enumerate(unique_articles):
+                        if i < len(processed) and processed[i].get('videos'):
+                            filtered_articles.append(article)
+                
+                if filtered_articles:
+                    unique_articles = filtered_articles
+                    response_data['logs'].append(f'   ✅ Filtered to {len(unique_articles)} articles based on content type')
+                else:
+                    response_data['logs'].append('   ⚠️ No matches found, using all articles')
+            
+            # Extract content if requested
+            if extract_full and unique_articles:
+                response_data['logs'].append('🔍 Extracting full content and media...')
+                response_data['logs'].append(f'   Using {workers} worker threads...')
+                
+                processed_articles = fetcher.process_articles_parallel(
+                    unique_articles, 
+                    max_workers=workers,
+                    extract_full=True
+                )
+                
+                # Count media
+                total_videos = sum(len(a.get('videos', [])) for a in processed_articles)
+                total_audio = sum(len(a.get('audios', [])) for a in processed_articles)
+                total_images = sum(len(a.get('images', [])) for a in processed_articles)
+                
+                response_data['logs'].append(f'   ✅ Extraction complete!')
+                response_data['logs'].append(f'      📹 Videos: {total_videos}')
+                response_data['logs'].append(f'      🎵 Audio: {total_audio}')
+                response_data['logs'].append(f'      🖼️  Images: {total_images}')
+            else:
+                processed_articles = unique_articles
+            
+            # Save to database
+            response_data['logs'].append('💾 Saving to database...')
+            saved_count = 0
+            media_stats = {'videos': 0, 'audio': 0, 'images': 0}
+            
+            # Get or create system user
+            try:
+                system_user = User.objects.get(username='news_bot')
+            except User.DoesNotExist:
+                system_user = User.objects.create_user(
+                    username='news_bot',
+                    email='news@ojukaye.com',
+                    password='NewsBot123!',
+                    first_name='News',
+                    last_name='Bot',
+                    is_active=False
+                )
+            
+            for article in processed_articles:
+                try:
+                    title = article.get('title', '').strip()
+                    url = article.get('url', '').strip()
+                    
+                    if not title or not url:
+                        continue
+                    
+                    # Check if exists
+                    if Post.objects.filter(external_url=url).exists():
+                        continue
+                    
+                    # Generate ID
+                    external_id = hashlib.md5(url.encode()).hexdigest()
+                    
+                    # Get content
+                    content = article.get('full_content') or article.get('description') or article.get('content') or title
+                    content = fetcher.clean_html(content)[:15000]
+                    
+                    # Get category
+                    category_name = fetcher.detect_category(title, content)
+                    category, _ = Category.objects.get_or_create(
+                        name=category_name,
+                        defaults={'slug': category_name.lower().replace(' ', '-')}
+                    )
+                    
+                    # Parse date
+                    published_at = fetcher.parse_date(article.get('published_at'))
+                    
+                    # Get media
+                    videos = article.get('videos', [])
+                    audios = article.get('audios', [])
+                    images = article.get('images', [])
+                    main_image = article.get('image') or article.get('main_image') or (images[0]['url'] if images else '')
+                    
+                    # Create post
+                    post = Post.objects.create(
+                        title=title[:200],
+                        content=content,
+                        post_type='news',
+                        category=category,
+                        author=system_user,
+                        external_source=article.get('source', 'Unknown')[:100],
+                        external_url=url[:500],
+                        external_id=external_id,
+                        image_url=main_image[:1000] if main_image else '',
+                        published_at=published_at,
+                        status='published',
+                        is_auto_fetched=True,
+                        is_approved=True,
+                        verification_status='pending',
+                        meta_description=content[:160] if content else title[:160],
+                        video_urls=videos if videos else None,
+                        audio_urls=audios if audios else None,
+                        has_media=bool(videos or audios),
+                        views=random.randint(10, 100)
+                    )
+                    
+                    saved_count += 1
+                    media_stats['videos'] += len(videos)
+                    media_stats['audio'] += len(audios)
+                    media_stats['images'] += len(images)
+                    
+                except Exception as e:
+                    logger.error(f"Error saving article: {e}")
+                    continue
+            
+            response_data['logs'].append(f'   ✅ Saved {saved_count} articles')
+            response_data['logs'].append(f'      📹 Videos: {media_stats["videos"]}')
+            response_data['logs'].append(f'      🎵 Audio: {media_stats["audio"]}')
+            response_data['logs'].append(f'      🖼️  Images: {media_stats["images"]}')
+            response_data['logs'].append(f'✅ Fetch completed at {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}')
+            
+            # Create fetch log
+            FetchLog.objects.create(
+                action='manual_fetch',
+                details=f"Fetched {saved_count} articles ({media_stats['videos']} videos, {media_stats['audio']} audio)",
+                user=request.user
+            )
+            
+            return JsonResponse({
+                'status': 'success',
+                'message': f'Successfully fetched {saved_count} articles!',
+                'logs': response_data['logs'],
+                'stats': {
+                    'saved': saved_count,
+                    'videos': media_stats['videos'],
+                    'audio': media_stats['audio'],
+                    'images': media_stats['images']
+                }
+            })
+            
+        except Exception as e:
+            logger.error(f"Error in quick fetch: {e}")
+            return JsonResponse({
+                'status': 'error',
+                'message': str(e),
+                'logs': response_data.get('logs', []) + [f'❌ Error: {str(e)}']
+            })
+    
+    # Get current stats
+    stats = {
+        'total_fetched': Post.objects.filter(is_auto_fetched=True).count(),
+        'last_24h': Post.objects.filter(
+            is_auto_fetched=True,
+            created_at__gte=timezone.now() - timedelta(hours=24)
+        ).count(),
+        'with_video': Post.objects.filter(
+            is_auto_fetched=True,
+            has_media=True
+        ).exclude(video_urls__isnull=True).count(),
+        'with_audio': Post.objects.filter(
+            is_auto_fetched=True,
+            has_media=True
+        ).exclude(audio_urls__isnull=True).count(),
+        'verified': Post.objects.filter(
+            is_auto_fetched=True,
+            verification_status='verified'
+        ).count(),
+    }
+    
+    # Get auto-fetcher status
+    fetcher_status = {
+        'running': auto_fetcher._running if hasattr(auto_fetcher, '_running') else False,
+        'test_mode': getattr(auto_fetcher, 'TEST_MODE', False),
+        'prod_interval': getattr(auto_fetcher, 'prod_interval', 12),
+        'prod_unit': getattr(auto_fetcher, 'prod_unit', 'hours'),
+        'prod_days': getattr(auto_fetcher, 'prod_days', 1),
+        'prod_limit': getattr(auto_fetcher, 'prod_limit', 100),
+        'prod_workers': getattr(auto_fetcher, 'prod_workers', 5),
+        'test_interval': getattr(auto_fetcher, 'test_interval', 5),
+        'test_unit': getattr(auto_fetcher, 'test_unit', 'minutes'),
+        'test_days': getattr(auto_fetcher, 'test_days', 1),
+        'test_limit': getattr(auto_fetcher, 'test_limit', 20),
+        'test_workers': getattr(auto_fetcher, 'test_workers', 2),
+        'last_fetch': cache.get('last_fetch_time', 'Never'),
+        'next_fetch': cache.get('next_fetch_time', 'Not scheduled'),
+    }
+    
+    # Format interval for display
+    if fetcher_status['test_mode']:
+        interval = fetcher_status['test_interval']
+        unit = fetcher_status['test_unit']
+    else:
+        interval = fetcher_status['prod_interval']
+        unit = fetcher_status['prod_unit']
+    
+    if unit == 'seconds':
+        fetcher_status['interval_display'] = f"Every {interval} seconds"
+    elif unit == 'minutes':
+        fetcher_status['interval_display'] = f"Every {interval} minutes"
+    else:
+        fetcher_status['interval_display'] = f"Every {interval} hours"
+    
+    # Get recent fetch logs
+    recent_logs = FetchLog.objects.all().order_by('-created_at')[:10]
+    
+    context = {
+        'stats': stats,
+        'api_key_exists': bool(api_key),
+        'auto_fetcher_status': fetcher_status,
+        'recent_logs': recent_logs,
+        'title': 'News Fetch Control Center',
+    }
+    
+    return render(request, 'admin/quick_fetch.html', context)
+
+
+# ============================================================================
+# FETCH LOGS & HISTORY
+# ============================================================================
+
+@staff_member_required
+def get_fetch_logs(request):
+    """Get fetch logs"""
+    try:
+        days = int(request.GET.get('days', 7))
+        limit = int(request.GET.get('limit', 50))
+        
+        logs = FetchLog.objects.filter(
+            created_at__gte=timezone.now() - timedelta(days=days)
+        ).order_by('-created_at')[:limit]
+        
+        data = [{
+            'action': log.action,
+            'details': log.details,
+            'user': log.user.username if log.user else 'System',
+            'created_at': log.created_at.strftime('%Y-%m-%d %H:%M:%S')
+        } for log in logs]
+        
+        return JsonResponse({'status': 'success', 'logs': data})
+    
+    except Exception as e:
+        return JsonResponse({'status': 'error', 'message': str(e)})
+
+
+@staff_member_required
+def clear_fetch_logs(request):
+    """Clear fetch logs"""
+    if request.method != 'POST':
+        return JsonResponse({'status': 'error', 'message': 'Method not allowed'})
+    
+    try:
+        # Keep only last 30 days
+        cutoff = timezone.now() - timedelta(days=30)
+        deleted = FetchLog.objects.filter(created_at__lt=cutoff).delete()
+        
+        return JsonResponse({
+            'status': 'success',
+            'message': f'Cleared {deleted[0]} old logs'
+        })
+    
+    except Exception as e:
+        return JsonResponse({'status': 'error', 'message': str(e)})
+
+
+# ============================================================================
+# SCHEDULE MANAGEMENT
+# ============================================================================
+
+@staff_member_required
+def get_fetch_schedule(request):
+    """Get upcoming fetch schedule"""
+    try:
+        # Calculate next 5 fetch times
+        schedule = []
+        if auto_fetcher._running:
+            current_time = timezone.now()
+            interval = auto_fetcher.fetch_interval
+            
+            for i in range(5):
+                next_time = current_time + timedelta(seconds=interval * (i + 1))
+                schedule.append({
+                    'time': next_time.strftime('%Y-%m-%d %H:%M:%S'),
+                    'type': 'Auto Fetch',
+                    'status': 'scheduled'
+                })
+        
+        return JsonResponse({'status': 'success', 'schedule': schedule})
+    
+    except Exception as e:
+        return JsonResponse({'status': 'error', 'message': str(e)})
+
+
+@staff_member_required
+def add_scheduled_fetch(request):
+    """Add a custom scheduled fetch"""
+    if request.method != 'POST':
+        return JsonResponse({'status': 'error', 'message': 'Method not allowed'})
+    
+    try:
+        fetch_time = request.POST.get('fetch_time')
+        fetch_type = request.POST.get('fetch_type', 'auto')
+        days = int(request.POST.get('days', 1))
+        limit = int(request.POST.get('limit', 50))
+        
+        # Create schedule
+        schedule = FetchSchedule.objects.create(
+            scheduled_time=fetch_time,
+            fetch_type=fetch_type,
+            days=days,
+            limit=limit,
+            created_by=request.user
+        )
+        
+        return JsonResponse({
+            'status': 'success',
+            'message': f'Scheduled fetch at {fetch_time}',
+            'id': schedule.id
+        })
+    
+    except Exception as e:
+        return JsonResponse({'status': 'error', 'message': str(e)})
+
+
+@staff_member_required
+def clear_fetch_schedule(request):
+    """Clear all scheduled fetches"""
+    if request.method != 'POST':
+        return JsonResponse({'status': 'error', 'message': 'Method not allowed'})
+    
+    try:
+        # Clear all future schedules
+        deleted = FetchSchedule.objects.filter(
+            scheduled_time__gte=timezone.now(),
+            completed=False
+        ).delete()
+        
+        return JsonResponse({
+            'status': 'success',
+            'message': f'Cleared {deleted[0]} scheduled fetches'
+        })
+    
+    except Exception as e:
+        return JsonResponse({'status': 'error', 'message': str(e)})
+
+
+# ============================================================================
+# FETCH STATISTICS
+# ============================================================================
+
+@staff_member_required
+def get_fetch_statistics(request):
+    """Get detailed fetch statistics"""
+    try:
+        from django.db.models import Count
+        from django.db.models.functions import TruncDate
+        
+        # Fetch counts by day
+        daily_fetches = Post.objects.filter(
+            is_auto_fetched=True,
+            created_at__gte=timezone.now() - timedelta(days=30)
+        ).annotate(
+            date=TruncDate('created_at')
+        ).values('date').annotate(
+            count=Count('id')
+        ).order_by('date')
+        
+        # Source breakdown
+        sources = Post.objects.filter(
+            is_auto_fetched=True
+        ).values('external_source').annotate(
+            count=Count('id')
+        ).order_by('-count')[:10]
+        
+        # Category breakdown
+        categories = Post.objects.filter(
+            is_auto_fetched=True
+        ).values('category__name').annotate(
+            count=Count('id')
+        ).order_by('-count')
+        
+        # Media statistics
+        media_stats = {
+            'with_video': Post.objects.filter(is_auto_fetched=True).exclude(video_urls__isnull=True).count(),
+            'with_audio': Post.objects.filter(is_auto_fetched=True).exclude(audio_urls__isnull=True).count(),
+            'with_images': Post.objects.filter(is_auto_fetched=True).exclude(image_url='').count(),
+        }
+        
+        return JsonResponse({
+            'status': 'success',
+            'data': {
+                'daily': list(daily_fetches),
+                'sources': list(sources),
+                'categories': list(categories),
+                'media': media_stats,
+                'total': Post.objects.filter(is_auto_fetched=True).count()
+            }
+        })
+    
+    except Exception as e:
+        return JsonResponse({'status': 'error', 'message': str(e)})
 
 @staff_member_required
 def admin_news_detail(request, post_id):
@@ -4095,3 +5027,211 @@ def get_trending_topics(limit=5):
         cache.set(cache_key, topics, 3600)  # 1 hour
     
     return topics
+
+@require_GET
+def get_modal_messages(request):
+    """API endpoint to get messages for modal display"""
+    messages_list = []
+    
+    if 'modal_messages' in request.session:
+        messages_list = request.session['modal_messages']
+        # Clear after retrieving
+        del request.session['modal_messages']
+    
+    return JsonResponse({'messages': messages_list})
+
+def resources(request):
+    """Resources page"""
+    trending_topics = get_trending_topics()
+    
+    context = {
+        'trending_topics': trending_topics,
+        'title': 'Resources',
+    }
+    return render(request, 'resources/resources.html', context)
+
+
+def help_center(request):
+    """Help center page"""
+    trending_topics = get_trending_topics()
+    
+    # Get help articles by category
+    help_categories = [
+        {
+            'name': 'Account & Profile',
+            'icon': 'user-circle',
+            'articles': [
+                {'title': 'How to create an account', 'url': '?article=create-account'},
+                {'title': 'Editing your profile', 'url': '?article=edit-profile'},
+                {'title': 'Changing your password', 'url': '?article=change-password'},
+                {'title': 'Account verification', 'url': '?article=verification'},
+                {'title': 'Deleting your account', 'url': '?article=delete-account'},
+            ]
+        },
+        {
+            'name': 'Posts & Content',
+            'icon': 'pen',
+            'articles': [
+                {'title': 'Creating a post', 'url': '?article=create-post'},
+                {'title': 'Adding images and media', 'url': '?article=add-media'},
+                {'title': 'Post privacy settings', 'url': '?article=post-privacy'},
+                {'title': 'Commenting on posts', 'url': '?article=commenting'},
+                {'title': 'Liking and bookmarking', 'url': '?article=likes-bookmarks'},
+            ]
+        },
+        {
+            'name': 'News & Verification',
+            'icon': 'newspaper',
+            'articles': [
+                {'title': 'How news is verified', 'url': '?article=news-verification'},
+                {'title': 'Submitting news articles', 'url': '?article=submit-news'},
+                {'title': 'Understanding verification badges', 'url': '?article=verification-badges'},
+                {'title': 'Reporting fake news', 'url': '?article=report-fake'},
+            ]
+        },
+        {
+            'name': 'Business & Advertising',
+            'icon': 'briefcase',
+            'articles': [
+                {'title': 'Business account benefits', 'url': '?article=business-benefits'},
+                {'title': 'How to advertise', 'url': '?article=how-to-advertise'},
+                {'title': 'Ad pricing and credits', 'url': '?article=ad-pricing'},
+                {'title': 'Analytics and insights', 'url': '?article=analytics'},
+            ]
+        },
+        {
+            'name': 'Technical Support',
+            'icon': 'code',
+            'articles': [
+                {'title': 'Browser requirements', 'url': '?article=browser-requirements'},
+                {'title': 'Troubleshooting issues', 'url': '?article=troubleshooting'},
+                {'title': 'Report a bug', 'url': '?article=report-bug'},
+            ]
+        },
+        {
+            'name': 'Safety & Privacy',
+            'icon': 'shield-alt',
+            'articles': [
+                {'title': 'Privacy policy overview', 'url': '?article=privacy-overview'},
+                {'title': 'Blocking and reporting', 'url': '?article=block-report'},
+                {'title': 'Safety tips', 'url': '?article=safety-tips'},
+                {'title': 'Two-factor authentication', 'url': '?article=2fa'},
+            ]
+        },
+    ]
+    
+    context = {
+        'trending_topics': trending_topics,
+        'help_categories': help_categories,
+        'title': 'Help Center',
+    }
+    return render(request, 'help/help.html', context)
+
+
+
+def people_to_follow(request):
+    """People to follow suggestions page"""
+    if request.user.is_authenticated:
+        following_ids = Follow.objects.filter(follower=request.user).values_list('following_id', flat=True)
+        suggested_users = User.objects.exclude(
+            Q(id=request.user.id) | Q(id__in=following_ids)
+        ).filter(is_active=True).order_by('?')[:20]
+    else:
+        suggested_users = User.objects.filter(is_active=True).order_by('?')[:20]
+    
+    trending_topics = get_trending_topics()
+    
+    context = {
+        'suggested_users': suggested_users,
+        'trending_topics': trending_topics,
+        'title': 'People to Follow',
+    }
+    return render(request, 'discover/people.html', context)
+
+
+def faq(request):
+    """FAQ page"""
+    trending_topics = get_trending_topics()
+    
+    faq_items = [
+        {
+            'question': 'How do I create an account?',
+            'answer': 'Click the "Register" button on the top right corner and fill in your details. You\'ll need a valid email address and a strong password.',
+            'category': 'account'
+        },
+        {
+            'question': 'How do I reset my password?',
+            'answer': 'Go to the login page and click "Forgot Password". Enter your email address and we\'ll send you instructions to reset your password.',
+            'category': 'account'
+        },
+        {
+            'question': 'How do I report a post?',
+            'answer': 'Click the three dots on any post and select "Report". Our moderation team will review the content.',
+            'category': 'moderation'
+        },
+        {
+            'question': 'How do I verify my business account?',
+            'answer': 'Go to your profile settings, select "Upgrade to Business", and submit your business details for verification.',
+            'category': 'business'
+        },
+        {
+            'question': 'How does news verification work?',
+            'answer': 'Our system automatically checks news sources for credibility, fact-checks content, and assigns a verification score. Staff members also review flagged content.',
+            'category': 'news'
+        },
+        {
+            'question': 'Can I delete my account?',
+            'answer': 'Yes, go to your profile settings and select "Delete Account". Please note this action is permanent and cannot be undone.',
+            'category': 'account'
+        },
+    ]
+    
+    context = {
+        'trending_topics': trending_topics,
+        'faq_items': faq_items,
+        'title': 'Frequently Asked Questions',
+    }
+    return render(request, 'help/faq.html', context)
+
+@require_POST
+def track_share(request, post_id):
+    """Track post shares"""
+    if not request.user.is_authenticated:
+        return JsonResponse({'error': 'Authentication required'}, status=401)
+    
+    try:
+        post = Post.objects.get(id=post_id)
+        post.shares = F('shares') + 1
+        post.save()
+        
+        return JsonResponse({'success': True})
+    except Post.DoesNotExist:
+        return JsonResponse({'error': 'Post not found'}, status=404)
+
+
+@login_required
+@csrf_exempt
+def test_ajax(request):
+    """Test view to verify AJAX is working"""
+    if request.method == 'POST':
+        return JsonResponse({
+            'success': True,
+            'message': 'AJAX is working!',
+            'user': request.user.username
+        })
+    return JsonResponse({'error': 'GET not allowed'}, status=405)
+
+@require_POST
+def track_share(request, post_id):
+    """Track post shares"""
+    if not request.user.is_authenticated:
+        return JsonResponse({'error': 'Authentication required'}, status=401)
+    
+    try:
+        post = Post.objects.get(id=post_id)
+        post.shares = F('shares') + 1
+        post.save()
+        
+        return JsonResponse({'success': True})
+    except Post.DoesNotExist:
+        return JsonResponse({'error': 'Post not found'}, status=404)

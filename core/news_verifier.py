@@ -1,47 +1,26 @@
-# core/news_verifier.py (Enhanced)
 
 import re
 import requests
 import json
 import hashlib
 import logging
-from typing import Dict, List, Tuple, Optional
+from typing import Dict, List, Optional
 from datetime import datetime, timedelta
 from urllib.parse import urlparse
 from django.utils import timezone
 from django.conf import settings
 from django.core.cache import cache
-import nltk
-from nltk.sentiment import SentimentIntensityAnalyzer
-from textblob import TextBlob
-import spacy
 
 logger = logging.getLogger(__name__)
 
-# Download NLTK data if needed
-try:
-    nltk.data.find('vader_lexicon')
-except LookupError:
-    nltk.download('vader_lexicon')
-
 class EnhancedNewsVerifier:
-    """Advanced news verification with multiple checks"""
+    """Advanced news verification with multiple checks - NO UNUSED LIBRARIES"""
     
     def __init__(self):
         self.session = requests.Session()
         self.session.headers.update({
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
         })
-        
-        # Initialize sentiment analyzer
-        self.sentiment_analyzer = SentimentIntensityAnalyzer()
-        
-        # Load spaCy model if available
-        try:
-            self.nlp = spacy.load('en_core_web_sm')
-        except:
-            self.nlp = None
-            logger.warning("spaCy model not available - run: python -m spacy download en_core_web_sm")
         
         # Known fact-checking websites
         self.fact_check_sites = [
@@ -78,13 +57,13 @@ class EnhancedNewsVerifier:
             'naijagossip.com', 'trendybeatz.com'
         ]
         
-        # Sensationalist keywords
+        # Sensationalist keywords with their penalty scores
         self.sensationalist_keywords = [
-            ('shocking', 0.2), ('unbelievable', 0.2), ('you won\'t believe', 0.3),
+            ('shocking', 0.2), ('unbelievable', 0.2), ("you won't believe", 0.3),
             ('mind-blowing', 0.2), ('jaw-dropping', 0.2), ('incredible', 0.1),
             ('amazing', 0.1), ('epic', 0.1), ('massive', 0.1), ('huge', 0.1),
             ('explosive', 0.2), ('revealed', 0.1), ('exposed', 0.2),
-            ('conspiracy', 0.3), ('cover-up', 0.3), ('they don\'t want you to know', 0.4),
+            ('conspiracy', 0.3), ('cover-up', 0.3), ("they don't want you to know", 0.4),
             ('what happens next', 0.3), ('will shock you', 0.3), ('goes viral', 0.2),
             ('breaking news', 0.1), ('just in', 0.1), ('urgent', 0.1),
             ('must read', 0.1), ('share this', 0.1), ('forward this', 0.1),
@@ -105,6 +84,12 @@ class EnhancedNewsVerifier:
         # Official domains (higher trust)
         self.official_domains = ['.gov', '.edu', '.org', '.int', '.mil']
         
+        # Emotional words for language analysis
+        self.emotional_positive = ['great', 'amazing', 'wonderful', 'excellent', 'perfect',
+                                   'brilliant', 'fantastic', 'outstanding', 'incredible']
+        self.emotional_negative = ['terrible', 'awful', 'horrible', 'disgusting', 'hate',
+                                   'worst', 'evil', 'corrupt', 'disaster', 'catastrophe']
+        
         # Cache timeout for API calls
         self.cache_timeout = 3600  # 1 hour
     
@@ -118,11 +103,15 @@ class EnhancedNewsVerifier:
         
         if not title or not url:
             return {
-                'score': 0.0,
+                'overall_score': 0.0,
+                'score_percentage': 0,
                 'status': 'fake',
-                'error': 'Missing required fields',
                 'checks': {},
-                'verification_time': timezone.now().isoformat()
+                'warnings': ['Missing required fields'],
+                'strengths': [],
+                'recommendations': ['Article cannot be verified without title and URL'],
+                'verified_at': timezone.now().isoformat(),
+                'method': 'ai_assisted'
             }
         
         # Run all verification checks
@@ -144,33 +133,27 @@ class EnhancedNewsVerifier:
         sensationalism_check = self._check_sensationalism(title, content)
         checks['sensationalism'] = sensationalism_check
         
-        # 5. Language analysis
+        # 5. Language analysis (simplified, no NLP libraries)
         language_check = self._analyze_language(title + ' ' + content)
         checks['language'] = language_check
         
-        # 6. External verification if enabled
-        if getattr(settings, 'ENABLE_EXTERNAL_VERIFICATION', False):
-            external_check = self._check_external_sources(title)
-            checks['external'] = external_check
-        
-        # 7. Consistency check
+        # 6. Consistency check
         consistency_check = self._check_consistency(title, content, url)
         checks['consistency'] = consistency_check
         
-        # 8. Duplicate detection
+        # 7. Duplicate detection (simplified)
         duplicate_check = self._check_duplicates(title, content)
         checks['duplicate'] = duplicate_check
         
         # Calculate weighted average
         weights = {
-            'source': 0.25,
+            'source': 0.30,
             'url': 0.10,
             'content': 0.15,
             'sensationalism': 0.15,
             'language': 0.10,
-            'external': 0.10,
             'consistency': 0.10,
-            'duplicate': 0.05
+            'duplicate': 0.10
         }
         
         weighted_score = 0
@@ -205,13 +188,13 @@ class EnhancedNewsVerifier:
         # Generate recommendations
         recommendations = []
         if final_score >= 0.8:
-            recommendations.append("Article appears to be legitimate news - can be auto-approved")
+            recommendations.append("✅ Article appears to be legitimate news - can be auto-approved")
         elif final_score >= 0.6:
-            recommendations.append("Article requires human review before approval")
+            recommendations.append("⚠️ Article requires human review before approval")
         elif final_score >= 0.4:
-            recommendations.append("Article shows multiple concerns - investigate thoroughly")
+            recommendations.append("🔍 Article shows multiple concerns - investigate thoroughly")
         else:
-            recommendations.append("Article likely contains fake news - consider rejection")
+            recommendations.append("❌ Article likely contains fake news - consider rejection")
         
         return {
             'overall_score': round(final_score, 2),
@@ -263,26 +246,26 @@ class EnhancedNewsVerifier:
         if domain_age:
             if domain_age < 30:  # Less than 30 days
                 score -= 0.2
-                reasons.append(f"Very new domain (less than {domain_age} days)")
+                reasons.append(f"⚠️ Very new domain (less than {domain_age} days)")
             elif domain_age < 365:  # Less than 1 year
                 score -= 0.1
-                reasons.append(f"Domain less than 1 year old ({domain_age} days)")
+                reasons.append(f"⚠️ Domain less than 1 year old ({domain_age} days)")
             elif domain_age > 3650:  # More than 10 years
                 score += 0.1
-                reasons.append(f"Established domain (over 10 years old)")
+                reasons.append(f"✅ Established domain (over 10 years old)")
         
         # Check for HTTPS
         if url.startswith('https://'):
             score += 0.05
-            reasons.append("Secure HTTPS connection")
+            reasons.append("✅ Secure HTTPS connection")
         else:
             score -= 0.05
-            reasons.append("No HTTPS - insecure connection")
+            reasons.append("⚠️ No HTTPS - insecure connection")
         
         # Check if source is provided
         if not source:
             score -= 0.1
-            reasons.append("No source attribution provided")
+            reasons.append("⚠️ No source attribution provided")
         
         return {
             'score': max(0.0, min(1.0, score)),
@@ -302,26 +285,26 @@ class EnhancedNewsVerifier:
         for shortener in self.url_shorteners:
             if shortener in url:
                 score -= 0.3
-                reasons.append(f"URL shortener detected: {shortener}")
+                reasons.append(f"⚠️ URL shortener detected: {shortener}")
                 break
         
         # Check for IP address instead of domain
         if re.match(r'https?://\d+\.\d+\.\d+\.\d+', url):
             score -= 0.4
-            reasons.append("IP address used instead of domain name - suspicious")
+            reasons.append("❌ IP address used instead of domain name - suspicious")
         
         # Check for suspicious TLDs
         for tld in self.suspicious_tlds:
             if domain.endswith(tld):
                 score -= 0.2
-                reasons.append(f"Suspicious top-level domain: {tld}")
+                reasons.append(f"⚠️ Suspicious top-level domain: {tld}")
                 break
         
         # Check for excessive subdomains
         subdomain_count = domain.count('.')
         if subdomain_count > 3:
             score -= 0.1
-            reasons.append(f"Excessive subdomains: {subdomain_count} levels")
+            reasons.append(f"⚠️ Excessive subdomains: {subdomain_count} levels")
         
         # Check for misspelled domain names (typosquatting)
         common_domains = ['google', 'facebook', 'twitter', 'youtube', 'instagram']
@@ -330,13 +313,13 @@ class EnhancedNewsVerifier:
                 # Check if it's a close match but not exact
                 if self._levenshtein_distance(common, domain) < 3:
                     score -= 0.3
-                    reasons.append(f"Possible typosquatting: {domain} looks like {common}.com")
+                    reasons.append(f"❌ Possible typosquatting: {domain} looks like {common}.com")
                     break
         
         # Check for numeric domain
         if re.match(r'^[0-9-]+$', domain.replace('.', '')):
             score -= 0.2
-            reasons.append("Numeric domain - suspicious")
+            reasons.append("⚠️ Numeric domain - suspicious")
         
         return {
             'score': max(0.0, min(1.0, score)),
@@ -353,32 +336,32 @@ class EnhancedNewsVerifier:
         content_length = len(content)
         if content_length < 100:
             score -= 0.3
-            reasons.append(f"Very short content ({content_length} chars)")
+            reasons.append(f"❌ Very short content ({content_length} chars)")
         elif content_length < 300:
             score -= 0.1
-            reasons.append(f"Short content ({content_length} chars)")
+            reasons.append(f"⚠️ Short content ({content_length} chars)")
         elif content_length > 1000:
             score += 0.1
-            reasons.append(f"Good content length ({content_length} chars)")
+            reasons.append(f"✅ Good content length ({content_length} chars)")
         
         # Check word count
         words = content.split()
         word_count = len(words)
         if word_count < 20:
             score -= 0.2
-            reasons.append(f"Very few words ({word_count} words)")
+            reasons.append(f"❌ Very few words ({word_count} words)")
         elif word_count > 200:
             score += 0.1
-            reasons.append(f"Substantial word count ({word_count} words)")
+            reasons.append(f"✅ Substantial word count ({word_count} words)")
         
         # Check for quotes
         quotes = re.findall(r'"([^"]*)"', content)
         if len(quotes) > 2:
             score += 0.1
-            reasons.append(f"Contains multiple quotes ({len(quotes)} quotes)")
+            reasons.append(f"✅ Contains multiple quotes ({len(quotes)} quotes)")
         elif len(quotes) > 0:
             score += 0.05
-            reasons.append("Contains quotes")
+            reasons.append("✅ Contains quotes")
         
         # Check for attribution
         attribution_keywords = [
@@ -388,29 +371,29 @@ class EnhancedNewsVerifier:
         for keyword in attribution_keywords:
             if keyword in content.lower():
                 score += 0.1
-                reasons.append(f"Has proper attribution: '{keyword}'")
+                reasons.append(f"✅ Has proper attribution: '{keyword}'")
                 break
         
         # Check for statistics and data
         statistics = re.findall(r'\d+%|\d+ percent|\d+\.\d+|\d+\s*(?:million|billion|thousand)', content.lower())
         if len(statistics) > 2:
             score += 0.1
-            reasons.append(f"Contains multiple statistics ({len(statistics)} stats)")
+            reasons.append(f"✅ Contains multiple statistics ({len(statistics)} stats)")
         elif statistics:
             score += 0.05
-            reasons.append("Contains statistics")
+            reasons.append("✅ Contains statistics")
         
         # Check for dates
         dates = re.findall(r'\b\d{1,2}[/-]\d{1,2}[/-]\d{2,4}\b|\b(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]* \d{1,2},? \d{4}\b', content)
         if dates:
             score += 0.05
-            reasons.append("Contains specific dates")
+            reasons.append("✅ Contains specific dates")
         
         # Check for paragraph structure
         paragraphs = content.split('\n\n')
         if len(paragraphs) > 3:
             score += 0.05
-            reasons.append("Good paragraph structure")
+            reasons.append("✅ Good paragraph structure")
         
         return {
             'score': max(0.0, min(1.0, score)),
@@ -435,7 +418,7 @@ class EnhancedNewsVerifier:
             if keyword in text:
                 score -= penalty
                 detected_keywords.append(keyword)
-                reasons.append(f"Sensationalist language: '{keyword}'")
+                reasons.append(f"⚠️ Sensationalist language: '{keyword}'")
         
         # Check for excessive punctuation
         exclamation_count = title.count('!')
@@ -443,17 +426,17 @@ class EnhancedNewsVerifier:
         
         if exclamation_count > 1:
             score -= 0.1
-            reasons.append(f"Excessive exclamation marks in title ({exclamation_count})")
+            reasons.append(f"⚠️ Excessive exclamation marks in title ({exclamation_count})")
         if question_count > 2:
             score -= 0.1
-            reasons.append(f"Excessive question marks in title ({question_count})")
+            reasons.append(f"⚠️ Excessive question marks in title ({question_count})")
         
         # Check ALL CAPS words
         words = title.split()
         caps_words = [w for w in words if w.isupper() and len(w) > 3]
         if caps_words:
             score -= 0.1
-            reasons.append(f"ALL CAPS words in title: {', '.join(caps_words)}")
+            reasons.append(f"⚠️ ALL CAPS words in title: {', '.join(caps_words)}")
         
         # Check for clickbait patterns
         clickbait_patterns = [
@@ -466,7 +449,7 @@ class EnhancedNewsVerifier:
         for pattern, penalty in clickbait_patterns:
             if re.search(pattern, text):
                 score -= penalty
-                reasons.append(f"Clickbait pattern: '{pattern}'")
+                reasons.append(f"⚠️ Clickbait pattern: '{pattern}'")
         
         # Check for emotional language
         emotional_words = ['heartbreaking', 'devastating', 'miraculous', 'horrifying',
@@ -474,7 +457,7 @@ class EnhancedNewsVerifier:
         emotional_count = sum(1 for word in emotional_words if word in text)
         if emotional_count > 3:
             score -= 0.1
-            reasons.append(f"Excessive emotional language ({emotional_count} words)")
+            reasons.append(f"⚠️ Excessive emotional language ({emotional_count} words)")
         
         return {
             'score': max(0.0, min(1.0, score)),
@@ -483,100 +466,74 @@ class EnhancedNewsVerifier:
         }
     
     def _analyze_language(self, text: str) -> Dict:
-        """Analyze language for emotional content and bias"""
+        """Analyze language for emotional content and bias - NO NLP LIBRARIES"""
         score = 0.6
         reasons = []
+        text_lower = text.lower()
         
-        # Sentiment analysis
-        try:
-            sentiment = self.sentiment_analyzer.polarity_scores(text)
-            
-            # Extreme sentiment can indicate bias
-            if sentiment['compound'] > 0.7:
-                score -= 0.1
-                reasons.append("Extremely positive sentiment - possible bias")
-            elif sentiment['compound'] < -0.7:
-                score -= 0.1
-                reasons.append("Extremely negative sentiment - possible bias")
-            elif -0.2 <= sentiment['compound'] <= 0.2:
-                score += 0.1
-                reasons.append("Neutral sentiment - objective tone")
-            
-            # High emotional content
-            if sentiment['pos'] > 0.4:
-                score -= 0.05
-                reasons.append("High positive emotional content")
-            if sentiment['neg'] > 0.4:
-                score -= 0.05
-                reasons.append("High negative emotional content")
-        except Exception as e:
-            logger.error(f"Sentiment analysis error: {e}")
-            sentiment = {'compound': 0, 'pos': 0, 'neg': 0, 'neu': 1}
+        # Check for emotional language
+        pos_count = sum(1 for word in self.emotional_positive if word in text_lower)
+        neg_count = sum(1 for word in self.emotional_negative if word in text_lower)
         
-        # Subjectivity analysis with TextBlob
-        try:
-            blob = TextBlob(text[:1000])  # Limit for performance
-            subjectivity = blob.sentiment.subjectivity
-            
-            if subjectivity > 0.7:
-                score -= 0.1
-                reasons.append("Highly subjective language")
-            elif subjectivity < 0.3:
-                score += 0.1
-                reasons.append("Objective, factual language")
-        except:
-            pass
+        if pos_count > 5:
+            score -= 0.15
+            reasons.append("⚠️ Extremely positive language - possible bias")
+        elif pos_count > 3:
+            score -= 0.1
+            reasons.append("⚠️ Very positive language")
+        elif pos_count > 1:
+            score -= 0.05
+            reasons.append("⚠️ Some positive emotional content")
         
-        # Readability score (simplified Flesch-Kincaid)
-        try:
-            sentences = nltk.sent_tokenize(text[:1000])
-            words = nltk.word_tokenize(text[:1000])
-            
-            if sentences and words:
-                avg_words_per_sentence = len(words) / len(sentences)
-                if avg_words_per_sentence > 30:
+        if neg_count > 5:
+            score -= 0.15
+            reasons.append("⚠️ Extremely negative language - possible bias")
+        elif neg_count > 3:
+            score -= 0.1
+            reasons.append("⚠️ Very negative language")
+        elif neg_count > 1:
+            score -= 0.05
+            reasons.append("⚠️ Some negative emotional content")
+        
+        # If both positive and negative are low, likely objective
+        if pos_count <= 1 and neg_count <= 1:
+            score += 0.1
+            reasons.append("✅ Language appears objective and balanced")
+        
+        # Simple sentence complexity check
+        sentences = text.split('.')
+        if sentences:
+            # Filter out empty sentences
+            sentences = [s for s in sentences if len(s.strip()) > 10]
+            if sentences:
+                avg_words = sum(len(s.split()) for s in sentences) / len(sentences)
+                
+                if avg_words > 30:
                     score -= 0.05
-                    reasons.append("Very complex sentence structure")
-                elif avg_words_per_sentence < 10:
+                    reasons.append("⚠️ Very complex sentence structure")
+                elif avg_words < 8:
                     score -= 0.05
-                    reasons.append("Very simple sentence structure")
-        except:
-            pass
+                    reasons.append("⚠️ Very simple sentence structure - may lack depth")
+                elif 12 <= avg_words <= 25:
+                    score += 0.05
+                    reasons.append("✅ Good sentence complexity")
+        
+        # Check for first-person language (indicates opinion vs fact)
+        first_person = ['i ', ' me ', ' my ', 'mine ', 'we ', ' us ', 'our ']
+        first_person_count = sum(1 for word in first_person if f' {word}' in f' {text_lower} ')
+        if first_person_count > 3:
+            score -= 0.1
+            reasons.append("⚠️ Heavy use of first-person language - may be opinion")
         
         return {
             'score': max(0.0, min(1.0, score)),
-            'sentiment': sentiment,
-            'reasons': reasons
-        }
-    
-    def _check_external_sources(self, title: str) -> Dict:
-        """Check external fact-checking sources"""
-        score = 0.5
-        reasons = []
-        fact_checks = []
-        
-        # Check cache first
-        cache_key = f'fact_check_{hashlib.md5(title.encode()).hexdigest()}'
-        cached_result = cache.get(cache_key)
-        
-        if cached_result:
-            return cached_result
-        
-        # Simplified check - in production, you'd use APIs
-        # For now, we'll just note that external check is not implemented
-        
-        reasons.append("External fact-checking not configured")
-        
-        result = {
-            'score': score,
             'reasons': reasons,
-            'fact_checks': fact_checks
+            'stats': {
+                'positive_words': pos_count,
+                'negative_words': neg_count,
+                'first_person': first_person_count
+            }
         }
-        
-        # Cache the result
-        cache.set(cache_key, result, self.cache_timeout)
-        
-        return result
     
     def _check_consistency(self, title: str, content: str, url: str) -> Dict:
         """Check for internal consistency"""
@@ -594,17 +551,17 @@ class EnhancedNewsVerifier:
         
         if title_words:
             title_in_content = sum(1 for word in title_words if word in content_lower)
-            title_coverage = title_in_content / len(title_words)
+            title_coverage = title_in_content / len(title_words) if title_words else 0
             
             if title_coverage < 0.3:
                 score -= 0.2
-                reasons.append(f"Title not well represented in content (only {title_coverage:.0%} match)")
+                reasons.append(f"❌ Title not well represented in content (only {title_coverage:.0%} match)")
             elif title_coverage < 0.5:
                 score -= 0.1
-                reasons.append(f"Title partially represented in content ({title_coverage:.0%} match)")
+                reasons.append(f"⚠️ Title partially represented in content ({title_coverage:.0%} match)")
             else:
                 score += 0.1
-                reasons.append(f"Title well represented in content ({title_coverage:.0%} match)")
+                reasons.append(f"✅ Title well represented in content ({title_coverage:.0%} match)")
         
         # Check for date consistency
         current_year = timezone.now().year
@@ -612,7 +569,7 @@ class EnhancedNewsVerifier:
         future_years = [y for y in years_mentioned if int(y) > current_year + 1]
         if future_years:
             score -= 0.1
-            reasons.append(f"Future dates mentioned: {', '.join(future_years)}")
+            reasons.append(f"⚠️ Future dates mentioned: {', '.join(future_years)}")
         
         # Check for contradictory statements (simplified)
         contradiction_pairs = [
@@ -624,12 +581,15 @@ class EnhancedNewsVerifier:
         contradictions = 0
         for word1, word2 in contradiction_pairs:
             if word1 in content_lower and word2 in content_lower:
-                if abs(content_lower.index(word1) - content_lower.index(word2)) < 500:
+                # Simple check - if both appear, might be contradiction
+                pos1 = content_lower.find(word1)
+                pos2 = content_lower.find(word2)
+                if abs(pos1 - pos2) < 500:  # Within reasonable distance
                     contradictions += 1
         
         if contradictions > 2:
             score -= 0.1
-            reasons.append(f"Potential contradictory statements detected ({contradictions} pairs)")
+            reasons.append(f"⚠️ Potential contradictory statements detected ({contradictions} pairs)")
         
         return {
             'score': max(0.0, min(1.0, score)),
@@ -644,9 +604,6 @@ class EnhancedNewsVerifier:
         reasons = []
         similar_posts = []
         
-        # Create content hash
-        content_hash = hashlib.md5(content.encode()).hexdigest()
-        
         # Look for similar posts in last 30 days
         time_threshold = timezone.now() - timedelta(days=30)
         
@@ -657,13 +614,13 @@ class EnhancedNewsVerifier:
         title_keywords = {w for w in title_words if w not in stopwords and len(w) > 3}
         
         if title_keywords:
-            # Find posts with similar keywords
+            # Find posts with similar keywords (simplified)
             similar_posts_qs = Post.objects.filter(
                 status='published',
                 created_at__gte=time_threshold
-            ).exclude(id=0)  # Will filter later
+            ).exclude(id=0)[:50]  # Limit for performance
             
-            for post in similar_posts_qs[:20]:
+            for post in similar_posts_qs:
                 post_title_words = set(post.title.lower().split())
                 post_keywords = {w for w in post_title_words if w not in stopwords and len(w) > 3}
                 
@@ -680,7 +637,7 @@ class EnhancedNewsVerifier:
                             'title': post.title,
                             'similarity': round(similarity, 2)
                         })
-                        reasons.append(f"Very similar to existing post: {post.title[:50]}")
+                        reasons.append(f"⚠️ Very similar to existing post: {post.title[:50]}")
                     elif similarity > 0.5:
                         score -= 0.1
                         similar_posts.append({
@@ -688,7 +645,7 @@ class EnhancedNewsVerifier:
                             'title': post.title,
                             'similarity': round(similarity, 2)
                         })
-                        reasons.append(f"Similar to existing post: {post.title[:50]}")
+                        reasons.append(f"ℹ️ Similar to existing post: {post.title[:50]}")
         
         return {
             'score': max(0.0, min(1.0, score)),
@@ -770,6 +727,7 @@ class EnhancedNewsVerifier:
                 logger.error(f"Error verifying article: {e}")
                 article['verification'] = {
                     'overall_score': 0.0,
+                    'score_percentage': 0,
                     'status': 'pending',
                     'error': str(e),
                     'verified_at': timezone.now().isoformat()
@@ -802,58 +760,62 @@ def process_news_submission(post):
     post.verification_method = 'ai_assisted'
     
     # Check for auto-approval based on system settings
-    settings = SystemSettings.objects.first()
-    auto_approve_threshold = settings.auto_approve_threshold if settings else 0.8
-    
-    if verification_result['overall_score'] >= auto_approve_threshold:
-        post.submission_status = 'approved'
-        post.status = 'published'
-        post.save()
+    try:
+        settings = SystemSettings.objects.first()
+        auto_approve_threshold = settings.auto_approve_threshold if settings else 0.8
         
-        from .models import Notification, UserActivity
-        Notification.objects.create(
-            user=post.author,
-            notification_type='news_approved',
-            message=f'Your news article "{post.title}" has been automatically approved (AI score: {verification_result["overall_score"]})',
-            post=post
-        )
-        
-        UserActivity.objects.create(
-            user=post.author,
-            activity_type='news_approved',
-            post=post,
-            details={'auto_approved': True, 'score': verification_result['overall_score']}
-        )
-        
-    elif verification_result['overall_score'] < 0.3:
-        # Auto-reject very low quality submissions
-        post.submission_status = 'rejected'
-        post.status = 'draft'
-        post.rejection_reason = f'AI verification indicates this may not be legitimate news (score: {verification_result["overall_score"]})'
-        post.save()
-        
-        from .models import Notification
-        Notification.objects.create(
-            user=post.author,
-            notification_type='news_rejected',
-            message=f'Your news article "{post.title}" was automatically rejected (AI score: {verification_result["overall_score"]})',
-            post=post
-        )
-    else:
+        if verification_result['overall_score'] >= auto_approve_threshold:
+            post.submission_status = 'approved'
+            post.status = 'published'
+            post.save()
+            
+            from .models import Notification, UserActivity
+            Notification.objects.create(
+                user=post.author,
+                notification_type='news_approved',
+                message=f'Your news article "{post.title}" has been automatically approved (AI score: {verification_result["overall_score"]})',
+                post=post
+            )
+            
+            UserActivity.objects.create(
+                user=post.author,
+                activity_type='news_approved',
+                post=post,
+                details={'auto_approved': True, 'score': verification_result['overall_score']}
+            )
+            
+        elif verification_result['overall_score'] < 0.3:
+            # Auto-reject very low quality submissions
+            post.submission_status = 'rejected'
+            post.status = 'draft'
+            post.rejection_reason = f'AI verification indicates this may not be legitimate news (score: {verification_result["overall_score"]})'
+            post.save()
+            
+            from .models import Notification
+            Notification.objects.create(
+                user=post.author,
+                notification_type='news_rejected',
+                message=f'Your news article "{post.title}" was automatically rejected (AI score: {verification_result["overall_score"]})',
+                post=post
+            )
+        else:
+            post.save()
+    except Exception as e:
+        logger.error(f"Error in auto-approval workflow: {e}")
         post.save()
     
     return post
 
 
 # Function to verify existing posts
-def verify_existing_posts():
+def verify_existing_posts(limit=50):
     """Run verification on existing unverified news posts"""
     from .models import Post
     
     unverified_posts = Post.objects.filter(
         is_news_submission=True,
         verification_status='pending'
-    ).exclude(verification_status='verified')[:50]
+    ).exclude(verification_status='verified')[:limit]
     
     verifier = EnhancedNewsVerifier()
     results = []

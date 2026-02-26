@@ -1,0 +1,351 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}About Us - Ojukaye{% endblock %}
+
+{% block content %}
+<div class="about-page">
+    <!-- Hero Section -->
+    <section class="about-hero">
+        <div class="container">
+            <h1>About Ojukaye</h1>
+            <p class="subtitle">Connecting Nigeria's voices, sharing authentic stories, and delivering trusted news</p>
+        </div>
+    </section>
+
+    <!-- Mission Section -->
+    <section class="mission-section">
+        <div class="container">
+            <div class="mission-grid">
+                <div class="mission-content">
+                    <h2>Our Mission</h2>
+                    <p>Ojukaye was founded with a simple yet powerful vision: to create a platform where Nigerians can share their stories, engage in meaningful discussions, and access reliable news from trusted sources.</p>
+                    <p>We believe in the power of community-driven content combined with professional journalism to create an informed, engaged, and connected society.</p>
+                    <div class="stats-grid">
+                        <div class="stat">
+                            <span class="stat-number">{{ total_users|default:"50K+" }}</span>
+                            <span class="stat-label">Active Users</span>
+                        </div>
+                        <div class="stat">
+                            <span class="stat-number">{{ total_posts|default:"100K+" }}</span>
+                            <span class="stat-label">Posts</span>
+                        </div>
+                        <div class="stat">
+                            <span class="stat-number">{{ news_sources|default:"500+" }}</span>
+                            <span class="stat-label">News Sources</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="mission-image">
+                    <img src="{% static 'images/about-mission.jpg' %}" alt="Ojukaye Mission" onerror="this.src='https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=600&q=80'">
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Values Section -->
+    <section class="values-section">
+        <div class="container">
+            <h2 class="section-title">Our Core Values</h2>
+            <div class="values-grid">
+                <div class="value-card">
+                    <div class="value-icon">
+                        <i class="fas fa-check-circle"></i>
+                    </div>
+                    <h3>Authenticity</h3>
+                    <p>We prioritize genuine content and real voices over sensationalism and misinformation.</p>
+                </div>
+                <div class="value-card">
+                    <div class="value-icon">
+                        <i class="fas fa-balance-scale"></i>
+                    </div>
+                    <h3>Integrity</h3>
+                    <p>Our commitment to truth and ethical journalism guides every decision we make.</p>
+                </div>
+                <div class="value-card">
+                    <div class="value-icon">
+                        <i class="fas fa-users"></i>
+                    </div>
+                    <h3>Community</h3>
+                    <p>We believe in the power of community and creating spaces for meaningful connection.</p>
+                </div>
+                <div class="value-card">
+                    <div class="value-icon">
+                        <i class="fas fa-shield-alt"></i>
+                    </div>
+                    <h3>Safety</h3>
+                    <p>We're committed to providing a safe, respectful environment for all users.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Story Section -->
+    <section class="story-section">
+        <div class="container">
+            <div class="story-grid">
+                <div class="story-image">
+                    <img src="{% static 'images/about-story.jpg' %}" alt="Our Story" onerror="this.src='https://images.unsplash.com/photo-1557804506-669a67965ba0?w=600&q=80'">
+                </div>
+                <div class="story-content">
+                    <h2>Our Story</h2>
+                    <p>Ojukaye began in 2024 as a response to the growing need for a platform that combines social engagement with reliable news delivery. Founded by a team of Nigerian journalists and tech entrepreneurs, we set out to create something different.</p>
+                    <p>Today, we've grown into a vibrant community of writers, journalists, business owners, and everyday Nigerians sharing their perspectives and staying informed about the issues that matter.</p>
+                    <a href="{% url 'contact' %}" class="btn btn-primary">Join Our Journey</a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Team Section -->
+    <section class="team-section">
+        <div class="container">
+            <h2 class="section-title">Meet Our Team</h2>
+            <div class="team-grid">
+                <div class="team-member">
+                    <div class="member-image">
+                        <img src="{% static 'images/team-1.jpg' %}" alt="Founder" onerror="this.src='https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=400&q=80'">
+                    </div>
+                    <h3>Chidi Ojukaye</h3>
+                    <p class="member-role">Founder & CEO</p>
+                    <p class="member-bio">Former journalist with 15 years of experience in Nigerian media.</p>
+                </div>
+                <div class="team-member">
+                    <div class="member-image">
+                        <img src="{% static 'images/team-2.jpg' %}" alt="CTO" onerror="this.src='https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=400&q=80'">
+                    </div>
+                    <h3>Amara Okonkwo</h3>
+                    <p class="member-role">Chief Technology Officer</p>
+                    <p class="member-bio">Tech innovator passionate about building community platforms.</p>
+                </div>
+                <div class="team-member">
+                    <div class="member-image">
+                        <img src="{% static 'images/team-3.jpg' %}" alt="Editor" onerror="this.src='https://images.unsplash.com/photo-1494790108777-766fd5f7f26c?w=400&q=80'">
+                    </div>
+                    <h3>Ngozi Eze</h3>
+                    <p class="member-role">Editor-in-Chief</p>
+                    <p class="member-bio">Award-winning journalist leading our news verification team.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+</div>
+
+<style>
+.about-page {
+    background: var(--bg-primary);
+}
+
+.about-hero {
+    background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+    color: white;
+    padding: 6rem 0;
+    text-align: center;
+}
+
+.about-hero h1 {
+    font-size: 3.5rem;
+    font-weight: 800;
+    margin-bottom: 1rem;
+}
+
+.about-hero .subtitle {
+    font-size: 1.25rem;
+    max-width: 600px;
+    margin: 0 auto;
+    opacity: 0.9;
+}
+
+.mission-section {
+    padding: 5rem 0;
+}
+
+.mission-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 4rem;
+    align-items: center;
+}
+
+.mission-content h2 {
+    font-size: 2.5rem;
+    margin-bottom: 1.5rem;
+}
+
+.mission-content p {
+    color: var(--text-secondary);
+    line-height: 1.8;
+    margin-bottom: 2rem;
+}
+
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 2rem;
+    text-align: center;
+}
+
+.stat-number {
+    display: block;
+    font-size: 2.5rem;
+    font-weight: 800;
+    color: var(--primary);
+    line-height: 1;
+    margin-bottom: 0.5rem;
+}
+
+.stat-label {
+    color: var(--text-tertiary);
+    font-size: 0.875rem;
+}
+
+.mission-image img {
+    width: 100%;
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-xl);
+}
+
+.values-section {
+    padding: 5rem 0;
+    background: var(--bg-secondary);
+}
+
+.section-title {
+    text-align: center;
+    font-size: 2.5rem;
+    margin-bottom: 3rem;
+}
+
+.values-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 2rem;
+}
+
+.value-card {
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    padding: 2rem;
+    text-align: center;
+    transition: all 0.3s;
+}
+
+.value-card:hover {
+    transform: translateY(-5px);
+    box-shadow: var(--shadow-lg);
+}
+
+.value-icon {
+    width: 64px;
+    height: 64px;
+    background: linear-gradient(135deg, var(--primary-light), var(--primary));
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 1.5rem;
+    color: white;
+    font-size: 2rem;
+}
+
+.value-card h3 {
+    margin-bottom: 1rem;
+}
+
+.value-card p {
+    color: var(--text-secondary);
+    line-height: 1.6;
+}
+
+.story-section {
+    padding: 5rem 0;
+}
+
+.story-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 4rem;
+    align-items: center;
+}
+
+.story-image img {
+    width: 100%;
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-xl);
+}
+
+.story-content h2 {
+    font-size: 2.5rem;
+    margin-bottom: 1.5rem;
+}
+
+.story-content p {
+    color: var(--text-secondary);
+    line-height: 1.8;
+    margin-bottom: 2rem;
+}
+
+.team-section {
+    padding: 5rem 0;
+    background: var(--bg-secondary);
+}
+
+.team-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 2rem;
+    max-width: 1000px;
+    margin: 0 auto;
+}
+
+.team-member {
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    padding: 2rem;
+    text-align: center;
+}
+
+.member-image {
+    width: 150px;
+    height: 150px;
+    border-radius: 50%;
+    overflow: hidden;
+    margin: 0 auto 1.5rem;
+}
+
+.member-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.member-role {
+    color: var(--primary);
+    font-weight: 600;
+    margin: 0.5rem 0;
+}
+
+.member-bio {
+    color: var(--text-tertiary);
+    font-size: 0.875rem;
+}
+
+@media (max-width: 768px) {
+    .about-hero h1 {
+        font-size: 2.5rem;
+    }
+    
+    .mission-grid,
+    .story-grid {
+        grid-template-columns: 1fr;
+        gap: 2rem;
+    }
+    
+    .stats-grid {
+        grid-template-columns: 1fr;
+    }
+}
+</style>
+{% endblock %}

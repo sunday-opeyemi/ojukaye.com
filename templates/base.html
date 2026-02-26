@@ -115,21 +115,12 @@
                             <i class="fas fa-file-alt"></i>
                             Manage Posts
                         </a>
-                        <a href="{% url 'fetch_news' %}" class="dropdown-item admin-item">
+                        <a href="{% url 'quick_fetch_news' %}" class="dropdown-item admin-item">
                             <i class="fas fa-sync-alt"></i>
-                            Fetch News
+                            Quick Fetch News
                         </a>
                         {% endif %}
-                        
-                        {% comment %} <div class="dropdown-divider"></div>
-                        <a href="#" class="dropdown-item dark-mode-toggle">
-                            <i class="fas fa-moon"></i>
-                            Dark Mode
-                        </a> {% endcomment %}
-                        {% comment %} <a href="{% url 'settings' %}" class="dropdown-item">
-                            <i class="fas fa-sliders-h"></i>
-                            Settings
-                        </a> {% endcomment %}
+
                         <div class="dropdown-divider"></div>
                         <a href="{% url 'logout' %}" class="dropdown-item logout-item">
                             <i class="fas fa-sign-out-alt"></i>
@@ -209,27 +200,6 @@
         </div>
     </nav>
     
-    <!-- Messages/Alerts Container -->
-    <div class="messages-container">
-        {% if messages %}
-            {% for message in messages %}
-            <div class="alert alert-{{ message.tags }}">
-                <div class="alert-content">
-                    <i class="fas 
-                        {% if message.tags == 'success' %}fa-check-circle
-                        {% elif message.tags == 'error' %}fa-exclamation-circle
-                        {% elif message.tags == 'warning' %}fa-exclamation-triangle
-                        {% else %}fa-info-circle{% endif %}">
-                    </i>
-                    <span>{{ message }}</span>
-                </div>
-                <button type="button" class="alert-close">
-                    <i class="fas fa-times"></i>
-                </button>
-            </div>
-            {% endfor %}
-        {% endif %}
-    </div>
     
     <!-- Main Content -->
     <main class="main-content">
@@ -260,19 +230,20 @@
                 <ul>
                     <li><a href="{% url 'home' %}">Home</a></li>
                     <li><a href="{% url 'online_news' %}">Online News</a></li>
-                    <li><a href="{% url 'trending_posts' %}">Trending</a></li>
+                    <li><a href="{% url 'trending' %}">Trending</a></li>
                     <li><a href="{% url 'discover' %}">Discover</a></li>
+                    <li><a href="{% url 'resources' %}">Resources</a></li>
                 </ul>
             </div>
             
             <div class="footer-section">
                 <h3>Resources</h3>
                 <ul>
-                    <li><a href="{% url 'help' %}">Help Center</a></li>
-                    <li><a href="{% url 'about' %}">About Us</a></li>
-                    <li><a href="{% url 'contact' %}">Contact</a></li>
-                    <li><a href="{% url 'privacy' %}">Privacy Policy</a></li>
-                    <li><a href="{% url 'terms' %}">Terms of Service</a></li>
+                    <li><a href="{% url 'help_center' %}">Help Center</a></li> 
+                    <li><a href="{% url 'about' %}">About Us</a></li>  
+                    <li><a href="{% url 'contact' %}">Contact</a></li> 
+                    <li><a href="{% url 'privacy' %}">Privacy Policy</a></li>  
+                    <li><a href="{% url 'terms' %}">Terms of Service</a></li> 
                 </ul>
             </div>
             

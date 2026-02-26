@@ -53,6 +53,7 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    'core.middleware.MessageToModalMiddleware',
     # 'ojuaye.context_processors.categories',
     # 'ojuaye.context_processors.trending_posts',
     # 'ojuaye.context_processors.notifications_count',
@@ -162,7 +163,7 @@ AD_IMPRESSION_RATE = 0.001  # ₦1 per 1000 impressions
 MIN_AD_BUDGET = 1000.00  # Minimum ad budget in Naira
 
 # News API Configuration
-NEWS_API_KEY = 'd50e0d8833d6444ebe8acfdd4d59fd55' 
+NEWS_API_KEY = '70faa98e3eb044e88aeb2695a7c2dae8' 
 NEWS_SOURCES = [
     'premiumtimesng.com',
     'punchng.com',
@@ -267,3 +268,22 @@ if not DEBUG:
     SECURE_BROWSER_XSS_FILTER = True
     SECURE_CONTENT_TYPE_NOSNIFF = True
     X_FRAME_OPTIONS = 'DENY'
+
+# ==================== TEMPLATE CACHE FIX ====================
+# This ensures templates always load the latest version
+TEMPLATES[0]['OPTIONS']['loaders'] = [
+    'django.template.loaders.filesystem.Loader',
+    'django.template.loaders.app_directories.Loader',
+]
+TEMPLATES[0]['APP_DIRS'] = False  # Disable cached loader
+
+# Disable all caching during development
+if DEBUG:
+    CACHES = {
+        'default': {
+            'BACKEND': 'django.core.cache.backends.dummy.DummyCache',
+        }
+    }
+    
+    # Add middleware to disable browser cache
+    MIDDLEWARE.insert(0, 'core.middleware.DisableBrowserCacheMiddleware')
