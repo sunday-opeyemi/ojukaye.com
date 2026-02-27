@@ -2,13 +2,15 @@ from django.urls import path
 from . import views
 
 urlpatterns = [
-    # ... your existing URLs ...
     
     # Home & Main Pages
-    path('', views.dynamic_home, name='home'),
-    path('online-news/', views.online_news, name='online_news'),
+    path('', views.dynamic_home, name='home'), 
+    path('online-news/', views.online_news, name='online_news'), 
     
-    path('logout/', views.logout_view, name='logout'), 
+    # Auth URLs
+    path('login/', views.login_view, name='login'),
+    path('logout/', views.logout_view, name='logout'),
+    path('register/', views.register_view, name='register'),
     
     # Trending & Discover
     path('trending/', views.trending_posts, name='trending'),

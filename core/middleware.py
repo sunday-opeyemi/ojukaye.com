@@ -73,26 +73,37 @@ class GuestRestrictionMiddleware(MiddlewareMixin):
     Guests can only view online news and public content
     """
     
-    # Pages that guests can access
+    # Pages that guests can access (PUBLIC)
     ALLOWED_PATHS = [
-        '/online-news/',  # Online news page - PUBLIC
+        '/online-news/',  # Online news page - MAIN PUBLIC PAGE
         '/login/',  # Login page
         '/register/',  # Registration page
         '/static/',  # Static files
         '/media/',  # Media files
         '/api/banners/',  # Banner API
         '/api/check-new-news/',  # Check news API
+        '/api/news-feed/',  # News feed API
+        '/about/',  # About page
+        '/contact/',  # Contact page
+        '/privacy/',  # Privacy policy
+        '/terms/',  # Terms of service
+        '/help/',  # Help center
+        '/faq/',  # FAQ
+        '/resources/',  # Resources
+        '/category/',  # Public category pages
+        '/search/',  # Public search
     ]
     
     # Public post URLs that guests can view
     ALLOWED_POST_PATHS = [
-        '/post/',  # Single post view
-        '/news/',  # News detail
+        '/post/',  # Individual post view
     ]
     
     def process_request(self, request):
-        # Skip middleware for API endpoints (except banners)
-        if request.path.startswith('/api/') and not request.path.startswith('/api/banners/'):
+        # Skip middleware for API endpoints (except specific public ones)
+        if request.path.startswith('/api/') and not any(
+            request.path.startswith(path) for path in ['/api/banners/', '/api/check-new-news/', '/api/news-feed/']
+        ):
             return
         
         # Allow superusers and staff
@@ -108,14 +119,13 @@ class GuestRestrictionMiddleware(MiddlewareMixin):
             # Allow guests to view individual posts
             return
         
-        # Check if user is authenticated for personal pages
-        if not request.user.is_authenticated:
-            # Store intended URL for redirect after login
-            if request.method == 'GET':
-                request.session['next'] = request.get_full_path()
-            
-            messages.warning(request, 'Please login or register to access your personal homepage')
-            return redirect('login')
+        # If user is authenticated, allow access to personal pages
+        if request.user.is_authenticated:
+            return
+        
+        # Guest trying to access protected page - redirect to online_news
+        messages.info(request, 'Please login to access your personal dashboard')
+        return redirect('online_news')
         
         # Check business account restrictions
         if request.path.startswith('/ads/') and hasattr(request.user, 'profile'):

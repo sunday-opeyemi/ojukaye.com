@@ -692,7 +692,7 @@ def auto_fetch_if_needed(request, news_posts):
                 # Use ThreadPoolExecutor to not block the request
                 import threading
                 def fetch_async():
-                    from .news_fetcher import NewsFetcher
+                    from .news_fetcher_unified import NewsFetcher
                     fetcher = NewsFetcher()
                     saved = fetcher.fetch_all_news()
                     logger.info(f"Auto-fetched {saved} news articles")
@@ -3145,9 +3145,10 @@ def fetch_news_status(request):
 # ==================== AUTH VIEWS ====================
 
 def login_view(request):
-    """User login with admin detection"""
+    """User login - redirect based on user type"""
     if request.user.is_authenticated:
-        return redirect('home')  # This will now go to dynamic_home
+        # If already logged in, go to personal home page
+        return redirect('home')
     
     if request.method == 'POST':
         form = AuthenticationForm(request, data=request.POST)
@@ -3159,14 +3160,18 @@ def login_view(request):
             if user is not None:
                 login(request, user)
                 
+                # Success message
                 if user.is_staff or user.is_superuser:
                     messages.success(request, f'Welcome back, Admin {username}!')
-                    next_page = request.GET.get('next', 'admin_dashboard')
                 else:
                     messages.success(request, f'Welcome back, {username}!')
-                    next_page = request.GET.get('next', 'home')  # Goes to dynamic_home
                 
-                return redirect(next_page)
+                # Redirect to personal home page (user dashboard)
+                # Check if there's a 'next' parameter, otherwise go to home
+                next_page = request.GET.get('next')
+                if next_page:
+                    return redirect(next_page)
+                return redirect('home')  # Personal user homepage
             else:
                 messages.error(request, 'Invalid username or password.')
         else:
@@ -3182,7 +3187,7 @@ def login_view(request):
 def register_view(request):
     """User registration"""
     if request.user.is_authenticated:
-        return redirect('home')  # This will now go to dynamic_home
+        return redirect('home')
     
     if request.method == 'POST':
         form = UserCreationForm(request.POST)
@@ -3195,7 +3200,7 @@ def register_view(request):
             # Auto login
             login(request, user)
             messages.success(request, 'Registration successful! Welcome to Ojukaye!')
-            return redirect('home') 
+            return redirect('home')  # Personal user homepage
     else:
         form = UserCreationForm()
     
