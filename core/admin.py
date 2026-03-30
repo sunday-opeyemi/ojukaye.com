@@ -247,7 +247,7 @@ class PostAdmin(admin.ModelAdmin):
     ]
     list_filter = [
         'post_type', 'status', 'category', 'created_at',
-        VerificationStatusFilter, SubmissionStatusFilter,
+        VerificationStatusFilter, SubmissionStatusFilter,  
         'is_approved', 'is_verified', 'is_sponsored', 
         'is_auto_fetched', 'has_media'
     ]

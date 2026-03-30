@@ -2100,15 +2100,19 @@ def create_post(request):
     ).order_by('-updated_at')[:5]
     
     if request.method == 'POST':
-        # DEBUG: Print all POST data
+        # DEBUG: Print all POST data safely
         print("\n" + "="*50)
         print("DEBUG - POST DATA:")
         for key, value in request.POST.items():
-            print(f"  {key}: {value}")
+            try:
+                # Safely encode any Unicode characters
+                safe_value = value.encode('ascii', errors='replace').decode('ascii')
+                print(f"  {key}: {safe_value}")
+            except Exception as e:
+                print(f"  {key}: [Error printing value: {e}]")
         print("="*50 + "\n")
         
         # CRITICAL FIX: Ensure post_type is in POST data
-        # If it's missing but we have a hidden field, add it
         if 'post_type' not in request.POST:
             # Check if it might be in a different format
             hidden_post_type = request.POST.get('post_type_hidden') or request.POST.get('post_type_value')
@@ -2130,33 +2134,60 @@ def create_post(request):
             post = form.save(commit=False)
             post.author = request.user
             
-            # FIX: Set post_type and is_news_submission consistently
+            # Set post_type and handle different post types
             post_type = form.cleaned_data.get('post_type')
             print(f"DEBUG - Post type from form: {post_type}")
             
             if post_type == 'user_news':
                 post.post_type = 'user_news'
-                post.is_news_submission = True  # IMPORTANT: Set this to True
+                post.is_news_submission = True
                 post.status = 'draft'  # News posts need approval
                 post.submission_status = 'pending'
-                messages.info(request, 'Your news submission has been sent for review.')
+                # Don't set published_at for news submissions until approved
+                messages.success(request, 'Your news has been submitted for review! It will be published after admin approval.')
+                
             elif post_type == 'discussion':
                 post.post_type = 'discussion'
                 post.is_news_submission = False
                 post.status = 'published'
+                post.published_at = timezone.now()
                 messages.success(request, 'Discussion post created successfully!')
+                
             else:  # profile_post
                 post.post_type = 'profile_post'
                 post.is_news_submission = False
                 post.status = 'published'
+                post.published_at = timezone.now()
                 messages.success(request, 'Profile post created successfully!')
             
             # Handle media
             if form.cleaned_data.get('video_url'):
                 post.has_media = True
+                video_url = form.cleaned_data.get('video_url')
+                post.video_urls = [{'url': video_url, 'type': 'embed', 'source': 'user'}]
             
             if form.cleaned_data.get('audio_url'):
                 post.has_media = True
+                audio_url = form.cleaned_data.get('audio_url')
+                post.audio_urls = [{'url': audio_url, 'type': 'embed', 'source': 'user'}]
+            
+            # Handle image
+            if form.cleaned_data.get('image'):
+                post.image = form.cleaned_data['image']
+            elif form.cleaned_data.get('image_url'):
+                post.image_url = form.cleaned_data['image_url']
+            
+            # Handle source for news posts
+            if post_type == 'user_news':
+                if form.cleaned_data.get('source_url'):
+                    post.external_url = form.cleaned_data['source_url']
+                    post.source_url = form.cleaned_data['source_url']
+                if form.cleaned_data.get('source_name'):
+                    post.external_source = form.cleaned_data['source_name']
+                    post.source_name = form.cleaned_data['source_name']
+            
+            # Handle privacy settings
+            post.privacy = form.cleaned_data.get('privacy', 'public')
             
             # Save the post
             post.save()
@@ -2171,14 +2202,38 @@ def create_post(request):
                 user=request.user,
                 activity_type='post_created',
                 post=post,
-                details={'title': post.title[:50]}
+                details={'title': post.title[:50], 'post_type': post_type}
             )
             
-            # Redirect based on post type
-            if post.post_type == 'user_news':
-                return redirect('news_submissions')
+            # Notify admins about new news submission
+            if post_type == 'user_news':
+                # Get system settings
+                try:
+                    settings = SystemSettings.objects.first()
+                    if settings and settings.notify_admin_on_submission:
+                        # Notify all staff users
+                        staff_users = User.objects.filter(is_staff=True)
+                        for staff in staff_users:
+                            Notification.objects.create(
+                                user=staff,
+                                from_user=request.user,
+                                notification_type='news_submission',
+                                message=f'New news submission: "{post.title}"',
+                                post=post
+                            )
+                except:
+                    pass  # Silently fail if settings don't exist
+            
+            # IMPORTANT FIX: Redirect based on post type
+            if post_type == 'user_news':
+                # For news posts, redirect to online news page
+                # Add the post ID to session for debugging if needed
+                request.session['last_submitted_post'] = post.id
+                return redirect('online_news')
             else:
+                # For discussion and profile posts, go to the post detail
                 return redirect('post_detail', post_id=post.id)
+                
         else:
             print("✗ Form is invalid!")
             print("Form errors:", form.errors)
@@ -2202,6 +2257,12 @@ def create_post(request):
     
     trending_topics = get_trending_topics()
     
+    # Get sidebar data safely
+    try:
+        sidebar_data = get_news_sidebar_data() if 'get_news_sidebar_data' in globals() else {}
+    except:
+        sidebar_data = {}
+    
     context = {
         'form': form,
         'categories': categories,
@@ -2209,6 +2270,14 @@ def create_post(request):
         'trending_topics': trending_topics,
         'followers_count': Follow.objects.filter(following=request.user).count(),
         'title': 'Create Post',
+        # Sidebar data with defaults
+        'top_sources': sidebar_data.get('top_sources', []),
+        'trending_news': sidebar_data.get('trending_news', []),
+        'sponsored_posts': sidebar_data.get('sponsored_posts', []),
+        'total_users': sidebar_data.get('total_users', 0),
+        'total_news': sidebar_data.get('total_news', 0),
+        'total_comments': sidebar_data.get('total_comments', 0),
+        'verified_count': sidebar_data.get('verified_count', 0),
     }
     return render(request, 'create_post.html', context)
 
@@ -2359,47 +2428,45 @@ def like_post(request, post_id):
             }, status=500)
         raise
     
-    
 
 @login_required
-@require_POST
-def bookmark_post(request, post_id):
-    """Bookmark/Unbookmark a post"""
-    try:
-        post = get_object_or_404(Post, id=post_id)
-        
-        if request.user in post.bookmarks.all():
-            post.bookmarks.remove(request.user)
-            bookmarked = False
-        else:
-            post.bookmarks.add(request.user)
-            bookmarked = True
-            
-            # Create activity
-            UserActivity.objects.create(
-                user=request.user,
-                activity_type='post_saved',
-                post=post,
-                details={'title': post.title[:50]}
-            )
-        
-        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-            return JsonResponse({
-                'success': True,
-                'bookmarked': bookmarked,
-                'bookmark_count': post.bookmarks.count()
-            })
-        
-        return redirect('post_detail', post_id=post_id)
+def bookmark_post(request):
+    """View bookmarked posts"""
+    bookmarked_posts = Post.objects.filter(
+        bookmarks=request.user,
+        status='published'
+    ).select_related('category', 'author').order_by('-published_at')
     
-    except Exception as e:
-        logger.error(f"Error in bookmark_post: {e}")
-        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-            return JsonResponse({
-                'success': False,
-                'error': str(e)
-            }, status=500)
-        raise
+    # Process media for each post
+    for post in bookmarked_posts:
+        post.processed_media = process_post_media_for_display(post)
+    
+    # Get trending topics
+    trending_topics = get_trending_topics()
+    
+    # Count posts by type for the collections
+    news_count = bookmarked_posts.filter(post_type__in=['news', 'user_news']).count()
+    discussion_count = bookmarked_posts.filter(post_type='discussion').count()
+    profile_count = bookmarked_posts.filter(post_type='profile_post').count()
+    
+    # Get trending posts for suggestions
+    trending_posts = Post.objects.filter(
+        status='published'
+    ).exclude(
+        bookmarks=request.user
+    ).annotate(
+        like_count=Count('likes')
+    ).order_by('-like_count', '-views')[:5]
+    
+    return render(request, 'post/saved_posts.html', {
+        'bookmarks': bookmarked_posts,
+        'news_count': news_count,
+        'discussion_count': discussion_count,
+        'profile_count': profile_count,
+        'trending_posts': trending_posts,
+        'trending_topics': trending_topics,
+        'title': 'Saved Posts'
+    })
 
 @login_required
 @require_POST
@@ -5240,3 +5307,33 @@ def track_share(request, post_id):
         return JsonResponse({'success': True})
     except Post.DoesNotExist:
         return JsonResponse({'error': 'Post not found'}, status=404)
+    
+    
+    
+@login_required
+@require_POST
+def toggle_bookmark(request, post_id):
+    """Toggle bookmark for a post (AJAX endpoint)"""
+    try:
+        post = get_object_or_404(Post, id=post_id)
+        
+        if request.user in post.bookmarks.all():
+            post.bookmarks.remove(request.user)
+            bookmarked = False
+            message = 'Bookmark removed'
+        else:
+            post.bookmarks.add(request.user)
+            bookmarked = True
+            message = 'Post saved'
+        
+        return JsonResponse({
+            'success': True,
+            'bookmarked': bookmarked,
+            'message': message,
+            'count': post.bookmarks.count()
+        })
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'error': str(e)
+        }, status=500)

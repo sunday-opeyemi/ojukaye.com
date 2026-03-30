@@ -10,6 +10,7 @@ from .models import (
 )
 from decimal import Decimal
 
+
 class RegistrationForm(UserCreationForm):
     ACCOUNT_TYPES = [
         ('individual', 'Individual Account'),

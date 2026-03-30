@@ -17,9 +17,24 @@
     <link rel="stylesheet" href="{% static 'css/styles.css' %}">
     
     {% block extra_css %}{% endblock %}
-    <meta name="csrf-token" content="{{ csrf_token }}">
 </head>
 <body>
+    <!-- Dark Mode Initialization Script (runs before anything else) -->
+    <script>
+        (function() {
+            // Set initial theme based on saved preference or system preference
+            const savedTheme = localStorage.getItem('theme');
+            if (savedTheme) {
+                document.documentElement.setAttribute('data-theme', savedTheme);
+            } else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+                document.documentElement.setAttribute('data-theme', 'dark');
+                localStorage.setItem('theme', 'dark');
+            } else {
+                document.documentElement.setAttribute('data-theme', 'light');
+            }
+        })();
+    </script>
+
     <!-- Navbar -->
     <nav class="navbar">
         <div class="nav-container">
@@ -73,6 +88,11 @@
                         {% endif %}
                         <span>Notifications</span>
                     </a>
+                    
+                    <!-- Dark Mode Toggle in Navbar - Only for logged in users -->
+                    <button class="nav-link dark-mode-nav-btn" id="darkModeToggle" aria-label="Toggle dark mode">
+                        <i class="fas fa-moon"></i>
+                    </button>
                     {% endif %}
                 </div>
                 
@@ -100,7 +120,7 @@
                             <i class="fas fa-user-edit"></i>
                             Edit Profile
                         </a>
-                        <a href="{% url 'bookmarks' %}" class="dropdown-item">
+                        <a href="{% url 'saved_posts' %}" class="dropdown-item">
                             <i class="fas fa-bookmark"></i>
                             Saved Posts
                         </a>
@@ -137,7 +157,7 @@
             </div>
         </div>
         
-        <!-- Mobile Menu (Hidden by default) -->
+        <!-- Mobile Menu -->
         <div class="mobile-menu">
             <div class="mobile-menu-content">
                 <!-- Mobile Search -->
@@ -145,6 +165,16 @@
                     <i class="fas fa-search search-icon"></i>
                     <input type="text" name="q" class="search-input" placeholder="Search...">
                 </form>
+                
+                <!-- Dark Mode Toggle (Mobile) - Only for logged in users -->
+                {% if user.is_authenticated %}
+                <div class="mobile-dark-mode">
+                    <button class="dark-mode-toggle mobile-toggle" id="mobileDarkModeToggle" aria-label="Toggle dark mode">
+                        <i class="fas fa-moon"></i>
+                        <span>Dark Mode</span>
+                    </button>
+                </div>
+                {% endif %}
                 
                 <!-- Mobile Navigation -->
                 <a href="{% url 'home' %}" class="mobile-nav-link">
@@ -172,34 +202,66 @@
                     <span class="mobile-badge">{{ notification_count }}</span>
                     {% endif %}
                 </a>
-                <a href="{% url 'bookmarks' %}" class="mobile-nav-link">
+                <a href="{% url 'saved_posts' %}" class="mobile-nav-link">
                     <i class="fas fa-bookmark"></i>
-                    <span>Saved</span>
+                    <span>Saved Posts</span>
                 </a>
                 
                 {% if user.is_staff or user.is_superuser %}
-                <div style="margin-top: 0.5rem; padding-top: 0.5rem; border-top: 1px solid var(--gray-200);">
-                    <a href="{% url 'admin_dashboard' %}" class="mobile-nav-link" style="color: var(--primary);">
+                <div class="mobile-admin-section">
+                    <a href="{% url 'admin_dashboard' %}" class="mobile-nav-link admin-link">
                         <i class="fas fa-tachometer-alt"></i>
                         Admin Dashboard
+                    </a>
+                    <a href="{% url 'admin_posts' %}" class="mobile-nav-link admin-link">
+                        <i class="fas fa-file-alt"></i>
+                        Manage Posts
+                    </a>
+                    <a href="{% url 'quick_fetch_news' %}" class="mobile-nav-link admin-link">
+                        <i class="fas fa-sync-alt"></i>
+                        Quick Fetch News
                     </a>
                 </div>
                 {% endif %}
                 
-                <a href="{% url 'logout' %}" class="mobile-nav-link" style="color: var(--danger); margin-top: 0.5rem;">
+                <a href="{% url 'logout' %}" class="mobile-nav-link logout-link">
                     <i class="fas fa-sign-out-alt"></i>
                     <span>Logout</span>
                 </a>
                 {% else %}
-                <div style="display: flex; gap: 0.75rem; margin-top: 1rem;">
-                    <a href="{% url 'login' %}" class="btn-login" style="flex: 1; text-align: center;">Sign In</a>
-                    <a href="{% url 'register' %}" class="btn-register" style="flex: 1; text-align: center;">Register</a>
+                <div class="mobile-auth-buttons">
+                    <a href="{% url 'login' %}" class="btn-login">Sign In</a>
+                    <a href="{% url 'register' %}" class="btn-register">Register</a>
                 </div>
                 {% endif %}
             </div>
         </div>
     </nav>
     
+    <!-- Messages/Alerts -->
+    {% if messages %}
+    <div class="messages-container">
+        {% for message in messages %}
+        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+            <div class="alert-content">
+                {% if message.tags == 'success' %}
+                <i class="fas fa-check-circle"></i>
+                {% elif message.tags == 'error' %}
+                <i class="fas fa-exclamation-circle"></i>
+                {% elif message.tags == 'warning' %}
+                <i class="fas fa-exclamation-triangle"></i>
+                {% else %}
+                <i class="fas fa-info-circle"></i>
+                {% endif %}
+                <span>{{ message }}</span>
+            </div>
+            <button type="button" class="alert-close" data-bs-dismiss="alert" aria-label="Close">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
     
     <!-- Main Content -->
     <main class="main-content">
@@ -263,7 +325,7 @@
                         <span class="stat-label">Comments</span>
                     </div>
                 </div>
-                <p style="color: var(--gray-600); font-size: 0.875rem; margin-top: 1rem;">
+                <p class="online-stats">
                     <i class="fas fa-users"></i> {{ online_users_count|default:"0" }} online now
                 </p>
             </div>
@@ -274,6 +336,11 @@
         </div>
     </footer>
     
+    <!-- Back to Top Button -->
+    <button class="back-to-top" id="backToTop" aria-label="Back to top">
+        <i class="fas fa-arrow-up"></i>
+    </button>
+    
     <!-- JavaScript -->
     <script>
         // Global variables
@@ -281,7 +348,62 @@
         const currentUserId = {% if user.is_authenticated %}{{ user.id }}{% else %}null{% endif %};
         const csrfToken = '{{ csrf_token }}';
     </script>
+    
+    <!-- Main JavaScript -->
     <script src="{% static 'js/main.js' %}"></script>
+    
+    <!-- Dark Mode Toggle Script (Sync both toggles) -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const desktopToggle = document.getElementById('darkModeToggle');
+            const mobileToggle = document.getElementById('mobileDarkModeToggle');
+            
+            function updateToggleIcons(theme) {
+                const iconClass = theme === 'dark' ? 'fa-sun' : 'fa-moon';
+                const text = theme === 'dark' ? 'Light Mode' : 'Dark Mode';
+                
+                if (desktopToggle) {
+                    const icon = desktopToggle.querySelector('i');
+                    if (icon) icon.className = `fas ${iconClass}`;
+                }
+                
+                if (mobileToggle) {
+                    const icon = mobileToggle.querySelector('i');
+                    const span = mobileToggle.querySelector('span');
+                    if (icon) icon.className = `fas ${iconClass}`;
+                    if (span) span.textContent = text;
+                }
+            }
+            
+            function toggleTheme() {
+                const currentTheme = document.documentElement.getAttribute('data-theme') || 'light';
+                const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+                
+                document.documentElement.setAttribute('data-theme', newTheme);
+                localStorage.setItem('theme', newTheme);
+                updateToggleIcons(newTheme);
+                
+                // Trigger custom event for other components
+                window.dispatchEvent(new CustomEvent('themeChanged', { 
+                    detail: { theme: newTheme } 
+                }));
+            }
+            
+            // Set initial icons
+            const initialTheme = document.documentElement.getAttribute('data-theme') || 'light';
+            updateToggleIcons(initialTheme);
+            
+            // Add click handlers
+            if (desktopToggle) {
+                desktopToggle.addEventListener('click', toggleTheme);
+            }
+            
+            if (mobileToggle) {
+                mobileToggle.addEventListener('click', toggleTheme);
+            }
+        });
+    </script>
+    
     {% block extra_js %}{% endblock %}
 </body>
 </html>

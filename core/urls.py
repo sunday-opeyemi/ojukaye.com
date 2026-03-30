@@ -35,6 +35,7 @@ urlpatterns = [
     # Posts
     path('post/<int:post_id>/', views.post_detail, name='post_detail'),
     path('post/<int:post_id>/like/', views.like_post, name='like_post'),
+    path('saved-posts/', views.bookmark_post, name='saved_posts'),
     path('post/<int:post_id>/bookmark/', views.bookmark_post, name='bookmark_post'),
     path('post/<int:post_id>/delete/', views.delete_post, name='delete_post'),
     path('post/<int:post_id>/comments/', views.load_more_comments, name='load_more_comments'),

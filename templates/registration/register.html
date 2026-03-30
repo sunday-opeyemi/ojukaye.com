@@ -73,14 +73,14 @@
                                 <small>Personal account</small>
                             </div>
                         </label>
-                        <label class="account-type-card">
+                        {% comment %} <label class="account-type-card">
                             <input type="radio" name="account_type" value="business" {% if form.account_type.value == 'business' %}checked{% endif %}>
                             <div class="account-type-content">
                                 <i class="fas fa-building"></i>
                                 <span>Business</span>
                                 <small>For organizations</small>
                             </div>
-                        </label>
+                        </label> {% endcomment %}
                     </div>
                     {% if form.account_type.errors %}
                     <div class="form-error">
@@ -129,7 +129,7 @@
                     {% endif %}
                 </div>
                 
-                <!-- Business Fields (Hidden by default, shown when business is selected) -->
+                {% comment %} <!-- Business Fields (Hidden by default, shown when business is selected) -->
                 <div class="business-fields" style="display: none;">
                     <h3 style="font-size: 1rem; margin-bottom: 1rem; color: var(--gray-700);">
                         <i class="fas fa-building" style="color: var(--primary);"></i> Business Information
@@ -184,7 +184,7 @@
                     <small style="color: var(--gray-500); font-size: 0.75rem; display: block; margin-top: 0.5rem;">
                         <i class="fas fa-info-circle"></i> Business accounts require verification. You'll receive an email with next steps.
                     </small>
-                </div>
+                </div> {% endcomment %}
                 
                 <!-- Password Fields -->
                 <div class="form-group">
